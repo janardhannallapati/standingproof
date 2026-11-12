@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build stage: resolve and install dependencies with uv. Nothing from here ships except /app.
-FROM python:3.12-slim AS build
+FROM python:3.15-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12.3 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # Runtime stage: no build tools, no uv, a non-root user.
-FROM python:3.12-slim AS runtime
+FROM python:3.15-slim AS runtime
 RUN useradd --system --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=build --chown=app:app /app/.venv /app/.venv
