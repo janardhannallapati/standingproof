@@ -1,0 +1,45 @@
+[project]
+name = "standingproof"
+version = "0.1.0"
+description = "Answers security questionnaires from approved sources, verifies them against live settings, and reopens them when those settings drift."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "Janardhan Nallapati" }]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.5",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "ruff>=0.17.4",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/F: pycodestyle and pyflakes. I: import order. UP: modern syntax. B: likely bugs.
+# S: security checks (bandit). ASYNC: blocking calls inside async code.
+select = ["E", "F", "I", "UP", "B", "S", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
