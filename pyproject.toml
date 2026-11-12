@@ -8,6 +8,7 @@ authors = [{ name = "Janardhan Nallapati" }]
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.5",
+    "pydantic-settings>=2.16.2",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -17,7 +18,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
+    "httpx2>=2.16.0",
     "mypy>=2.4.1",
     "pytest>=9.2.0",
     "pytest-asyncio>=1.4.1.post1",
@@ -26,6 +27,9 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# A warning is a defect we have not looked at yet, so it fails the run.
+filterwarnings = ["error"]
 testpaths = ["tests"]
 
 [tool.ruff]
