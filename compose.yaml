@@ -1,0 +1,59 @@
+# Local development stack. Ports are bound to 127.0.0.1 so nothing is reachable from the
+# network, and the credentials below are development defaults for that reason only.
+# Production values come from the environment at deploy time.
+x-app-env: &app_env
+  SP_DATABASE_URL: postgresql+asyncpg://standingproof:standingproof@postgres:5432/standingproof
+  SP_REDIS_URL: redis://redis:6379/0
+  SP_ENVIRONMENT: dev
+
+x-app-hardening: &app_hardening
+  read_only: true
+  tmpfs: ["/tmp"]
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: standingproof
+      POSTGRES_PASSWORD: standingproof
+      POSTGRES_DB: standingproof
+    ports: ["127.0.0.1:${SP_POSTGRES_PORT:-5432}:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U standingproof -d standingproof"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:${SP_REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Runs once and exits. The API starts only after this succeeds, so two API replicas
+  # never race to apply the same migration.
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment: *app_env
+    <<: *app_hardening
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: .
+    environment: *app_env
+    <<: *app_hardening
+    ports: ["127.0.0.1:${SP_API_PORT:-8000}:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:
