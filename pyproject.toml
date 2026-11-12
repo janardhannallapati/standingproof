@@ -7,6 +7,7 @@ license = "Apache-2.0"
 authors = [{ name = "Janardhan Nallapati" }]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.20.1",
     "asyncpg>=0.32.0",
     "fastapi>=0.162.5",
     "pydantic-settings>=2.16.2",
