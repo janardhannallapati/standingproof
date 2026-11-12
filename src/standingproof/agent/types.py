@@ -54,13 +54,19 @@ class HandoffReason(StrEnum):
     TIME_LIMIT = "time_limit"
     REPEATED_CALL = "repeated_call"
     UNGROUNDED_ANSWER = "ungrounded_answer"
+    UNSUPPORTED_CLAIM = "unsupported_claim"
     MODEL_DECLINED = "model_declined"
     OUTPUT_TRUNCATED = "output_truncated"
     UNEXPECTED_STOP = "unexpected_stop"
+    MODEL_ERROR = "model_error"
 
 
 class AgentResult(BaseModel):
-    """The outcome of one run. Exactly one of `draft` and `handoff` is set."""
+    """The outcome of one run. Exactly one of `draft` and `handoff` is set.
+
+    A draft here has passed the automatic checks. It is a proposal for a human reviewer,
+    never something to send to a customer as it stands.
+    """
 
     draft: AnswerDraft | None
     handoff: HandoffReason | None

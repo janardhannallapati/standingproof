@@ -1,6 +1,6 @@
 import json
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable, Mapping
+from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic import BaseModel, ValidationError
@@ -14,8 +14,9 @@ class ToolOutcome:
 
     content: str
     is_error: bool = False
-    # Identifiers of sources this call returned. An answer may cite only these.
-    source_ids: frozenset[str] = frozenset()
+    # Sources this call returned, as id -> text. An answer may cite only these ids, and its
+    # wording is checked against these texts.
+    sources: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

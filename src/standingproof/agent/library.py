@@ -87,7 +87,9 @@ def build_registry(library: list[LibraryEntry]) -> ToolRegistry:
             {"id": e.id, "approved_answer": e.approved_answer, "approved_on": e.approved_on}
             for e in hits
         ]
-        return ToolOutcome(content=json.dumps(payload), source_ids=frozenset(e.id for e in hits))
+        return ToolOutcome(
+            content=json.dumps(payload), sources={e.id: e.approved_answer for e in hits}
+        )
 
     async def policy(arguments: PolicyInput) -> ToolOutcome:
         entry = by_id.get(arguments.source_id)
@@ -99,7 +101,7 @@ def build_registry(library: list[LibraryEntry]) -> ToolRegistry:
             )
         return ToolOutcome(
             content=json.dumps({"id": entry.id, "policy_excerpt": entry.policy_excerpt}),
-            source_ids=frozenset({entry.id}),
+            sources={entry.id: entry.policy_excerpt},
         )
 
     return ToolRegistry(

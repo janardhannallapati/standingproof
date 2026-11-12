@@ -2,8 +2,8 @@ import pytest
 
 from standingproof.agent.library import LIBRARY, build_registry
 from standingproof.agent.limits import Limits
-from standingproof.agent.loop import run_agent
-from standingproof.agent.types import AnswerDraft, HandoffReason, ToolCall
+from standingproof.agent.loop import ModelCallError, run_agent
+from standingproof.agent.types import AnswerDraft, HandoffReason, ModelTurn, ToolCall
 from tests.agent.fakes import ScriptedModel, finishes, search, stops, usage, wants_tools
 
 MFA_ID = "LIB-MFA-01"
@@ -207,3 +207,52 @@ async def test_stops_when_the_time_limit_has_passed() -> None:
 
     assert result.handoff == HandoffReason.TIME_LIMIT
     assert len(model.requests) == 1
+
+
+async def test_hands_off_when_the_model_provider_fails() -> None:
+    class FailingModel:
+        async def complete(self, **_: object) -> ModelTurn:
+            raise ModelCallError("provider down")
+
+    result = await run_agent(
+        question=QUESTION,
+        model=FailingModel(),
+        registry=build_registry(LIBRARY),
+        limits=Limits(),
+    )
+
+    assert result.handoff == HandoffReason.MODEL_ERROR
+    assert result.steps == 0
+
+
+async def test_hands_off_when_no_source_status_still_carries_answer_text() -> None:
+    draft = AnswerDraft(status="no_approved_source", answer="Yes, we do.", citations=[], note="")
+    model = ScriptedModel([wants_tools(search("c1", "quantum")), finishes(draft)])
+
+    result = await run(model)
+
+    assert result.handoff == HandoffReason.UNGROUNDED_ANSWER
+
+
+async def test_hands_off_when_no_source_status_still_carries_citations() -> None:
+    draft = AnswerDraft(status="no_approved_source", answer="", citations=[MFA_ID], note="")
+    model = ScriptedModel([wants_tools(search("c1", "MFA")), finishes(draft)])
+
+    result = await run(model)
+
+    assert result.handoff == HandoffReason.UNGROUNDED_ANSWER
+
+
+async def test_hands_off_when_the_wording_claims_more_than_the_cited_source_says() -> None:
+    overclaim = AnswerDraft(
+        status="answered",
+        answer="Yes. We are fully compliant and MFA is guaranteed for everyone.",
+        citations=[MFA_ID],
+        note="",
+    )
+    model = ScriptedModel([wants_tools(search("c1", "MFA")), finishes(overclaim)])
+
+    result = await run(model)
+
+    assert result.handoff == HandoffReason.UNSUPPORTED_CLAIM
+    assert result.draft is None

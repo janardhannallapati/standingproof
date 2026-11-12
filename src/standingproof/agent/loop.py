@@ -9,6 +9,7 @@ import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from standingproof.agent.claims import unsupported_claims
 from standingproof.agent.limits import Limits
 from standingproof.agent.pricing import cost_usd
 from standingproof.agent.prompts import SYSTEM_PROMPT, question_message
@@ -21,6 +22,10 @@ from standingproof.agent.types import (
     ToolCall,
     Usage,
 )
+
+
+class ModelCallError(Exception):
+    """The provider could not be reached or rejected the request, after the client's retries."""
 
 
 class ModelClient(Protocol):
@@ -52,11 +57,22 @@ def _add(total: Usage, turn: Usage) -> Usage:
     )
 
 
-def _grounded(draft: AnswerDraft, seen_sources: set[str]) -> bool:
-    """An answer must cite at least one source, and only sources a tool returned this run."""
+def _check(draft: AnswerDraft, seen_sources: dict[str, list[str]]) -> HandoffReason | None:
+    """Decide in code whether a draft may go forward to review. Fails closed."""
     if draft.status == "no_approved_source":
-        return True
-    return bool(draft.citations) and set(draft.citations) <= seen_sources
+        # "Nothing found" must be exactly that: no wording, no citations.
+        if draft.answer.strip() or draft.citations:
+            return HandoffReason.UNGROUNDED_ANSWER
+        return None
+    if not draft.answer.strip() or not draft.citations:
+        return HandoffReason.UNGROUNDED_ANSWER
+    if not set(draft.citations) <= seen_sources.keys():
+        # A cited id that no tool returned in this run was invented or injected.
+        return HandoffReason.UNGROUNDED_ANSWER
+    cited_texts = [text for source_id in draft.citations for text in seen_sources[source_id]]
+    if unsupported_claims(draft.answer, cited_texts):
+        return HandoffReason.UNSUPPORTED_CLAIM
+    return None
 
 
 async def run_agent(
@@ -70,7 +86,7 @@ async def run_agent(
     messages: list[dict[str, Any]] = [{"role": "user", "content": question_message(question)}]
     tools = registry.definitions()
     seen_calls: set[str] = set()
-    seen_sources: set[str] = set()
+    seen_sources: dict[str, list[str]] = {}
     total = Usage()
     spent = 0.0
     steps = 0
@@ -88,15 +104,20 @@ async def run_agent(
         if clock() - started >= limits.max_seconds:
             return stop(HandoffReason.TIME_LIMIT)
 
-        turn = await model.complete(system=SYSTEM_PROMPT, messages=messages, tools=tools)
+        try:
+            turn = await model.complete(system=SYSTEM_PROMPT, messages=messages, tools=tools)
+        except ModelCallError:
+            # A provider outage is not a reason to guess. The question goes to a person.
+            return stop(HandoffReason.MODEL_ERROR)
         steps += 1
         total = _add(total, turn.usage)
         spent += cost_usd(turn.model, turn.usage)
 
         if turn.stop_reason == "end_turn":
-            if turn.draft is None or not _grounded(turn.draft, seen_sources):
+            if turn.draft is None:
                 return stop(HandoffReason.UNGROUNDED_ANSWER)
-            return stop(None, turn.draft)
+            problem = _check(turn.draft, seen_sources)
+            return stop(problem) if problem else stop(None, turn.draft)
 
         if turn.stop_reason != "tool_use":
             return stop(_STOP_TO_HANDOFF.get(turn.stop_reason, HandoffReason.UNEXPECTED_STOP))
@@ -112,7 +133,8 @@ async def run_agent(
         results: list[dict[str, Any]] = []
         for call in turn.tool_calls:
             outcome = await registry.execute(call)
-            seen_sources.update(outcome.source_ids)
+            for source_id, text in outcome.sources.items():
+                seen_sources.setdefault(source_id, []).append(text)
             block: dict[str, Any] = {
                 "type": "tool_result",
                 "tool_use_id": call.id,
