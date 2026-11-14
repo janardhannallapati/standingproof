@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from standingproof.questionnaires.intake import FileLimitError
 from standingproof.questionnaires.parser import (
@@ -193,3 +194,13 @@ def test_a_manual_mapping_may_name_a_column_beyond_the_scan_width() -> None:
     parsed = parse_workbook(content, mapping=mapping, **LIMITS)
 
     assert [(q.cell, q.text) for q in parsed.questions] == [("BI2", "Is MFA enforced?")]
+
+
+@pytest.mark.parametrize("field", ["question_column", "answer_column", "id_column"])
+def test_a_manual_mapping_cannot_name_a_column_past_the_widest_allowed(field: str) -> None:
+    columns = {"question_column": "B", field: "IW"}  # IW is column 257
+
+    with pytest.raises(ValidationError, match="256"):
+        ManualMapping(sheet="S", header_row=1, **columns)
+
+    ManualMapping(sheet="S", header_row=1, **{**columns, field: "IV"})  # column 256 is allowed

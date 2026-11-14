@@ -16,7 +16,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 from openpyxl.utils import column_index_from_string, get_column_letter
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from standingproof.questionnaires.detect import ColumnMapping, detect_columns
 from standingproof.questionnaires.intake import FileLimitError
@@ -25,6 +25,7 @@ _SCAN_ROWS = 30
 # Columns read per row unless a person names one further right. Bounds the work a very
 # wide sheet can cause; real questionnaires use a handful of columns.
 _SCAN_COLUMNS = 50
+_MAX_MANUAL_COLUMN = 256
 _PREVIEW_ROWS = 8
 _PREVIEW_COLUMNS = 8
 _PREVIEW_CELL_CHARS = 80
@@ -46,6 +47,18 @@ class ManualMapping(BaseModel):
     question_column: str = Field(pattern=_COLUMN_LETTERS, description="Column letter, e.g. B.")
     answer_column: str | None = Field(default=None, pattern=_COLUMN_LETTERS)
     id_column: str | None = Field(default=None, pattern=_COLUMN_LETTERS)
+
+    @field_validator("question_column", "answer_column", "id_column")
+    @classmethod
+    def _within_width(cls, letters: str | None) -> str | None:
+        # Rows are read as far right as the furthest chosen column, so that column is
+        # bounded. Otherwise "ZZZ" would make every row 18,278 cells wide.
+        if letters and column_index_from_string(letters.upper()) > _MAX_MANUAL_COLUMN:
+            raise ValueError(
+                f"column {letters.upper()} is past column {_MAX_MANUAL_COLUMN}, the furthest "
+                "that can be mapped"
+            )
+        return letters
 
     def as_columns(self) -> ColumnMapping:
         def index(letters: str | None) -> int | None:
