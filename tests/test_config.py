@@ -26,3 +26,22 @@ def test_connection_strings_do_not_leak_into_repr() -> None:
     settings = Settings(_env_file=None)
 
     assert "standingproof:standingproof" not in repr(settings)
+
+
+def test_upload_limits_have_safe_defaults_and_can_be_overridden() -> None:
+    defaults = Settings(_env_file=None)
+    tighter = Settings(_env_file=None, upload_max_bytes=1000)
+
+    assert defaults.upload_max_bytes == 5 * 1024 * 1024
+    assert defaults.upload_max_uncompressed_bytes == 50 * 1024 * 1024
+    assert defaults.upload_max_sheets == 20
+    assert defaults.upload_max_questions == 5000
+    assert defaults.question_max_chars == 4000
+    assert tighter.upload_max_bytes == 1000
+
+
+def test_xml_parsing_is_hardened() -> None:
+    import openpyxl.xml
+
+    # openpyxl switches to defusedxml only when it is installed; this fails if it is removed.
+    assert openpyxl.xml.DEFUSEDXML is True

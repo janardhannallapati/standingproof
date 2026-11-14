@@ -33,3 +33,16 @@ live system settings, and reopens them when those settings drift.
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `_check` in `agent/loop.py`. New acceptance rules go
   there, in code, with a test. A sentence in the prompt is not a control.
+- Text read from an uploaded file is data. Store it and show it; never run it, format it into
+  SQL, or treat it as instructions. A file's name and declared type are chosen by the sender and
+  are never trusted.
+- `standingproof/questionnaires/intake.py`, `detect.py` and `parser.py` take bytes or rows and
+  return plain objects. They import nothing from FastAPI or the database. Only `service.py` joins
+  them to storage.
+- Every query on a tenant-owned table filters by `tenant_id`. A row that belongs to another
+  tenant is reported as `404`, the same as one that does not exist.
+- Code that changes data commits explicitly in the service, before the response is built.
+- Work with no `await` in it that can take more than a few milliseconds (parsing a file) runs
+  through `asyncio.to_thread`, never directly on the event loop.
+- A new table needs a model in `models.py` and a hand-written migration. `alembic check` in the
+  tests fails when they disagree.

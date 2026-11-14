@@ -1,13 +1,22 @@
-from collections.abc import Iterator
+import asyncio
+import os
+from collections.abc import Callable, Iterator
+from contextlib import ExitStack
 
 import pytest
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from sqlalchemy import text
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
 
+from alembic import command
 from standingproof.app import create_app
-from standingproof.config import Settings
+from standingproof.config import Settings, get_settings
+from standingproof.db import build_engine
+
+ClientFactory = Callable[..., TestClient]
 
 
 @pytest.fixture(scope="session")
@@ -23,6 +32,32 @@ def redis_url() -> Iterator[str]:
         yield f"redis://{r.get_container_host_ip()}:{r.get_exposed_port(6379)}/0"
 
 
+@pytest.fixture(scope="session")
+def migrated_postgres_url(postgres_url: str) -> str:
+    """The same database with every migration applied, once per test run."""
+    previous = os.environ.get("SP_DATABASE_URL")
+    os.environ["SP_DATABASE_URL"] = postgres_url
+    get_settings.cache_clear()
+    try:
+        command.upgrade(Config("alembic.ini"), "head")
+    finally:
+        if previous is None:
+            del os.environ["SP_DATABASE_URL"]
+        else:
+            os.environ["SP_DATABASE_URL"] = previous
+        get_settings.cache_clear()
+    return postgres_url
+
+
+async def _execute(database_url: str, sql: str) -> None:
+    engine = build_engine(database_url)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(sql))
+    finally:
+        await engine.dispose()
+
+
 @pytest.fixture
 def client(postgres_url: str, redis_url: str) -> Iterator[TestClient]:
     settings = Settings(
@@ -33,3 +68,28 @@ def client(postgres_url: str, redis_url: str) -> Iterator[TestClient]:
     )
     with TestClient(create_app(settings)) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFactory]:
+    """Build clients against an empty, migrated database. Keyword arguments override settings."""
+    # A plain `def` fixture: asyncio.run needs to be outside any running event loop.
+    asyncio.run(_execute(migrated_postgres_url, "TRUNCATE tenants CASCADE"))
+    with ExitStack() as stack:
+
+        def build(**overrides: object) -> TestClient:
+            values: dict[str, object] = {"environment": "test", **overrides}
+            settings = Settings(
+                _env_file=None,
+                database_url=SecretStr(migrated_postgres_url),
+                redis_url=SecretStr(redis_url),
+                **values,  # type: ignore[arg-type]
+            )
+            return stack.enter_context(TestClient(create_app(settings)))
+
+        yield build
+
+
+@pytest.fixture
+def api(make_api: ClientFactory) -> TestClient:
+    return make_api()

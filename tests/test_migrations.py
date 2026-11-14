@@ -40,4 +40,16 @@ def test_upgrade_head_creates_vector_extension_and_tenants(
     )
 
     assert "vector" in extensions
-    assert "tenants" in tables
+    assert {"tenants", "questionnaires", "questionnaire_files", "questions"} <= set(tables)
+
+
+def test_orm_models_match_the_migrations(
+    migrated_postgres_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SP_DATABASE_URL", migrated_postgres_url)
+    get_settings.cache_clear()
+    try:
+        # Raises if autogenerate would produce a new migration, i.e. models and schema differ.
+        command.check(Config("alembic.ini"))
+    finally:
+        get_settings.cache_clear()
