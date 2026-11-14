@@ -328,3 +328,28 @@ async def test_parsing_does_not_block_other_requests(
     assert uploaded.status_code == 201
     assert health.status_code == 200
     assert moments["health_answered"] < moments["parse_finished"]
+
+
+def test_without_sign_in_the_api_refuses_to_serve_tenant_data_in_production(
+    make_api: ClientFactory,
+) -> None:
+    production = make_api(environment="prod")
+
+    assert upload(production, simple(QUESTIONS)).status_code == 401
+    assert production.get(f"/questionnaires/{uuid.uuid4()}").status_code == 401
+    assert production.get("/healthz").status_code == 200
+
+
+def test_reading_a_questionnaire_does_not_parse_the_file_again(
+    api: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    content = xlsx({"Sheet A": [["Topic", "Details"], ["Access", "Is MFA enforced?"]]})
+    created = upload(api, content).json()
+
+    def must_not_parse(*args: object, **kwargs: object) -> object:
+        raise AssertionError("a read must not parse the stored file")
+
+    monkeypatch.setattr(service, "parse_workbook", must_not_parse)
+
+    assert api.get(f"/questionnaires/{created['id']}").json()["sheets"] == created["sheets"]
+    assert upload(api, content).json()["sheets"] == created["sheets"]

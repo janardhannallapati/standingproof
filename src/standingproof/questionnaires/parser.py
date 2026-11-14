@@ -22,6 +22,9 @@ from standingproof.questionnaires.detect import ColumnMapping, detect_columns
 from standingproof.questionnaires.intake import FileLimitError
 
 _SCAN_ROWS = 30
+# Columns read per row unless a person names one further right. Bounds the work a very
+# wide sheet can cause; real questionnaires use a handful of columns.
+_SCAN_COLUMNS = 50
 _PREVIEW_ROWS = 8
 _PREVIEW_COLUMNS = 8
 _PREVIEW_CELL_CHARS = 80
@@ -174,6 +177,9 @@ def parse_workbook(
     using the columns a person chose.
     """
     result = ParsedWorkbook()
+    chosen = mapping.as_columns() if mapping else None
+    needed = [chosen.question_col, chosen.answer_col or 0, chosen.id_col or 0] if chosen else []
+    max_col = max([_SCAN_COLUMNS, *needed])
     with warnings.catch_warnings():
         # openpyxl warns about spreadsheet features it does not model (for example some
         # dropdown extensions). They do not affect reading cell text.
@@ -198,11 +204,11 @@ def parse_workbook(
             if mapping is not None and sheet.title != mapping.sheet:
                 continue
 
-            rows = sheet.iter_rows(values_only=True)
+            rows = sheet.iter_rows(values_only=True, max_col=max_col)
             head = list(itertools.islice(rows, _SCAN_ROWS))
             result.previews.append(_preview(sheet.title, head))
 
-            columns = mapping.as_columns() if mapping else detect_columns(head)
+            columns = chosen or detect_columns(head)
             if columns is None:
                 result.unmapped_sheets.append(sheet.title)
                 continue

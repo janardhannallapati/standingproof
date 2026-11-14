@@ -78,12 +78,12 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
     with ExitStack() as stack:
 
         def build(**overrides: object) -> TestClient:
+            values: dict[str, object] = {"environment": "test", **overrides}
             settings = Settings(
                 _env_file=None,
                 database_url=SecretStr(migrated_postgres_url),
                 redis_url=SecretStr(redis_url),
-                environment="test",
-                **overrides,  # type: ignore[arg-type]
+                **values,  # type: ignore[arg-type]
             )
             return stack.enter_context(TestClient(create_app(settings)))
 

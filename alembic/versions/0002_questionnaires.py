@@ -37,6 +37,7 @@ def upgrade() -> None:
         sa.Column("sha256", sa.String(64), nullable=False),
         sa.Column("question_count", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("mapping", postgresql.JSONB()),
+        sa.Column("previews", postgresql.JSONB()),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

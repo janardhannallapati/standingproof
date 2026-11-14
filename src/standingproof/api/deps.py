@@ -4,7 +4,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated, cast
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -50,6 +50,12 @@ async def current_tenant(session: SessionDep, settings: SettingsDep) -> uuid.UUI
     Until sign-in exists this is one development tenant, created on first use. Sign-in
     replaces the body of this function; nothing that depends on it changes.
     """
+    if settings.environment == "prod":
+        # Fail closed. Without this, a production deployment would serve every caller
+        # as one shared tenant, with no authentication at all.
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Sign-in is not available in this version."
+        )
     name = settings.dev_tenant_name
     lookup = select(Tenant.id).where(Tenant.name == name)
     tenant_id = (await session.execute(lookup)).scalar_one_or_none()

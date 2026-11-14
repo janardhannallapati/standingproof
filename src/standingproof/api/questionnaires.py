@@ -14,7 +14,7 @@ from standingproof.api.deps import SessionDep, SettingsDep, TenantDep
 from standingproof.models import STATUS_NEEDS_MAPPING, Questionnaire
 from standingproof.questionnaires import service
 from standingproof.questionnaires.intake import FileLimitError, UnsupportedFileError
-from standingproof.questionnaires.parser import ManualMapping, MappingError, SheetPreview
+from standingproof.questionnaires.parser import ManualMapping, MappingError
 
 router = APIRouter(prefix="/questionnaires", tags=["questionnaires"])
 
@@ -54,15 +54,16 @@ class QuestionPage(BaseModel):
     next_after: int | None
 
 
-def _out(questionnaire: Questionnaire, previews: list[SheetPreview] | None) -> QuestionnaireOut:
+def _out(questionnaire: Questionnaire) -> QuestionnaireOut:
+    needs_mapping = questionnaire.status == STATUS_NEEDS_MAPPING
     return QuestionnaireOut(
         id=questionnaire.id,
         filename=questionnaire.filename,
         status=questionnaire.status,  # type: ignore[arg-type]
         question_count=questionnaire.question_count,
         sheets=(
-            [SheetPreviewOut(name=p.name, rows=p.rows) for p in previews]
-            if previews is not None
+            [SheetPreviewOut.model_validate(p) for p in questionnaire.previews or []]
+            if needs_mapping
             else None
         ),
     )
@@ -118,24 +119,16 @@ async def upload_questionnaire(
     except (FileLimitError, service.UnreadableWorkbookError) as error:
         raise HTTPException(_UNPROCESSABLE, str(error)) from error
 
-    questionnaire = result.questionnaire
     if not result.created:
         response.status_code = status.HTTP_200_OK
-    needs_mapping = questionnaire.status == STATUS_NEEDS_MAPPING
-    previews = result.previews
-    if needs_mapping and not result.created:
-        previews = await service.previews(session, questionnaire, settings)
-    return _out(questionnaire, previews if needs_mapping else None)
+    return _out(result.questionnaire)
 
 
 @router.get("/{questionnaire_id}")
 async def get_questionnaire(
-    questionnaire_id: uuid.UUID, session: SessionDep, tenant_id: TenantDep, settings: SettingsDep
+    questionnaire_id: uuid.UUID, session: SessionDep, tenant_id: TenantDep
 ) -> QuestionnaireOut:
-    questionnaire = await _owned(session, tenant_id, questionnaire_id)
-    if questionnaire.status != STATUS_NEEDS_MAPPING:
-        return _out(questionnaire, None)
-    return _out(questionnaire, await service.previews(session, questionnaire, settings))
+    return _out(await _owned(session, tenant_id, questionnaire_id))
 
 
 @router.get("/{questionnaire_id}/questions")
@@ -177,4 +170,4 @@ async def set_mapping(
         raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from error
     except (MappingError, FileLimitError, service.UnreadableWorkbookError) as error:
         raise HTTPException(_UNPROCESSABLE, str(error)) from error
-    return _out(questionnaire, None)
+    return _out(questionnaire)

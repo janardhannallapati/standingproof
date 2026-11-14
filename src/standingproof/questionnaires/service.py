@@ -9,6 +9,7 @@ import hashlib
 import logging
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
@@ -51,7 +52,6 @@ class AlreadyParsedError(Exception):
 class Ingested:
     questionnaire: Questionnaire
     created: bool
-    previews: list[SheetPreview]
 
 
 def _parse(content: bytes, settings: Settings, mapping: ManualMapping | None) -> ParsedWorkbook:
@@ -106,6 +106,10 @@ def _rows(
     ]
 
 
+def _stored_previews(previews: list[SheetPreview]) -> list[dict[str, Any]]:
+    return [{"name": preview.name, "rows": preview.rows} for preview in previews]
+
+
 async def _by_hash(
     session: AsyncSession, tenant_id: uuid.UUID, sha256: str
 ) -> Questionnaire | None:
@@ -143,7 +147,7 @@ async def ingest(
     sha256 = hashlib.sha256(content).hexdigest()
     existing = await _by_hash(session, tenant_id, sha256)
     if existing is not None:
-        return Ingested(existing, created=False, previews=[])
+        return Ingested(existing, created=False)
 
     check_xlsx(
         content,
@@ -159,6 +163,7 @@ async def ingest(
         sha256=sha256,
         question_count=len(parsed.questions),
         mapping=parsed.mappings or None,
+        previews=None if parsed.questions else _stored_previews(parsed.previews),
     )
     session.add(questionnaire)
     try:
@@ -169,7 +174,7 @@ async def ingest(
         winner = await _by_hash(session, tenant_id, sha256)
         if winner is None:
             raise
-        return Ingested(winner, created=False, previews=[])
+        return Ingested(winner, created=False)
 
     session.add(
         QuestionnaireFile(
@@ -182,7 +187,7 @@ async def ingest(
     session.add_all(_rows(parsed.questions, tenant_id=tenant_id, questionnaire_id=questionnaire.id))
     # File, questionnaire and questions are saved together or not at all.
     await session.commit()
-    return Ingested(questionnaire, created=True, previews=parsed.previews)
+    return Ingested(questionnaire, created=True)
 
 
 async def _content(session: AsyncSession, questionnaire: Questionnaire) -> bytes:
@@ -194,14 +199,6 @@ async def _content(session: AsyncSession, questionnaire: Questionnaire) -> bytes
             )
         )
     ).scalar_one()
-
-
-async def previews(
-    session: AsyncSession, questionnaire: Questionnaire, settings: Settings
-) -> list[SheetPreview]:
-    """Rebuild the sheet previews from the stored file, for a person choosing columns."""
-    parsed = await _parse_in_thread(await _content(session, questionnaire), settings)
-    return parsed.previews
 
 
 async def apply_mapping(
@@ -240,6 +237,7 @@ async def apply_mapping(
     questionnaire.status = STATUS_PARSED
     questionnaire.question_count = len(parsed.questions)
     questionnaire.mapping = parsed.mappings
+    questionnaire.previews = None
     await session.commit()
     return questionnaire
 

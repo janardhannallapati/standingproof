@@ -59,6 +59,9 @@ class Questionnaire(Base):
     question_count: Mapped[int] = mapped_column(Integer, server_default=_ZERO)
     # Sheet name -> the header row and columns the questions were read from.
     mapping: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # The top-left corner of each sheet, kept only while a person must choose the columns,
+    # so that showing it never means parsing the file again.
+    previews: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
 
 

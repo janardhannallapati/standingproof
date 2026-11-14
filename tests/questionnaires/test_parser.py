@@ -173,3 +173,23 @@ def test_the_parser_counts_sheets_itself_and_enforces_the_limit() -> None:
 
     with pytest.raises(FileLimitError, match="sheets"):
         parse_workbook(many, **{**LIMITS, "max_sheets": 3})
+
+
+def test_columns_beyond_the_scan_width_are_not_read() -> None:
+    wide = [None] * 60 + ["Question"]
+    content = xlsx({"S": [wide, [None] * 60 + ["Is MFA enforced?"]]})
+
+    parsed = parse_workbook(content, **LIMITS)
+
+    assert parsed.questions == []
+    assert parsed.unmapped_sheets == ["S"]
+
+
+def test_a_manual_mapping_may_name_a_column_beyond_the_scan_width() -> None:
+    wide = [None] * 60 + ["Details"]
+    content = xlsx({"S": [wide, [None] * 60 + ["Is MFA enforced?"]]})
+    mapping = ManualMapping(sheet="S", header_row=1, question_column="BI")
+
+    parsed = parse_workbook(content, mapping=mapping, **LIMITS)
+
+    assert [(q.cell, q.text) for q in parsed.questions] == [("BI2", "Is MFA enforced?")]
