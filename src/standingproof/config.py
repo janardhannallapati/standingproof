@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     run_max_cost_usd: float = 0.50
     run_max_seconds: float = 120.0
 
+    # Ceilings for an uploaded questionnaire. Each is checked before the work it bounds.
+    upload_max_bytes: int = 5 * 1024 * 1024
+    upload_max_uncompressed_bytes: int = 50 * 1024 * 1024
+    upload_max_sheets: int = 20
+    upload_max_rows_per_sheet: int = 100_000
+    upload_max_questions: int = 5_000
+    question_max_chars: int = 4_000
+
+    # Until sign-in exists, every request acts as this one tenant.
+    dev_tenant_name: str = "default"
+
 
 @lru_cache
 def get_settings() -> Settings:

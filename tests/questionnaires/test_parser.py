@@ -9,7 +9,7 @@ from standingproof.questionnaires.parser import (
 )
 from tests.xlsx_builder import simple, xlsx
 
-LIMITS = {"max_questions": 5000, "max_chars": 4000}
+LIMITS = {"max_questions": 5000, "max_chars": 4000, "max_rows": 100_000, "max_sheets": 20}
 
 
 def test_reads_each_question_with_its_sheet_and_cell() -> None:
@@ -103,7 +103,7 @@ def test_numbers_and_dates_in_cells_become_text() -> None:
 
 
 def test_text_over_the_limit_is_cut_and_flagged() -> None:
-    parsed = parse_workbook(simple(["x" * 50]), max_questions=5000, max_chars=20)
+    parsed = parse_workbook(simple(["x" * 50]), **{**LIMITS, "max_chars": 20})
 
     assert parsed.questions[0].text == "x" * 20
     assert parsed.questions[0].truncated is True
@@ -130,7 +130,7 @@ def test_instruction_like_and_formula_like_text_is_kept_as_plain_text() -> None:
 
 def test_more_questions_than_the_limit_is_an_error() -> None:
     with pytest.raises(FileLimitError, match="questions"):
-        parse_workbook(simple(["a?", "b?", "c?"]), max_questions=2, max_chars=4000)
+        parse_workbook(simple(["a?", "b?", "c?"]), **{**LIMITS, "max_questions": 2})
 
 
 def test_no_recognisable_column_gives_no_questions_and_a_preview() -> None:
@@ -159,3 +159,17 @@ def test_a_manual_mapping_for_a_missing_sheet_is_an_error() -> None:
 
     with pytest.raises(MappingError, match="Nope"):
         parse_workbook(simple(["Is MFA enforced?"]), mapping=mapping, **LIMITS)
+
+
+def test_a_sheet_with_more_rows_than_the_limit_is_an_error_even_if_they_are_empty() -> None:
+    padded = xlsx({"S": [["Question"], ["Is MFA enforced?"], *[[None, "filler"]] * 50]})
+
+    with pytest.raises(FileLimitError, match="rows"):
+        parse_workbook(padded, **{**LIMITS, "max_rows": 20})
+
+
+def test_the_parser_counts_sheets_itself_and_enforces_the_limit() -> None:
+    many = xlsx({f"S{i}": [["Question"], ["Is MFA enforced?"]] for i in range(4)})
+
+    with pytest.raises(FileLimitError, match="sheets"):
+        parse_workbook(many, **{**LIMITS, "max_sheets": 3})

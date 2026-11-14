@@ -1,4 +1,9 @@
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 
 def build_engine(database_url: str) -> AsyncEngine:
@@ -13,3 +18,12 @@ def build_engine(database_url: str) -> AsyncEngine:
         pool_pre_ping=True,
         connect_args={"timeout": 2},
     )
+
+
+def build_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    """Create the factory that hands out one session per request.
+
+    expire_on_commit=False keeps loaded objects readable after commit. The default would
+    reload each attribute on next access, which in async code is a hidden database call.
+    """
+    return async_sessionmaker(engine, expire_on_commit=False)

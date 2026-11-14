@@ -9,14 +9,16 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 from standingproof.config import get_settings
+from standingproof.models import Base
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# Migrations are written by hand until there are ORM models to compare against.
-target_metadata = None
+# Migrations are written by hand. The models are given here so that `alembic check`
+# (run by the tests) fails when a model and the migrations disagree.
+target_metadata = Base.metadata
 
 
 def _database_url() -> str:

@@ -132,10 +132,17 @@ def _questions(
     rows: Iterator[tuple[object, ...]],
     columns: ColumnMapping,
     max_chars: int,
+    max_rows: int,
 ) -> Iterator[ParsedQuestion]:
     question_letter = get_column_letter(columns.question_col)
     answer_letter = get_column_letter(columns.answer_col) if columns.answer_col else None
     for row_number, row in enumerate(rows, start=1):
+        if row_number > max_rows:
+            # Bounds the work per sheet. Without it, a sheet of millions of rows that hold
+            # no question text would be read to the end without ever reaching another limit.
+            raise FileLimitError(
+                f"sheet {sheet!r} has more than {max_rows} rows; the limit is {max_rows}"
+            )
         if row_number <= columns.header_row:
             continue
         text = _cell_at(row, columns.question_col)
@@ -156,6 +163,8 @@ def parse_workbook(
     *,
     max_questions: int,
     max_chars: int,
+    max_rows: int,
+    max_sheets: int,
     mapping: ManualMapping | None = None,
 ) -> ParsedWorkbook:
     """Read every visible sheet and return its questions in workbook order.
@@ -173,6 +182,12 @@ def parse_workbook(
         # data_only returns the value a person sees in a formula cell, not the formula.
         workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
     try:
+        # The count that matters is the parser's own. The check on the raw archive is an
+        # early, cheap refusal; this one cannot disagree with what is about to be read.
+        if len(workbook.sheetnames) > max_sheets:
+            raise FileLimitError(
+                f"the workbook has {len(workbook.sheetnames)} sheets; the limit is {max_sheets}"
+            )
         if mapping is not None and mapping.sheet not in workbook.sheetnames:
             raise MappingError(f"the workbook has no sheet named {mapping.sheet!r}")
 
@@ -194,7 +209,7 @@ def parse_workbook(
 
             result.mappings[sheet.title] = _describe(columns)
             for question in _questions(
-                sheet.title, itertools.chain(head, rows), columns, max_chars
+                sheet.title, itertools.chain(head, rows), columns, max_chars, max_rows
             ):
                 if len(result.questions) >= max_questions:
                     raise FileLimitError(
