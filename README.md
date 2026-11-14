@@ -14,6 +14,17 @@ docker compose up --build
 curl localhost:8000/readyz
 ```
 
+## Try the agent on one question
+
+Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.
+
+```sh
+uv run python -m standingproof.agent "Is multi-factor authentication enforced for all employees?"
+```
+
+The agent searches a small sample library of approved answers, replies only from what it finds,
+and reports "no approved source" when nothing supports an answer.
+
 ## Develop
 
 Requires [uv](https://docs.astral.sh/uv/) and Docker.

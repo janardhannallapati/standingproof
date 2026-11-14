@@ -8,6 +8,7 @@ authors = [{ name = "Janardhan Nallapati" }]
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
+    "anthropic>=2.8.0",
     "asyncpg>=0.32.0",
     "fastapi>=0.162.5",
     "pydantic-settings>=2.16.2",
@@ -36,6 +37,7 @@ asyncio_default_fixture_loop_scope = "function"
 # A warning is a defect we have not looked at yet, so it fails the run.
 filterwarnings = ["error"]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     )
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     environment: Literal["dev", "test", "prod"] = "dev"
+
+    # The provider's own variable name, so the same key works with its other tools.
+    anthropic_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    draft_model: str = "claude-opus-5-5"
+    draft_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    run_max_steps: int = 8
+    run_max_cost_usd: float = 0.50
+    run_max_seconds: float = 120.0
 
 
 @lru_cache
