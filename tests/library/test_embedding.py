@@ -240,3 +240,11 @@ async def test_the_local_model_runs_off_the_event_loop(monkeypatch: pytest.Monke
 
     # If the model ran on the event loop, the ticker could not have run at all.
     assert ticks >= 10
+
+
+def test_an_empty_voyage_key_counts_as_no_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Compose passes the variable through as an empty string when it is not set.
+    monkeypatch.setenv("VOYAGE_API_KEY", "")
+
+    with pytest.raises(EmbeddingConfigError, match="VOYAGE_API_KEY"):
+        build_embedder(Settings(_env_file=None, embedding_model="voyage-4-lite"))

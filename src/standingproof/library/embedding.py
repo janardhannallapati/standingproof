@@ -217,9 +217,10 @@ def build_embedder(settings: Settings) -> Embedder:
     """The embedder the settings ask for. Fails at startup, not on the first request."""
     spec = model_spec(settings.embedding_model)
     if spec.provider == "voyage":
-        if settings.voyage_api_key is None:
+        key = settings.voyage_api_key.get_secret_value() if settings.voyage_api_key else ""
+        if not key:
             raise EmbeddingConfigError(
                 f"The embedding model {spec.name!r} needs a key: set VOYAGE_API_KEY."
             )
-        return VoyageEmbedder(spec, api_key=settings.voyage_api_key.get_secret_value())
+        return VoyageEmbedder(spec, api_key=key)
     return FastEmbedEmbedder(spec, cache_dir=settings.embedding_cache_dir)

@@ -5,6 +5,10 @@ x-app-env: &app_env
   SP_DATABASE_URL: postgresql+asyncpg://standingproof:standingproof@postgres:5432/standingproof
   SP_REDIS_URL: redis://redis:6379/0
   SP_ENVIRONMENT: dev
+  # The default embedding model runs inside the container. To try a hosted one, set both
+  # of these in your shell or .env before `docker compose up` (see the README).
+  SP_EMBEDDING_MODEL: ${SP_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
+  VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
 
 x-app-hardening: &app_hardening
   read_only: true

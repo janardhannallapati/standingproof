@@ -38,6 +38,52 @@ Only plain `.xlsx` files up to 5 MB are accepted; macro-enabled workbooks are re
 the same file twice returns the first result. The interactive API reference is at
 `localhost:8000/docs`.
 
+## Load your library and search it
+
+The library is what the agent may answer from: answers your company has already approved, and
+your policy documents.
+
+```sh
+curl -X POST localhost:8000/library/answers -H "content-type: application/json" -d '{
+  "question": "Is multi-factor authentication required for employees?",
+  "answer": "Yes. Multi-factor authentication is required for all employee accounts.",
+  "owner": "security-lead@example.com",
+  "expires_on": "2027-06-30",
+  "control_id": "CC6.1"
+}'
+curl -F "file=@access-control-policy.md" localhost:8000/library/policies
+curl --get localhost:8000/library/search --data-urlencode "q=Do you enforce 2FA for staff?"
+```
+
+Search matches by wording and by meaning, so the question above finds the answer although it
+shares no word with it. Each result says how it was found (`keyword`, `meaning`, or an exact
+`control_id`) and carries its owner and expiry date. An approved answer past its expiry date is
+kept and listed, and is never returned by search. Policies are Markdown or plain text up to
+1 MB; they are split by heading, and a result names the heading it came from.
+
+Search returns the closest entries it has. It does not decide that a question has no approved
+source: on our test set, questions with no source and questions with one had nearest matches
+at the same distances. That decision belongs to the answer check, not to retrieval.
+
+### Embedding model
+
+Text is turned into vectors by `BAAI/bge-small-en-v1.5`, which runs inside the process. No
+key is needed and no library text leaves the machine. Vectors are stored per model, so another
+model can be tried beside it:
+
+```sh
+export SP_EMBEDDING_MODEL=voyage-4-lite VOYAGE_API_KEY=<your key>
+docker compose up --build -d
+docker compose exec api python -m standingproof.library reembed
+```
+
+With a Voyage model selected, library text and search queries are sent to Voyage AI. Unset both
+variables to return to the local model; its vectors are still there.
+
+Retrieval is measured, not assumed: `uv run pytest -m slow -s tests/eval` runs 33 questions
+against a sample library with the real model and prints, for keyword, meaning and combined
+search, how often the right source is in the top five.
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.
