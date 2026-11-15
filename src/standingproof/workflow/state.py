@@ -76,9 +76,19 @@ class Outcome:
 
     status: Literal["ready", "needs_review"]
     # reused: an approved answer matched exactly. drafted: the model wrote it from sources.
-    path: Literal["reused", "drafted"]
+    # None when the question went to a person with nothing written.
+    path: Literal["reused", "drafted"] | None
     reason: str | None
     draft: AnswerDraft | None
+    steps: int
+    cost_usd: float
+    usage: Usage
+
+
+@dataclass(frozen=True)
+class Progress:
+    """What a question has used so far, finished or not."""
+
     steps: int
     cost_usd: float
     usage: Usage

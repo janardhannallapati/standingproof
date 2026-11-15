@@ -36,7 +36,8 @@ jobs:
       - name: Test
         run: uv run pytest -v
 
-  # The tests marked `slow` load the real embedding model and print retrieval scores.
+  # The tests marked `slow`: retrieval scores with the real embedding model, and a run
+  # that survives a worker process being killed.
   retrieval:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -49,7 +50,7 @@ jobs:
           enable-cache: true
       - name: Install
         run: uv sync --frozen
-      - name: Retrieval quality on the golden set
+      - name: Retrieval quality on the golden set; a killed worker loses nothing
         run: uv run pytest -m slow -s -v
 
   # Builds the image that ships and proves it starts. The test job runs from source, so
@@ -76,6 +77,15 @@ jobs:
             -d '{"question":"Is multi-factor authentication required for employees?","answer":"Yes, for all employee accounts.","owner":"ci","expires_on":"2099-01-01"}'
           curl --fail --silent --show-error --max-time 60 --get http://127.0.0.1:8000/library/search \
             --data-urlencode 'q=Do you enforce 2FA for staff?' | tee /dev/stderr | grep -q '"meaning"'
+      - name: The worker is running and the saved-state tables exist
+        run: |
+          docker compose ps --status running --services | grep -qx worker
+          docker compose exec -T postgres psql -U standingproof -d standingproof -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'workflow'" | grep -qv '^0$'
+      - name: A run on an unknown questionnaire is refused, so the route is wired
+        run: |
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \
+            http://127.0.0.1:8000/questionnaires/00000000-0000-0000-0000-000000000000/runs)" = 404
       - name: Logs on failure
         if: failure()
         run: docker compose logs --no-color

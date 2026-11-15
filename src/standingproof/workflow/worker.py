@@ -27,7 +27,7 @@ from standingproof.workflow import leases, runs
 from standingproof.workflow import sweep as sweeping
 from standingproof.workflow.checkpoint import delete_state
 from standingproof.workflow.exact import find_exact_answer
-from standingproof.workflow.graph import QuestionGraph, run_question
+from standingproof.workflow.graph import QuestionGraph, progress, run_question
 from standingproof.workflow.queue import Job, JobQueue
 from standingproof.workflow.state import ExactMatch, QuestionContext
 
@@ -109,9 +109,13 @@ class Worker:
     async def _give_back(
         self, lease: leases.Lease, reason: str, *, delay: float, refund: bool = False
     ) -> None:
+        # What the question has cost so far is recorded even though it did not finish:
+        # the money is spent, and the run's ceiling has to see it.
+        used = await progress(self._deps.graph, str(lease.item_id))
         async with self._deps.sessions() as session:
             await leases.give_back(
                 session,
+                progress=used,
                 item_id=lease.item_id,
                 owner=self.name,
                 reason=reason,
@@ -149,6 +153,7 @@ class Worker:
                 owner=self.name,
                 seconds=self._settings.lease_seconds,
                 max_attempts=self._settings.question_max_attempts,
+                reserve_usd=self._settings.run_max_cost_usd,
             )
         if lease is None:
             return  # finished, cancelled, or held by another worker

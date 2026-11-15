@@ -21,6 +21,7 @@ from standingproof.agent.types import AnswerDraft, Usage
 from standingproof.workflow.nodes import call_model, exact_match, run_tools
 from standingproof.workflow.state import (
     Outcome,
+    Progress,
     QuestionContext,
     QuestionState,
     initial_state,
@@ -79,3 +80,18 @@ async def run_question(
     # sync: a step's result is in the database before the next step starts.
     final = await graph.ainvoke(start, config, context=context, durability="sync")
     return _outcome(final)
+
+
+async def progress(graph: QuestionGraph, thread_id: str) -> Progress | None:
+    """What the saved state says a question has used. None if nothing was saved.
+
+    A model call whose step never reached a checkpoint (the process died during it) is not
+    in here: it was paid for and there is no record of how much.
+    """
+    snapshot = await graph.aget_state({"configurable": {"thread_id": thread_id}})
+    if not snapshot.values:
+        return None
+    values = snapshot.values
+    return Progress(
+        steps=values["steps"], cost_usd=values["cost_usd"], usage=Usage(**values["usage"])
+    )

@@ -264,7 +264,9 @@ async def _take(db: Db, item_id: uuid.UUID, owner: str) -> None:
     from standingproof.workflow import leases
 
     async with db.sessions() as session:
-        await leases.take_lease(session, item_id=item_id, owner=owner, seconds=60, max_attempts=3)
+        await leases.take_lease(
+            session, item_id=item_id, owner=owner, seconds=60, max_attempts=3, reserve_usd=0.5
+        )
 
 
 def _run_until(rig: Rig, done: Callable[[], Awaitable[bool]], timeout: float = 20) -> None:
@@ -371,4 +373,28 @@ def test_a_job_handled_by_hand_matches_what_the_queue_delivers(wf: Db, redis_url
 
     [row] = items(wf, started.run.id)
     assert row.status == "needs_review"
+    rig.close()
+
+
+def test_what_a_failed_attempt_cost_is_recorded_on_the_question(wf: Db, redis_url: str) -> None:
+    from tests.agent.fakes import search, wants_tools
+
+    owner = tenant(wf)
+    started = start(wf, owner, questionnaire(wf, owner, ["Do you test backups?"]))
+    turns = iter([wants_tools(search("c1", "backups"))])
+
+    async def one_turn_then_rate_limited() -> ModelTurn:
+        try:
+            return next(turns)
+        except StopIteration:
+            raise ModelCallError("rate limited", retryable=True) from None
+
+    rig = Rig(wf, redis_url, CountingModel(one_turn_then_rate_limited))
+    rig.add(started.item_ids)
+
+    rig.work_through_the_queue()
+
+    [row] = items(wf, started.run.id)
+    assert (row.status, row.reason, row.steps) == ("queued", "model_unavailable", 1)
+    assert row.cost_usd > 0
     rig.close()

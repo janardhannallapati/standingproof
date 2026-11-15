@@ -51,6 +51,24 @@ settings against one set of credentials; per-tenant credentials are planned.
 They are not stored in the database, and they are not written to logs, error messages or
 stored evidence.
 
+## Where the model key lives
+
+Only the `worker` service is given `ANTHROPIC_API_KEY`. The API service faces the network and
+never calls the model, so it does not hold the key.
+
+## Saved workflow state
+
+While a questionnaire is being answered, each question's progress is saved in Postgres (schema
+`workflow`): the question text, the sources the tools returned and the model's turns. It is
+customer data, kept so that a restart loses nothing.
+
+- It is deleted `SP_STATE_KEEP_DAYS` (default 7) after the question finishes. The result itself
+  stays on the run.
+- A job on the Redis queue is an id and nothing else. No question or answer text goes through
+  Redis.
+- The workflow library can send traces of every step to a hosted service (LangSmith). That is
+  off unless switched on, and the image sets `LANGSMITH_TRACING=false` so that it stays off.
+
 ## What leaves your machine
 
 | Destination | What is sent | When |

@@ -29,7 +29,8 @@ from standingproof.models import (
     Run,
     RunQuestion,
 )
-from standingproof.workflow.state import Outcome
+from standingproof.workflow.budget import room_in_budget
+from standingproof.workflow.state import Outcome, Progress
 
 REASON_RUN_COST_LIMIT = "run_cost_limit"
 REASON_CANCELLED = "cancelled"
@@ -81,38 +82,45 @@ async def _close_unstarted(session: AsyncSession, item_id: uuid.UUID, reason: st
 
 
 async def take_lease(
-    session: AsyncSession, *, item_id: uuid.UUID, owner: str, seconds: float, max_attempts: int
+    session: AsyncSession,
+    *,
+    item_id: uuid.UUID,
+    owner: str,
+    seconds: float,
+    max_attempts: int,
+    reserve_usd: float,
+    wait_seconds: float = 5.0,
 ) -> Lease | None:
     """Take a question for this worker, or return None if it is not there to be taken.
 
     A question can be taken when it is queued, or when it is running and its holder's lease
     has run out (the holder died). One UPDATE decides, so of two workers exactly one wins.
-    """
-    found = (
-        await session.execute(
-            select(RunQuestion.run_id, Run.status, Run.max_cost_usd)
-            .join(Run, Run.id == RunQuestion.run_id)
-            .where(RunQuestion.id == item_id)
-        )
-    ).one_or_none()
-    if found is None:
-        return None
-    run_id, run_status, max_cost = found
 
-    if run_status != RUN_RUNNING:
+    `reserve_usd` is the most one question may cost. It is set aside for every question in
+    progress when deciding whether the run's budget has room for this one.
+    """
+    run_id = (
+        await session.execute(select(RunQuestion.run_id).where(RunQuestion.id == item_id))
+    ).scalar_one_or_none()
+    if run_id is None:
+        return None
+    room = await room_in_budget(session, run_id=run_id, item_id=item_id, reserve_usd=reserve_usd)
+    if room == "cancelled":
         await _close_unstarted(session, item_id, REASON_CANCELLED)
         await session.commit()
         return None
-    spent = (
-        await session.execute(
-            select(func.coalesce(func.sum(RunQuestion.cost_usd), 0)).where(
-                RunQuestion.run_id == run_id
-            )
-        )
-    ).scalar_one()
-    if spent >= max_cost:
+    if room == "spent":
         await _close_unstarted(session, item_id, REASON_RUN_COST_LIMIT)
         await finish_run_if_done(session, run_id)
+        await session.commit()
+        return None
+    if room == "wait":
+        # Questions in progress may still use the rest of the budget. Look again shortly.
+        await session.execute(
+            update(RunQuestion)
+            .where(RunQuestion.id == item_id, RunQuestion.status == ITEM_QUEUED)
+            .values(enqueue_after=in_seconds(wait_seconds))
+        )
         await session.commit()
         return None
 
@@ -150,6 +158,9 @@ async def take_lease(
                 lease_until=in_seconds(seconds),
                 attempts=RunQuestion.attempts + 1,
                 started_at=func.coalesce(RunQuestion.started_at, NOW),
+                # If this worker dies, the sweep may queue the question again the moment
+                # the lease runs out, whatever wait was set while it was queued.
+                enqueue_after=NOW,
             )
             .returning(RunQuestion.tenant_id, RunQuestion.question_id, RunQuestion.attempts)
         )
@@ -233,13 +244,26 @@ async def give_back(
     retry_in_seconds: float,
     max_attempts: int,
     refund_attempt: bool = False,
+    progress: Progress | None = None,
 ) -> None:
     """Let go of a question that could not be finished now.
 
     It goes back to the queue after a delay, or is marked failed once it has been tried
     `max_attempts` times. Does nothing if this worker no longer holds it. `refund_attempt`
     is for a worker that is shutting down: stopping is not the question's fault.
+    `progress` is what the question has cost so far; it counts against the run's budget
+    whether or not the question is ever finished.
     """
+    if progress is not None:
+        await session.execute(
+            update(RunQuestion)
+            .where(_held_by(item_id, owner))
+            .values(
+                steps=progress.steps,
+                cost_usd=Decimal(str(round(progress.cost_usd, 6))),
+                usage=progress.usage.model_dump(),
+            )
+        )
     spent = RunQuestion.attempts >= max_attempts
     failed = (
         await session.execute(

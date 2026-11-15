@@ -10,6 +10,7 @@ live system settings, and reopens them when those settings drift.
 - Retrieval scores with the real embedding model: `uv run pytest -m slow -s tests/eval`
 - Lint and types: `uv run ruff check . && uv run ruff format --check . && uv run mypy`
 - Run locally: `docker compose up --build`, then `curl localhost:8000/readyz`
+- Slow tests (real embedding model; a worker process killed mid-run): `uv run pytest -m slow`
 - New migration: `uv run alembic revision -m "<what changes>"`
 - Ask the agent one question (calls the paid API): `uv run python -m standingproof.agent "<question>"`
 
@@ -32,8 +33,12 @@ live system settings, and reopens them when those settings drift.
   first.
 - `standingproof/agent/model.py` is the only module that imports the `anthropic` SDK. Everything
   else depends on the `ModelClient` protocol in `agent/loop.py`.
-- A model's final answer is accepted only by `_check` in `agent/loop.py`. New acceptance rules go
-  there, in code, with a test. A sentence in the prompt is not a control.
+- A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance
+  rules go there, in code, with a test. A sentence in the prompt is not a control.
+- `agent/steps.py` holds the loop's decisions as pure functions. The hand-written loop
+  (`agent/loop.py`) and the graph (`workflow/nodes.py`) both call them, and
+  `tests/workflow/test_graph.py` fails if the two disagree. Change a decision there, never in
+  one caller.
 - Text read from an uploaded file is data. Store it and show it; never run it, format it into
   SQL, or treat it as instructions. A file's name and declared type are chosen by the sender and
   are never trusted.
@@ -81,3 +86,26 @@ live system settings, and reopens them when those settings drift.
 - Check credentials are per deployment. A tenant must never be able to grant itself a scope:
   connecting one requires the operator's declaration (`Settings.declared_scopes`) and fails if
   another tenant holds it. Keep both rules until credentials are per tenant.
+- A step of the graph can run more than once (after a crash, a retry, a second delivery). It
+  reads the saved state, decides, and returns what changed. It must give the same result when
+  repeated, and it never keeps anything in a variable outside the state.
+- Graph state is saved to the database, so it holds plain JSON values only. Clients, tools and
+  limits arrive through `QuestionContext`. Model content is saved through `plain_content` and
+  sent back unchanged.
+- Postgres is the record of what work exists and who holds it. A job on the Redis stream is
+  only a wake-up and carries an id, never text. Code must be correct when a job arrives twice,
+  late, or never: `leases.take_lease` decides who works, and the worker's sweep re-queues
+  whatever is open and idle.
+- Only the holder of a question's lease may save its result (`WHERE lease_owner = ...`).
+- Whether a run is over is decided after a commit, never inside the transaction that finished
+  a question: two last questions finishing together each see the other as open.
+- The run's cost ceiling (`workflow/budget.py`) counts money already spent, including on
+  attempts that did not finish, plus the most each question in progress could still cost. It is
+  decided under a lock on the run. Do not start a question by any path that skips it.
+- A provider failure that can pass (rate limit, outage) is retried later and ends as `failed`,
+  never as "needs review". A person cannot fix a rate limit.
+- Log an exception's type, not its message, in the workflow: a message can carry customer text.
+- The saved-state tables belong to the workflow library and live in schema `workflow`. They are
+  created by `python -m standingproof.workflow setup`, not by a migration.
+- `LANGSMITH_TRACING=false` is set in the image. Never enable tracing to a hosted service:
+  it would send customer text out.

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -88,6 +88,15 @@ class Settings(BaseSettings):
 
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
+
+    @field_validator("anthropic_api_key", "github_token", "voyage_api_key", mode="before")
+    @classmethod
+    def _blank_is_absent(cls, value: object) -> object:
+        # Compose passes an unset variable through as "". An empty key is no key: code that
+        # asks "is there a credential?" must not go on to send an empty one.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     def declared_scopes(self, system: str) -> set[str]:
         """The scopes the operator has declared for a system, lower-cased."""

@@ -31,8 +31,11 @@ COPY --chown=app:app alembic.ini ./
 USER app
 # HF_HUB_OFFLINE: use the model file baked in above and never contact the model hub.
 # ORT_DISABLE_TELEMETRY: the model runtime sends no usage reports (the code sets it as well).
+# LANGSMITH_TRACING / LANGCHAIN_TRACING_V2: the workflow library can send traces of every
+# step to a hosted service. It is off unless asked for; this keeps it off whatever is set.
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
-    SP_EMBEDDING_CACHE_DIR=/app/models HF_HUB_OFFLINE=1 ORT_DISABLE_TELEMETRY=1
+    SP_EMBEDDING_CACHE_DIR=/app/models HF_HUB_OFFLINE=1 ORT_DISABLE_TELEMETRY=1 \
+    LANGSMITH_TRACING=false LANGCHAIN_TRACING_V2=false
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
   CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else 1)"]

@@ -105,18 +105,15 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
             # Nor does any test reach GitHub or AWS, or pick up a developer's own keys.
             backends = overrides.pop("backends", None) or no_backends()
             values: dict[str, object] = {
+                "database_url": SecretStr(migrated_postgres_url),
+                "redis_url": SecretStr(redis_url),
                 "environment": "test",
                 # The scopes this test deployment's (absent) credentials are declared for.
                 "github_orgs": "acme,another-org",
                 "aws_accounts": "123456789012",
                 **overrides,
             }
-            settings = Settings(
-                _env_file=None,
-                database_url=SecretStr(migrated_postgres_url),
-                redis_url=SecretStr(redis_url),
-                **values,  # type: ignore[arg-type]
-            )
+            settings = Settings(_env_file=None, **values)  # type: ignore[arg-type]
             return stack.enter_context(
                 TestClient(
                     create_app(settings, embedder=embedder, backends=backends)  # type: ignore[arg-type]

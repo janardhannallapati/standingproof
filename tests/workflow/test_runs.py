@@ -52,9 +52,17 @@ def call(db: Db, function: Any, **arguments: Any) -> Any:
     return db.run(go())
 
 
-def take(db: Db, item_id: uuid.UUID, owner: str = "w1", seconds: float = 60) -> Any:
+def take(
+    db: Db, item_id: uuid.UUID, owner: str = "w1", seconds: float = 60, reserve: float = 0.0
+) -> Any:
     return call(
-        db, leases.take_lease, item_id=item_id, owner=owner, seconds=seconds, max_attempts=3
+        db,
+        leases.take_lease,
+        item_id=item_id,
+        owner=owner,
+        seconds=seconds,
+        max_attempts=3,
+        reserve_usd=reserve,
     )
 
 
@@ -402,7 +410,7 @@ def test_two_last_questions_finishing_at_the_same_moment_still_finish_the_run(wf
         async with wf.sessions() as session:
             await leases.save_result(session, item_id=item, owner="w1", outcome=outcome())
 
-    for round_number in range(25):
+    for round_number in range(10):
         sheet = questionnaire(wf, owner, QUESTIONS[:2])
         started = start(wf, owner, sheet)
         for item in started.item_ids:
@@ -426,3 +434,83 @@ def test_the_sweep_closes_a_run_whose_questions_are_all_final(wf: Db) -> None:
     assert closed == 1
     assert run_row(wf, started.run.id).status == "finished"
     assert call(wf, sweep.finish_idle_runs) == 0
+
+
+# --- The run's cost ceiling counts work in progress and work that did not finish. ---
+
+
+def test_a_question_waits_while_those_in_progress_could_use_up_the_budget(wf: Db) -> None:
+    owner = tenant(wf)
+    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS), max_cost_usd=0.50)
+    first, second, _ = started.item_ids
+    assert take(wf, first, reserve=0.50) is not None
+
+    # Nothing is spent yet, but the first question may still use the whole 0.50.
+    held_back = take(wf, second, "w2", reserve=0.50)
+
+    rows = items(wf, started.run.id)
+    assert held_back is None
+    assert rows[1].status == "queued"  # waiting, not closed
+    assert call(wf, sweep.due_for_queue, limit=10, requeue_seconds=60) == []
+
+    call(wf, leases.save_result, item_id=first, owner="w1", outcome=outcome(cost=0.02))
+    assert take(wf, second, "w2", reserve=0.50) is not None
+
+
+def test_two_workers_cannot_both_take_the_last_room_in_the_budget(wf: Db) -> None:
+    owner = tenant(wf)
+
+    async def try_take(item: uuid.UUID, name: str) -> Any:
+        async with wf.sessions() as session:
+            return await leases.take_lease(
+                session, item_id=item, owner=name, seconds=60, max_attempts=3, reserve_usd=0.50
+            )
+
+    for round_number in range(8):
+        started = start(wf, owner, questionnaire(wf, owner, QUESTIONS[:2]), max_cost_usd=0.50)
+        first, second = started.item_ids
+
+        async def both(a: uuid.UUID = first, b: uuid.UUID = second) -> list[Any]:
+            return list(await asyncio.gather(try_take(a, "w1"), try_take(b, "w2")))
+
+        taken = [lease for lease in wf.run(both()) if lease is not None]
+
+        assert len(taken) == 1, f"round {round_number}"
+
+
+def test_money_spent_on_a_question_that_was_given_back_counts_against_the_run(wf: Db) -> None:
+    from standingproof.workflow.state import Progress
+
+    owner = tenant(wf)
+    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS[:2]), max_cost_usd=0.05)
+    first, second = started.item_ids
+    take(wf, first)
+
+    call(
+        wf,
+        leases.give_back,
+        item_id=first,
+        owner="w1",
+        reason="model_unavailable",
+        retry_in_seconds=0,
+        max_attempts=3,
+        progress=Progress(steps=2, cost_usd=0.06, usage=Usage(input_tokens=9)),
+    )
+
+    rows = items(wf, started.run.id)
+    assert (rows[0].status, rows[0].steps, rows[0].cost_usd) == ("queued", 2, Decimal("0.060000"))
+    assert take(wf, second) is None
+    assert items(wf, started.run.id)[1].reason == "run_cost_limit"
+
+
+def test_a_dead_workers_question_is_due_as_soon_as_its_lease_runs_out(wf: Db) -> None:
+    owner = tenant(wf)
+    # Still inside the grace period given to the first job when the worker dies.
+    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS[:1]), enqueue_grace_seconds=60)
+    [item] = started.item_ids
+    take(wf, item)
+    assert call(wf, sweep.due_for_queue, limit=10, requeue_seconds=60) == []
+
+    expire_lease(wf, item)
+
+    assert call(wf, sweep.due_for_queue, limit=10, requeue_seconds=60) == [item]

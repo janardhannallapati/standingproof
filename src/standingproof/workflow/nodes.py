@@ -31,7 +31,8 @@ def _needs_review(reason: str, draft: AnswerDraft | None = None) -> Update:
     return {
         "outcome": {
             "status": "needs_review",
-            "path": "drafted",
+            # Nothing was written unless the model returned a draft ("no approved source").
+            "path": "drafted" if draft else None,
             "reason": reason,
             "draft": draft.model_dump() if draft else None,
         }
