@@ -5,21 +5,25 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from standingproof import __version__
-from standingproof.api import health, questionnaires
+from standingproof.api import health, library, questionnaires
 from standingproof.api.body_limit import BodyLimitMiddleware
 from standingproof.config import Settings, get_settings
 from standingproof.db import build_engine, build_session_factory
+from standingproof.library.embedding import Embedder, build_embedder
 
 _MULTIPART_OVERHEAD_BYTES = 64 * 1024
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, embedder: Embedder | None = None) -> FastAPI:
     """Build the application.
 
     A factory (not a module-level `app`) lets each test build its own instance with its own
     settings, and keeps importing this module free of side effects.
     """
     settings = settings or get_settings()
+    # Built here, not in lifespan: a wrong model name or a missing key stops the process
+    # at startup with a clear message. The local model itself is loaded on first use.
+    embedder = embedder or build_embedder(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -34,15 +38,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await embedder.aclose()
             await app.state.redis.aclose()
             await app.state.engine.dispose()
 
     app = FastAPI(title="Standingproof", version=__version__, lifespan=lifespan)
     app.state.settings = settings
+    app.state.embedder = embedder
     # No request body may exceed the largest upload plus room for the multipart framing.
     app.add_middleware(
         BodyLimitMiddleware, max_bytes=settings.upload_max_bytes + _MULTIPART_OVERHEAD_BYTES
     )
     app.include_router(health.router)
     app.include_router(questionnaires.router)
+    app.include_router(library.router)
     return app

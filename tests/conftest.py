@@ -15,6 +15,7 @@ from alembic import command
 from standingproof.app import create_app
 from standingproof.config import Settings, get_settings
 from standingproof.db import build_engine
+from tests.fakes import FakeEmbedder
 
 ClientFactory = Callable[..., TestClient]
 
@@ -78,6 +79,8 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
     with ExitStack() as stack:
 
         def build(**overrides: object) -> TestClient:
+            # No test loads the real embedding model unless it passes its own embedder.
+            embedder = overrides.pop("embedder", None) or FakeEmbedder()
             values: dict[str, object] = {"environment": "test", **overrides}
             settings = Settings(
                 _env_file=None,
@@ -85,7 +88,9 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
                 redis_url=SecretStr(redis_url),
                 **values,  # type: ignore[arg-type]
             )
-            return stack.enter_context(TestClient(create_app(settings)))
+            return stack.enter_context(
+                TestClient(create_app(settings, embedder=embedder))  # type: ignore[arg-type]
+            )
 
         yield build
 

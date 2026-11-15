@@ -1,5 +1,6 @@
 """Test doubles shared across test modules."""
 
+import dataclasses
 import hashlib
 import math
 import re
@@ -24,7 +25,8 @@ class FakeEmbedder:
     """Deterministic vectors with no model file: same text, same vector, every run."""
 
     def __init__(self, spec: ModelSpec | None = None) -> None:
-        self.spec = spec or MODELS[DEFAULT_MODEL]
+        # Its own cut-off, so tests do not depend on the value tuned for the real model.
+        self.spec = spec or dataclasses.replace(MODELS[DEFAULT_MODEL], max_distance=0.5)
         self.document_batches: list[list[str]] = []
         self.queries: list[str] = []
 

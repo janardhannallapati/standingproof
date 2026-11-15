@@ -5,6 +5,7 @@ model. A model is chosen by name in settings; hosted models also need their prov
 """
 
 import asyncio
+import re
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 
 DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 _VOYAGE_URL = "https://api.voyageai.com/v1/embeddings"
+_SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/\-]*")
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,12 @@ class ModelSpec:
     # A match further away than this (cosine distance) is not a match. Without a cut-off,
     # nearest-neighbour search always returns something, however unrelated.
     max_distance: float | None
+
+    def __post_init__(self) -> None:
+        # The name and width are written into SQL text by the search (see search.py), so
+        # their form is checked here, once, where every spec is created.
+        if not _SAFE_NAME.fullmatch(self.name) or not 0 < self.dimensions <= 4096:
+            raise ValueError(f"not a usable model spec: {self.name!r}, {self.dimensions}")
 
 
 # Adding a model: add it here and add a migration that creates its two indexes.

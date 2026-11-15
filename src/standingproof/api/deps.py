@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from standingproof.config import Settings
+from standingproof.library.embedding import Embedder
 from standingproof.models import Tenant
 
 
@@ -38,9 +39,14 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
+def get_embedder(request: Request) -> Embedder:
+    return cast(Embedder, request.app.state.embedder)
+
+
 EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
+EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 

@@ -211,3 +211,32 @@ async def test_the_real_local_model_gives_384_numbers_and_knows_a_paraphrase() -
 
     assert len(mfa) == 384
     assert cosine(question, mfa) > cosine(question, encryption)
+
+
+async def test_the_local_model_runs_off_the_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+    import time
+
+    embedder = FastEmbedEmbedder(MODELS[DEFAULT_MODEL])
+
+    def slow_model(texts: list[str]) -> list[list[float]]:
+        time.sleep(0.3)  # stands in for the model; blocks whichever thread runs it
+        return [[0.0] * 384 for _ in texts]
+
+    monkeypatch.setattr(embedder, "_documents", slow_model)
+    ticks = 0
+
+    async def ticker() -> None:
+        nonlocal ticks
+        while True:
+            await asyncio.sleep(0.01)
+            ticks += 1
+
+    task = asyncio.create_task(ticker())
+    try:
+        await embedder.embed_documents(["text"])
+    finally:
+        task.cancel()
+
+    # If the model ran on the event loop, the ticker could not have run at all.
+    assert ticks >= 10
