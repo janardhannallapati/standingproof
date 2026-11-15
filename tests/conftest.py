@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from alembic.config import Config
+from botocore.exceptions import NoCredentialsError
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy import select, text
@@ -17,6 +18,8 @@ from testcontainers.community.redis import RedisContainer
 from alembic import command
 from standingproof.agent.tools import ToolRegistry
 from standingproof.app import create_app
+from standingproof.checks.aws import AwsReader
+from standingproof.checks.service import CheckBackends
 from standingproof.config import Settings, get_settings
 from standingproof.db import build_engine, build_session_factory
 from standingproof.library.embedding import Embedder
@@ -25,6 +28,17 @@ from standingproof.models import Tenant
 from tests.fakes import FakeEmbedder
 
 ClientFactory = Callable[..., TestClient]
+
+
+def _no_aws_credentials(service: str) -> Any:
+    raise NoCredentialsError()
+
+
+def no_backends() -> CheckBackends:
+    """Backends with no credential at all: GitHub absent, AWS unable to build a client."""
+    return CheckBackends(
+        github=None, aws=AwsReader(region="eu-west-1", client_factory=_no_aws_credentials)
+    )
 
 
 @pytest.fixture(scope="session")
@@ -88,6 +102,8 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
         def build(**overrides: object) -> TestClient:
             # No test loads the real embedding model unless it passes its own embedder.
             embedder = overrides.pop("embedder", None) or FakeEmbedder()
+            # Nor does any test reach GitHub or AWS, or pick up a developer's own keys.
+            backends = overrides.pop("backends", None) or no_backends()
             values: dict[str, object] = {"environment": "test", **overrides}
             settings = Settings(
                 _env_file=None,
@@ -96,7 +112,9 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
                 **values,  # type: ignore[arg-type]
             )
             return stack.enter_context(
-                TestClient(create_app(settings, embedder=embedder))  # type: ignore[arg-type]
+                TestClient(
+                    create_app(settings, embedder=embedder, backends=backends)  # type: ignore[arg-type]
+                )
             )
 
         yield build

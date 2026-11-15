@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     library_text_max_chars: int = 4_000
     search_max_results: int = 20
 
+    # Read-only credentials for live checks. AWS credentials are read by the AWS SDK from
+    # its usual places (environment variables, a role); only the region is set here.
+    github_token: SecretStr | None = None
+    github_api_url: str = "https://api.github.com"
+    aws_region: str = "us-east-1"
+    # A check that takes longer than this is recorded as unavailable.
+    check_timeout_seconds: float = 15.0
+    # An observation younger than this is returned again, with no new call.
+    evidence_max_age_seconds: int = 900
+
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
 

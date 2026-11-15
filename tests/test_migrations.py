@@ -48,6 +48,8 @@ def test_upgrade_head_creates_vector_extension_and_tenants(
         "policy_chunks",
         "library_answer_embeddings",
         "policy_chunk_embeddings",
+        "connections",
+        "evidence",
     } <= set(tables)
 
 
