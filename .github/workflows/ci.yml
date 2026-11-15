@@ -35,3 +35,24 @@ jobs:
         run: uv run mypy
       - name: Test
         run: uv run pytest -v
+
+  # Builds the image that ships and proves it starts. The test job runs from source, so
+  # without this a change that only breaks the image would pass.
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The image and the tests use one Python version
+        run: grep -q "^FROM python:$(cat .python-version)-slim AS runtime" Dockerfile
+      - name: Build and start
+        run: docker compose up --build --detach --wait --wait-timeout 180
+      - name: Liveness and readiness
+        run: |
+          curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8000/healthz
+          curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8000/readyz
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color

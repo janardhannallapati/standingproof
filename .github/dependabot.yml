@@ -16,3 +16,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # The Python version is chosen by hand and is the same in .python-version, so the
+    # image and the tests always run one version. Patch releases still arrive.
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
