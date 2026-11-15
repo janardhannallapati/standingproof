@@ -3,7 +3,9 @@
 # Build stage: resolve and install dependencies with uv. Nothing from here ships except /app.
 FROM python:3.13-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12.3 /uv /usr/local/bin/uv
-ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
+# ORT_DISABLE_TELEMETRY: the ONNX runtime reports usage to its vendor unless told not to.
+# Set here too, because the model download below starts the runtime during the build.
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never ORT_DISABLE_TELEMETRY=1
 WORKDIR /app
 
 # Dependencies first: this layer is reused until pyproject.toml or uv.lock changes.
@@ -28,8 +30,9 @@ COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app alembic.ini ./
 USER app
 # HF_HUB_OFFLINE: use the model file baked in above and never contact the model hub.
+# ORT_DISABLE_TELEMETRY: the model runtime sends no usage reports (the code sets it as well).
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
-    SP_EMBEDDING_CACHE_DIR=/app/models HF_HUB_OFFLINE=1
+    SP_EMBEDDING_CACHE_DIR=/app/models HF_HUB_OFFLINE=1 ORT_DISABLE_TELEMETRY=1
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
   CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).status == 200 else 1)"]

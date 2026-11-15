@@ -60,3 +60,7 @@ live system settings, and reopens them when those settings drift.
 - A regular expression that runs on uploaded text must not have two adjacent parts that can
   match the same characters. Prefer a fixed prefix and string methods.
 - The Python version is in `.python-version` and the Dockerfile, and they must agree. CI checks.
+- A dependency that runs native code may report usage to its vendor by default. Before adding
+  one, run it under `strace -f -e trace=connect` and look at what it writes under the home
+  directory. `ORT_DISABLE_TELEMETRY=1` is set in code and in the image for this reason; do not
+  remove either.

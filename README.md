@@ -68,12 +68,14 @@ at the same distances. That decision belongs to the answer check, not to retriev
 ### Embedding model
 
 Text is turned into vectors by `BAAI/bge-small-en-v1.5`, which runs inside the process. No
-key is needed and no library text leaves the machine. Vectors are stored per model, so another
+key is needed and no library text leaves the machine. The runtime that executes the model
+(ONNX Runtime) ships with usage telemetry switched on; Standingproof switches it off before
+the runtime loads, and a test fails if the runtime records anything. Vectors are stored per model, so another
 model can be tried beside it:
 
 ```sh
 export SP_EMBEDDING_MODEL=voyage-4-lite VOYAGE_API_KEY=<your key>
-docker compose up --build -d
+docker compose up --build -d --wait
 docker compose exec api python -m standingproof.library reembed
 ```
 

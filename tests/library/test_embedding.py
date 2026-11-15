@@ -1,5 +1,9 @@
 import json
 import math
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 import httpx2
 import pytest
@@ -248,3 +252,27 @@ def test_an_empty_voyage_key_counts_as_no_key(monkeypatch: pytest.MonkeyPatch) -
 
     with pytest.raises(EmbeddingConfigError, match="VOYAGE_API_KEY"):
         build_embedder(Settings(_env_file=None, embedding_model="voyage-4-lite"))
+
+
+@pytest.mark.slow
+def test_the_model_runtime_records_no_telemetry(tmp_path: Path) -> None:
+    # The ONNX runtime ships with usage telemetry on: each process queues an event (machine
+    # details, the interpreter's path) in a file under the home directory and uploads the
+    # queue to its vendor. A fresh home directory shows whether anything was queued.
+    script = (
+        "import asyncio\n"
+        "from standingproof.config import Settings\n"
+        "from standingproof.library.embedding import build_embedder\n"
+        "embedder = build_embedder(Settings(_env_file=None))\n"
+        "print(len(asyncio.run(embedder.embed_query('a question'))))\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k not in {"ORT_DISABLE_TELEMETRY"}}
+    env.update(HOME=str(tmp_path), XDG_CACHE_HOME=str(tmp_path / ".cache"))
+
+    done = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", script], env=env, capture_output=True, text=True, timeout=120
+    )
+
+    assert done.stdout.strip() == "384", done.stderr
+    written = [str(p.relative_to(tmp_path)) for p in tmp_path.rglob("*") if p.is_file()]
+    assert [p for p in written if "onnxruntime" in p.lower() or "Microsoft" in p] == []
