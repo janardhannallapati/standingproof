@@ -7,6 +7,7 @@ live system settings, and reopens them when those settings drift.
 
 - Install: `uv sync`
 - Test: `uv run pytest -v` (needs Docker; tests start Postgres and Redis containers)
+- Retrieval scores with the real embedding model: `uv run pytest -m slow -s tests/eval`
 - Lint and types: `uv run ruff check . && uv run ruff format --check . && uv run mypy`
 - Run locally: `docker compose up --build`, then `curl localhost:8000/readyz`
 - New migration: `uv run alembic revision -m "<what changes>"`
@@ -46,3 +47,16 @@ live system settings, and reopens them when those settings drift.
   through `asyncio.to_thread`, never directly on the event loop.
 - A new table needs a model in `models.py` and a hand-written migration. `alembic check` in the
   tests fails when they disagree.
+- Code that needs vectors depends on the `Embedder` protocol in `library/embedding.py`, never on
+  a model library. Tests use `tests/fakes.py::FakeEmbedder`; only tests marked `slow` load the
+  real model, and no test calls a hosted embedding API.
+- Vectors live in the `*_embeddings` tables, one row per item and model. A new model is an entry
+  in `MODELS` plus a migration that creates its two partial indexes; a test fails if either is
+  missing. Content tables never hold a vector.
+- Content and its vector are written in one transaction: embed first, then insert both.
+- A change to chunking, ranking or the embedding model is judged by `tests/eval`, and its numbers
+  go in the pull request. Do not edit the golden set to make a change look better.
+- Search excludes expired answers and other tenants' rows in SQL, not after loading.
+- A regular expression that runs on uploaded text must not have two adjacent parts that can
+  match the same characters. Prefer a fixed prefix and string methods.
+- The Python version is in `.python-version` and the Dockerfile, and they must agree. CI checks.

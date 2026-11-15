@@ -36,6 +36,20 @@ class Settings(BaseSettings):
     upload_max_questions: int = 5_000
     question_max_chars: int = 4_000
 
+    # Which model turns text into vectors. The default runs locally and needs no key.
+    # A hosted model is chosen by name and needs its provider's key.
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    # Where the local model file is kept. Unset: the library's own cache directory.
+    embedding_cache_dir: str | None = None
+    voyage_api_key: SecretStr | None = Field(default=None, validation_alias="VOYAGE_API_KEY")
+
+    # Ceilings for the library.
+    policy_max_bytes: int = 1024 * 1024
+    policy_max_chunks: int = 500
+    chunk_max_chars: int = 1_200
+    library_text_max_chars: int = 4_000
+    search_max_results: int = 20
+
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
 
