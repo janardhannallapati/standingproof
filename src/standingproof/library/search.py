@@ -214,7 +214,12 @@ async def search_library(
         rankings["meaning"] = await _meaning(
             session, tenant_id, vector, embedder.spec, today, depth
         )
-    fused = reciprocal_rank_fusion(rankings)
+    # On equal scores an approved answer goes before policy text: it is the wording a person
+    # already signed off. Then by id, so the order never depends on what the database returned.
+    fused = sorted(
+        reciprocal_rank_fusion(rankings),
+        key=lambda item: (-round(item.score, 12), item.key[0] != "answer", str(item.key[1])),
+    )
 
     # A control id typed exactly is a lookup, not a similarity question: it goes first.
     exact = await _control_ids(session, tenant_id, query, today)

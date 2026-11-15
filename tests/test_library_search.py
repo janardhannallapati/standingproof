@@ -138,3 +138,17 @@ def test_query_text_is_data_not_sql_or_search_syntax(api: TestClient) -> None:
 
     for q in ["authentication' OR '1'='1'; --", "authentication & | ! ( :* <->"]:
         assert [r["id"] for r in search(api, q)] == [answer_id]
+
+
+def test_when_an_answer_and_a_policy_passage_tie_the_approved_answer_comes_first(
+    api: TestClient,
+) -> None:
+    # Each is found once, at rank 1 of a different search, so their merged scores are equal.
+    # Run several times over: with no rule, the order would follow the random ids.
+    for n in range(6):
+        upload_policy(api, f"# Doc {n}\n\nzebra{n} crossing rules.\n".encode(), name=f"{n}.md")
+        add_answer(api, question=f"marker{n}?", answer="2FA for staff.", control_id=None)
+
+        results = search(api, f"zebra{n} multi-factor employees", limit=2)
+
+        assert [r["kind"] for r in results] == ["answer", "policy"], n
