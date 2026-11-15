@@ -54,7 +54,8 @@ services:
   # never race to apply the same migration.
   migrate:
     build: .
-    command: ["alembic", "upgrade", "head"]
+    # Our tables first, then the tables the workflow library keeps its saved state in.
+    command: ["sh", "-c", "alembic upgrade head && python -m standingproof.workflow setup"]
     environment: *app_env
     <<: *app_hardening
     depends_on:
@@ -65,6 +66,24 @@ services:
     environment: *app_env
     <<: *app_hardening
     ports: ["127.0.0.1:${SP_API_PORT:-8000}:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  # Answers queued questions. Run more of these to go faster: `--scale worker=3`.
+  worker:
+    build: .
+    command: ["python", "-m", "standingproof.workflow", "worker"]
+    environment:
+      <<: *app_env
+      # Only the worker calls the model, so only the worker is given the key. Without one
+      # it still reuses exact approved answers and hands every other question to a person.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    <<: *app_hardening
+    # The image's health check asks the API's port, which a worker does not open.
+    healthcheck: { disable: true }
+    # Long enough for questions in progress to save their current step (see SIGTERM).
+    stop_grace_period: 40s
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }

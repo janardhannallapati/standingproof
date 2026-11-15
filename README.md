@@ -132,6 +132,46 @@ uv run python scripts/try_checks.py --github-org your-org --github-repo your-org
   --aws-account 123456789012
 ```
 
+## Run a questionnaire
+
+Answer every question of an uploaded questionnaire in the background:
+
+```sh
+curl -X POST localhost:8000/questionnaires/<id>/runs      # 202, returns the run
+curl localhost:8000/runs/<run-id>                          # progress
+curl "localhost:8000/runs/<run-id>/questions?status=needs_review"
+```
+
+```json
+{"status": "finished", "counts": {"ready": 212, "needs_review": 31}, "cost_usd": "1.840000"}
+```
+
+Each question ends in one of these states, with the reason and what it cost:
+
+| State | Meaning |
+|---|---|
+| `ready` | A draft that passed the automatic checks, waiting for a reviewer. `path` says how it was made: `reused` (an approved answer matched the question exactly; no model call) or `drafted` (written by the model from sources it cited) |
+| `needs_review` | A person has to look: no approved source, a citation that no tool returned, a limit reached. `reason` says which |
+| `failed` | The model provider was unavailable on three attempts |
+| `not_started` | The run was cancelled or reached its cost ceiling first |
+
+Nothing here is sent anywhere. A `ready` draft is a proposal for a reviewer.
+
+The work is done by the `worker` service, not by the API. Run more of them to go faster
+(`docker compose up --scale worker=3`).
+
+- **A restart loses nothing.** Each question's progress is saved to Postgres after every step.
+  Stop or kill a worker at any moment: another continues each question from its last saved
+  step, and a model call that was already paid for is not made again. A test kills a worker
+  process mid-run and checks exactly that.
+- **Spending is bounded.** A run stops starting questions once it has spent
+  `SP_RUN_COST_LIMIT_USD` (default 5). Questions in progress and attempts that did not finish
+  count. A run can end at most one question's own ceiling (`SP_RUN_MAX_COST_USD`) over.
+- **One run at a time** per questionnaire: starting again returns the run in progress.
+- **A rate limit is waited out**, not handed to a person. `POST /runs/<id>/cancel` stops a run.
+- Without `ANTHROPIC_API_KEY` the worker still reuses exact approved answers and sends every
+  other question to review.
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.

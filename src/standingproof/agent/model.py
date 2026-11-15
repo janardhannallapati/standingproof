@@ -45,14 +45,18 @@ class AnthropicModel:
             )
         except anthropic.APIConnectionError as error:
             log.warning("model call failed: connection error")
-            raise ModelCallError("could not reach the model provider") from error
+            raise ModelCallError("could not reach the model provider", retryable=True) from error
         except anthropic.RateLimitError as error:
             log.warning("model call failed: rate limited")
-            raise ModelCallError("rate limited by the model provider") from error
+            raise ModelCallError("rate limited by the model provider", retryable=True) from error
         except anthropic.APIStatusError as error:
             # 4xx here is our bug (bad request, bad key); 5xx is theirs. Both stop the run.
             log.warning("model call failed: HTTP %s", error.status_code)
-            raise ModelCallError(f"model provider returned HTTP {error.status_code}") from error
+            raise ModelCallError(
+                f"model provider returned HTTP {error.status_code}",
+                # 5xx and 529 (overloaded) pass with time; a 4xx will fail the same way again.
+                retryable=error.status_code >= 500,
+            ) from error
 
         tool_calls = [
             ToolCall(id=block.id, name=block.name, arguments=dict(block.input))

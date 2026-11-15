@@ -4,18 +4,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
-
 from standingproof.agent.loop import ModelClient
+from standingproof.agent.steps import plain_content
 from standingproof.agent.types import ModelTurn
-
-
-def _to_json(content: Any) -> Any:
-    if isinstance(content, BaseModel):
-        return content.model_dump(mode="json", exclude_none=True)
-    if isinstance(content, list):
-        return [_to_json(item) for item in content]
-    return content
 
 
 class RecordingModel:
@@ -31,7 +22,7 @@ class RecordingModel:
     ) -> ModelTurn:
         turn = await self._inner.complete(system=system, messages=messages, tools=tools)
         record = turn.model_dump(mode="json", exclude={"assistant_content"})
-        record["assistant_content"] = _to_json(turn.assistant_content)
+        record["assistant_content"] = plain_content(turn.assistant_content)
         self._turns.append(record)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._path.write_text(json.dumps({"turns": self._turns}, indent=2) + "\n")

@@ -56,3 +56,18 @@ def test_declared_check_scopes_are_parsed_from_comma_separated_text() -> None:
     assert settings.declared_scopes("aws") == {"123456789012"}
     assert Settings(_env_file=None).declared_scopes("github") == set()
     assert settings.declared_scopes("gitlab") == set()
+
+
+@pytest.mark.parametrize("variable", ["ANTHROPIC_API_KEY", "SP_GITHUB_TOKEN", "VOYAGE_API_KEY"])
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_a_blank_credential_is_no_credential(
+    monkeypatch: pytest.MonkeyPatch, variable: str, blank: str
+) -> None:
+    """Compose passes an unset variable through as an empty string."""
+    monkeypatch.setenv(variable, blank)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.anthropic_api_key is None
+    assert settings.github_token is None
+    assert settings.voyage_api_key is None

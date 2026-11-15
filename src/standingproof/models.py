@@ -6,6 +6,7 @@ a tenant filter (and later a row-level security policy) never needs a join.
 
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
 from pgvector.sqlalchemy import Vector
@@ -18,6 +19,7 @@ from sqlalchemy import (
     Index,
     Integer,
     LargeBinary,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -28,6 +30,19 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 STATUS_PARSED = "parsed"
 STATUS_NEEDS_MAPPING = "needs_mapping"
+
+RUN_RUNNING = "running"
+RUN_FINISHED = "finished"
+RUN_CANCELLED = "cancelled"
+
+# A question inside a run. The first two are in progress; the other four are final.
+ITEM_QUEUED = "queued"
+ITEM_RUNNING = "running"
+ITEM_READY = "ready"
+ITEM_NEEDS_REVIEW = "needs_review"
+ITEM_FAILED = "failed"
+ITEM_NOT_STARTED = "not_started"
+ITEM_OPEN = (ITEM_QUEUED, ITEM_RUNNING)
 
 _UUID_DEFAULT = text("gen_random_uuid()")
 _NOW = text("now()")
@@ -230,3 +245,79 @@ class Evidence(Base):
     statement: Mapped[str] = mapped_column(Text)
     reason: Mapped[str | None] = mapped_column(String(40))
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class Run(Base):
+    """One pass over a questionnaire: every question answered, or handed to a person."""
+
+    __tablename__ = "runs"
+    __table_args__ = (
+        # Two runs at once would pay twice for the same answers.
+        Index(
+            "uq_runs_one_active",
+            "questionnaire_id",
+            unique=True,
+            postgresql_where=text("status = 'running'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    questionnaire_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questionnaires.id", ondelete="CASCADE")
+    )
+    # running | finished | cancelled
+    status: Mapped[str] = mapped_column(String(16))
+    # No further question starts once the run has spent this much.
+    max_cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 4))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class RunQuestion(Base):
+    """One question inside a run: where it is, who is working on it, and how it ended.
+
+    Its id is also the thread id under which the workflow saves this question's state.
+    """
+
+    __tablename__ = "run_questions"
+    __table_args__ = (
+        UniqueConstraint("run_id", "question_id", name="uq_run_questions_question"),
+        Index("ix_run_questions_run_status", "run_id", "status"),
+        # What the sweep looks for: work that is due and has nobody on it.
+        Index(
+            "ix_run_questions_open",
+            "status",
+            "enqueue_after",
+            postgresql_where=text("status IN ('queued', 'running')"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+    question_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("questions.id", ondelete="CASCADE"))
+    position: Mapped[int] = mapped_column(Integer)
+    # queued | running | ready | needs_review | failed | not_started
+    status: Mapped[str] = mapped_column(String(16))
+    # reused (an approved answer matched exactly) | drafted (the model wrote it)
+    path: Mapped[str | None] = mapped_column(String(16))
+    # Why it needs review, failed or was never started.
+    reason: Mapped[str | None] = mapped_column(String(40))
+    answer: Mapped[str | None] = mapped_column(Text)
+    citations: Mapped[list[str] | None] = mapped_column(JSONB)
+    note: Mapped[str | None] = mapped_column(Text)
+    steps: Mapped[int] = mapped_column(Integer, server_default=_ZERO)
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), server_default=_ZERO)
+    usage: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # How many times a worker has taken this question up.
+    attempts: Mapped[int] = mapped_column(Integer, server_default=_ZERO)
+    # The worker holding this question, and until when. Only the holder may save a result.
+    lease_owner: Mapped[str | None] = mapped_column(String(100))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When the sweep should next put this question on the queue if it is still open.
+    enqueue_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when the workflow's saved state for this question has been deleted.
+    state_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
