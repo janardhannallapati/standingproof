@@ -78,3 +78,6 @@ live system settings, and reopens them when those settings drift.
 - Tokens and keys never appear in an error, a log line, evidence or a test fixture. Tests run
   with `tests/conftest.py::no_backends`, which cannot build a real client.
 - Evidence is append-only. A new look is a new row.
+- Check credentials are per deployment. A tenant must never be able to grant itself a scope:
+  connecting one requires the operator's declaration (`Settings.declared_scopes`) and fails if
+  another tenant holds it. Keep both rules until credentials are per tenant.

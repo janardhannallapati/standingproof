@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     # Read-only credentials for live checks. AWS credentials are read by the AWS SDK from
     # its usual places (environment variables, a role); only the region is set here.
     github_token: SecretStr | None = None
+    # Which organisations and accounts those credentials may be used on, comma-separated.
+    # The credentials belong to the deployment, so this is the operator's decision: a tenant
+    # can connect only a scope listed here. Empty means no scope can be connected.
+    github_orgs: str = ""
+    aws_accounts: str = ""
     github_api_url: str = "https://api.github.com"
     aws_region: str = "us-east-1"
     # A check that takes longer than this is recorded as unavailable.
@@ -62,6 +67,11 @@ class Settings(BaseSettings):
 
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
+
+    def declared_scopes(self, system: str) -> set[str]:
+        """The scopes the operator has declared for a system, lower-cased."""
+        text = {"github": self.github_orgs, "aws": self.aws_accounts}.get(system, "")
+        return {part.strip().lower() for part in text.split(",") if part.strip()}
 
 
 @lru_cache

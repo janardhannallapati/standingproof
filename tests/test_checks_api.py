@@ -240,3 +240,56 @@ def test_the_default_backends_never_reach_for_real_credentials() -> None:
     except NoCredentialsError:
         return
     raise AssertionError("the test AWS reader built a real client")
+
+
+def test_a_scope_the_deployment_has_not_declared_cannot_be_connected(
+    make_api: ClientFactory, migrated_postgres_url: str
+) -> None:
+    # The credentials belong to the deployment, not to a tenant. So which organisations and
+    # accounts they may be used on is the operator's decision, made in configuration.
+    api = make_api(github_orgs="acme", aws_accounts="")
+
+    undeclared_org = connect(api, scope="someone-elses-org")
+    undeclared_account = connect(api, system="aws", scope="123456789012")
+
+    assert undeclared_org.status_code == 403
+    assert undeclared_account.status_code == 403
+    assert connect(api, scope="ACME").status_code == 201
+    assert count(migrated_postgres_url, "connections") == 1
+
+
+def test_by_default_no_scope_is_declared_so_nothing_can_be_connected(
+    make_api: ClientFactory,
+) -> None:
+    api = make_api(github_orgs="", aws_accounts="")
+
+    assert connect(api).status_code == 403
+
+
+def test_a_scope_connected_by_one_tenant_cannot_be_connected_by_another(
+    make_api: ClientFactory,
+) -> None:
+    ours = make_api()
+    theirs = make_api(dev_tenant_name="another-company")
+
+    assert connect(ours).status_code == 201
+    taken = connect(theirs)
+
+    assert taken.status_code == 409
+    assert theirs.get("/connections").json()["connections"] == []
+    assert run(theirs, "github.org_two_factor", "acme").status_code == 403
+    # The tenant that holds it is unaffected, and connecting again is still a no-op.
+    assert connect(ours).status_code == 200
+
+
+def test_a_connection_stops_working_when_the_operator_withdraws_the_scope(
+    make_api: ClientFactory,
+) -> None:
+    handler = routes(ORG_2FA)
+    connect(make_api())  # connected while "acme" was declared
+
+    later = make_api(backends=backends(handler=handler), github_orgs="")
+    response = run(later, "github.org_two_factor", "acme")
+
+    assert response.status_code == 403
+    assert handler.seen == []

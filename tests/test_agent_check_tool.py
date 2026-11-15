@@ -17,7 +17,7 @@ from tests.checks.test_github import routes
 from tests.conftest import ClientFactory, Db
 from tests.test_checks_api import ORG_2FA, backends, connect
 
-SETTINGS = Settings(_env_file=None)
+SETTINGS = Settings(_env_file=None, github_orgs="acme")
 
 
 def call(check: str, scope: str, call_id: str = "c1") -> ToolCall:

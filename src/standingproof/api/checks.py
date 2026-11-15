@@ -82,17 +82,29 @@ async def list_checks() -> CheckList:
 @router.post(
     "/connections",
     status_code=status.HTTP_201_CREATED,
-    responses={200: {"description": "This scope was already connected."}},
+    responses={
+        200: {"description": "This scope was already connected."},
+        403: {"description": "The operator has not declared this scope."},
+        409: {"description": "Another tenant holds this scope."},
+    },
 )
 async def connect(
-    body: ConnectionIn, response: Response, session: SessionDep, tenant_id: TenantDep
+    body: ConnectionIn,
+    response: Response,
+    session: SessionDep,
+    tenant_id: TenantDep,
+    settings: SettingsDep,
 ) -> ConnectionOut:
     try:
         connection, created = await service.add_connection(
-            session, tenant_id=tenant_id, system=body.system, scope=body.scope
+            session, tenant_id=tenant_id, system=body.system, scope=body.scope, settings=settings
         )
     except service.InvalidConnectionError as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from error
+    except service.ScopeNotDeclaredError as error:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(error)) from error
+    except service.ScopeTakenError as error:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from error
     if not created:
         response.status_code = status.HTTP_200_OK
     return ConnectionOut.model_validate(connection)

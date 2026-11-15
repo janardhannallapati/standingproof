@@ -44,6 +44,10 @@ AWS policy for the checks:
 ```
 
 In this version credentials are read from the environment, one set for the whole deployment.
+Because they are shared, which organisations and accounts they may be used on is set by the
+operator (`SP_GITHUB_ORGS`, `SP_AWS_ACCOUNTS`), not by a caller, and each such scope can be
+connected by one tenant only. Do not run several tenants that should not see each other's
+settings against one set of credentials; per-tenant credentials are planned.
 They are not stored in the database, and they are not written to logs, error messages or
 stored evidence.
 

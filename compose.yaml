@@ -12,6 +12,8 @@ x-app-env: &app_env
   # Read-only credentials for live checks; all optional. Without them a check reports
   # "not configured". Set them in your shell or .env (see the README).
   SP_GITHUB_TOKEN: ${SP_GITHUB_TOKEN:-}
+  SP_GITHUB_ORGS: ${SP_GITHUB_ORGS:-}
+  SP_AWS_ACCOUNTS: ${SP_AWS_ACCOUNTS:-}
   SP_AWS_REGION: ${SP_AWS_REGION:-us-east-1}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}

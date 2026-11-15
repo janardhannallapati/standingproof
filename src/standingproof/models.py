@@ -198,7 +198,9 @@ class Connection(Base):
 
     __tablename__ = "connections"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "system", "scope", name="uq_connections_tenant_scope"),
+        # Across all tenants: the credentials are shared by the deployment, so a scope that two
+        # tenants could both connect would let each read the other's settings.
+        UniqueConstraint("system", "scope", name="uq_connections_scope"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)

@@ -40,7 +40,8 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.UniqueConstraint("tenant_id", "system", "scope", name="uq_connections_tenant_scope"),
+        # One tenant per scope, across the whole deployment (see models.Connection).
+        sa.UniqueConstraint("system", "scope", name="uq_connections_scope"),
     )
     op.create_table(
         "evidence",

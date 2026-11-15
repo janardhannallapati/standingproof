@@ -115,8 +115,10 @@ account-wide block on public S3 buckets and default disk encryption.
 - **Read-only, three times over.** The credentials you supply should be read-only
   ([SECURITY.md](SECURITY.md) lists the exact permissions). The clients can send only the
   operations on an allow-list in `checks/registry.py`. A test fails if a check uses another.
-- **Default deny.** A check runs only on an organisation or account you have connected. Every
-  attempt is stored, including refused ones.
+- **Default deny.** A check runs only on an organisation or account that is connected, and one
+  can be connected only if the operator has listed it in `SP_GITHUB_ORGS` or `SP_AWS_ACCOUNTS`.
+  The credentials belong to the deployment, so a caller cannot grant itself a scope, and a
+  scope is held by one tenant. Every attempt is stored, including refused ones.
 - **Nothing is guessed.** If the system refuses, is unreachable or does not show the setting,
   the result says "not observed" and why, and offers no fact.
 - **Only what was needed is kept.** A few named fields of the reply are stored, never the

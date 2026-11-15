@@ -31,6 +31,14 @@ class InvalidConnectionError(Exception):
     """The system is unknown, or the scope is not an organisation name or an account id."""
 
 
+class ScopeNotDeclaredError(Exception):
+    """The operator has not declared this scope for the deployment's credentials."""
+
+
+class ScopeTakenError(Exception):
+    """Another tenant has already connected this scope."""
+
+
 @dataclass
 class CheckBackends:
     """The clients checks run through. None means that system has no credential configured."""
@@ -63,9 +71,14 @@ def source_text(evidence: Evidence) -> str:
 
 
 async def add_connection(
-    session: AsyncSession, *, tenant_id: uuid.UUID, system: str, scope: str
+    session: AsyncSession, *, tenant_id: uuid.UUID, system: str, scope: str, settings: Settings
 ) -> tuple[Connection, bool]:
-    """Allow this tenant to run checks on a scope. Returns the connection and whether it is new."""
+    """Allow this tenant to run checks on a scope. Returns the connection and whether it is new.
+
+    The credentials that checks run with belong to the deployment, not to the tenant. So a
+    tenant cannot grant itself a scope: the operator must have declared it, and it can be
+    held by one tenant only. Per-tenant credentials will replace both rules.
+    """
     kind = _SYSTEM_SCOPE_KIND.get(system)
     if kind is None or not valid_scope(kind, scope):
         raise InvalidConnectionError(
@@ -73,25 +86,30 @@ async def add_connection(
             "or 'aws' with a 12-digit account id."
         )
     scope = scope.lower()
+    if scope not in settings.declared_scopes(system):
+        raise ScopeNotDeclaredError(
+            "This deployment's credentials are not declared for that scope. "
+            "The operator lists permitted scopes in SP_GITHUB_ORGS and SP_AWS_ACCOUNTS."
+        )
     created = (
         await session.execute(
             insert(Connection)
             .values(tenant_id=tenant_id, system=system, scope=scope)
-            .on_conflict_do_nothing(constraint="uq_connections_tenant_scope")
+            .on_conflict_do_nothing(constraint="uq_connections_scope")
             .returning(Connection.id)
         )
     ).scalar_one_or_none()
     await session.commit()
-    connection = (
+    # Deliberately not filtered by tenant: this asks who holds the scope. Nothing about
+    # another tenant's row is returned; the caller learns only that the scope is taken.
+    holder = (
         await session.execute(
-            select(Connection).where(
-                Connection.tenant_id == tenant_id,
-                Connection.system == system,
-                Connection.scope == scope,
-            )
+            select(Connection).where(Connection.system == system, Connection.scope == scope)
         )
     ).scalar_one()
-    return connection, created is not None
+    if holder.tenant_id != tenant_id:
+        raise ScopeTakenError("That scope is already connected.")
+    return holder, created is not None
 
 
 async def list_connections(session: AsyncSession, tenant_id: uuid.UUID) -> list[Connection]:
@@ -147,7 +165,12 @@ async def run_check(
 ) -> Evidence:
     """Decide, then look. Returns the stored evidence, whatever the outcome was."""
     check = CHECKS.get(name)
-    connections = [(c.system, c.scope) for c in await list_connections(session, tenant_id)]
+    # A connection counts only while the operator still declares its scope.
+    connections = [
+        (c.system, c.scope)
+        for c in await list_connections(session, tenant_id)
+        if c.scope in settings.declared_scopes(c.system)
+    ]
     decision = authorize(check, scope, connections)
     now = utc_now()
 
