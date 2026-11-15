@@ -9,6 +9,14 @@ x-app-env: &app_env
   # of these in your shell or .env before `docker compose up` (see the README).
   SP_EMBEDDING_MODEL: ${SP_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
   VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+  # Read-only credentials for live checks; all optional. Without them a check reports
+  # "not configured". Set them in your shell or .env (see the README).
+  SP_GITHUB_TOKEN: ${SP_GITHUB_TOKEN:-}
+  SP_AWS_REGION: ${SP_AWS_REGION:-us-east-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  # This stack does not run on EC2, so the AWS SDK should not wait for an instance role.
+  AWS_EC2_METADATA_DISABLED: "true"
 
 x-app-hardening: &app_hardening
   read_only: true
