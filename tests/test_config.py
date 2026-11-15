@@ -45,3 +45,14 @@ def test_xml_parsing_is_hardened() -> None:
 
     # openpyxl switches to defusedxml only when it is installed; this fails if it is removed.
     assert openpyxl.xml.DEFUSEDXML is True
+
+
+def test_declared_check_scopes_are_parsed_from_comma_separated_text() -> None:
+    settings = Settings(
+        _env_file=None, github_orgs=" Acme, other-org ,,", aws_accounts="123456789012"
+    )
+
+    assert settings.declared_scopes("github") == {"acme", "other-org"}
+    assert settings.declared_scopes("aws") == {"123456789012"}
+    assert Settings(_env_file=None).declared_scopes("github") == set()
+    assert settings.declared_scopes("gitlab") == set()

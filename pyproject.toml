@@ -10,6 +10,7 @@ dependencies = [
     "alembic>=1.20.1",
     "anthropic>=2.8.0",
     "asyncpg>=0.32.0",
+    "boto3>=1.40",
     "defusedxml>=0.7.1",
     "fastapi>=0.162.5",
     "fastembed>=0.9.1",
@@ -64,3 +65,8 @@ select = ["E", "F", "I", "UP", "B", "S", "ASYNC"]
 [tool.mypy]
 strict = true
 files = ["src"]
+
+# AWS's SDK ships no type information. Its replies are plain dicts, checked where they are read.
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true

@@ -86,6 +86,52 @@ Retrieval is measured, not assumed: `uv run pytest -m slow -s tests/eval` runs 3
 against a sample library with the real model and prints, for keyword, meaning and combined
 search, how often the right source is in the top five.
 
+## Check a live setting
+
+An approved answer says what the policy is. A check looks at what the system does. Standingproof
+can read seven settings from GitHub and AWS, store what it saw with the time, and give that to
+the agent as a source it can cite.
+
+```sh
+curl -X POST localhost:8000/connections -H "content-type: application/json" \
+  -d '{"system": "github", "scope": "your-org"}'
+curl -X POST localhost:8000/checks/github.branch_protection/run \
+  -H "content-type: application/json" -d '{"scope": "your-org/your-repo"}'
+```
+
+```json
+{
+  "status": "observed",
+  "statement": "Branch main of your-org/your-repo is protected: a change needs 1 approving review before it can be merged, and the rule does not apply to administrators.",
+  "facts": {"default_branch": "main", "protected": true, "required_approving_reviews": 1, "applies_to_administrators": false},
+  "observed_at": "2026-11-16T10:02:11Z"
+}
+```
+
+`GET /checks` lists them: two-factor sign-in for a GitHub organisation, branch protection and
+secret scanning for a repository, and for an AWS account root MFA, the password policy, the
+account-wide block on public S3 buckets and default disk encryption.
+
+- **Read-only, three times over.** The credentials you supply should be read-only
+  ([SECURITY.md](SECURITY.md) lists the exact permissions). The clients can send only the
+  operations on an allow-list in `checks/registry.py`. A test fails if a check uses another.
+- **Default deny.** A check runs only on an organisation or account that is connected, and one
+  can be connected only if the operator has listed it in `SP_GITHUB_ORGS` or `SP_AWS_ACCOUNTS`.
+  The credentials belong to the deployment, so a caller cannot grant itself a scope, and a
+  scope is held by one tenant. Every attempt is stored, including refused ones.
+- **Nothing is guessed.** If the system refuses, is unreachable or does not show the setting,
+  the result says "not observed" and why, and offers no fact.
+- **Only what was needed is kept.** A few named fields of the reply are stored, never the
+  whole reply.
+- An observation is reused for 15 minutes, then looked at again.
+
+To see every check against your own accounts without storing anything:
+
+```sh
+uv run python scripts/try_checks.py --github-org your-org --github-repo your-org/your-repo \
+  --aws-account 123456789012
+```
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.

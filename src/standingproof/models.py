@@ -188,3 +188,45 @@ class PolicyChunkEmbedding(Base):
     model: Mapped[str] = mapped_column(Text, primary_key=True)
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
     embedding: Mapped[Any] = mapped_column(Vector())
+
+
+class Connection(Base):
+    """A scope in an outside system that this tenant may run checks against.
+
+    Holds no credential. It is the allow-list the authorisation decision reads.
+    """
+
+    __tablename__ = "connections"
+    __table_args__ = (
+        # Across all tenants: the credentials are shared by the deployment, so a scope that two
+        # tenants could both connect would let each read the other's settings.
+        UniqueConstraint("system", "scope", name="uq_connections_scope"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    system: Mapped[str] = mapped_column(String(16))
+    # A GitHub organisation (lower case) or a 12-digit AWS account id.
+    scope: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class Evidence(Base):
+    """What one run of a check saw, and when. Append-only: a new look is a new row."""
+
+    __tablename__ = "evidence"
+    __table_args__ = (
+        Index("ix_evidence_lookup", "tenant_id", "check_name", "scope", "observed_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    check_name: Mapped[str] = mapped_column(String(100))
+    scope: Mapped[str] = mapped_column(String(300))
+    # observed | unavailable | not_configured | denied
+    status: Mapped[str] = mapped_column(String(16))
+    facts: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    raw_result: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    statement: Mapped[str] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(String(40))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

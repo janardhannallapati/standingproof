@@ -64,3 +64,20 @@ live system settings, and reopens them when those settings drift.
   one, run it under `strace -f -e trace=connect` and look at what it writes under the home
   directory. `ORT_DISABLE_TELEMETRY=1` is set in code and in the image for this reason; do not
   remove either.
+- A check reads one setting and nothing else. Its API operations are declared in
+  `checks/registry.py` and must be on `READ_ONLY_OPERATIONS`; the clients refuse anything
+  else. Never add an operation that changes state, and never give a client a generic
+  "call any endpoint" method.
+- `checks/authorize.py` decides whether a check may run, before any client is touched. It is
+  pure and default-deny. New rules go there with a test.
+- A refusal, a timeout or a missing credential is a stored outcome with a reason, not an
+  exception, and it asserts no fact. Only `observed` evidence is ever a source.
+- Evidence keeps allow-listed fields of a reply (`checks/redact.py`), never the whole reply,
+  and a statement is built from those fields only. Text from the remote system (a description,
+  an error message) does not go into a statement, a log line or a tool result.
+- Tokens and keys never appear in an error, a log line, evidence or a test fixture. Tests run
+  with `tests/conftest.py::no_backends`, which cannot build a real client.
+- Evidence is append-only. A new look is a new row.
+- Check credentials are per deployment. A tenant must never be able to grant itself a scope:
+  connecting one requires the operator's declaration (`Settings.declared_scopes`) and fails if
+  another tenant holds it. Keep both rules until credentials are per tenant.

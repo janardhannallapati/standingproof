@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from standingproof.checks.service import CheckBackends
 from standingproof.config import Settings
 from standingproof.library.embedding import Embedder
 from standingproof.models import Tenant
@@ -43,10 +44,15 @@ def get_embedder(request: Request) -> Embedder:
     return cast(Embedder, request.app.state.embedder)
 
 
+def get_backends(request: Request) -> CheckBackends:
+    return cast(CheckBackends, request.app.state.backends)
+
+
 EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
+BackendsDep = Annotated[CheckBackends, Depends(get_backends)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
