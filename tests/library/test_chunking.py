@@ -100,3 +100,21 @@ def test_too_many_chunks_is_an_error_that_names_the_limit() -> None:
 
     with pytest.raises(TooManyChunksError, match="5"):
         chunks(text, max_chunks=5)
+
+
+def test_closing_hashes_and_trailing_spaces_are_not_part_of_the_title() -> None:
+    result = chunks("## Passwords ##   \n\nbody\n")
+
+    assert result[0].heading_path == "Passwords"
+
+
+def test_a_crafted_heading_line_is_handled_in_linear_time() -> None:
+    # Long runs of spaces and hashes made the first heading pattern try every way of
+    # sharing them out between its parts. A megabyte-long line must still be quick.
+    import time
+
+    line = "# " + " #" * 20_000 + " " * 20_000 + "x" + " " * 20_000 + "\n\nbody"
+
+    started = time.perf_counter()
+    chunks(line, max_chars=100_000)
+    assert time.perf_counter() - started < 1.0

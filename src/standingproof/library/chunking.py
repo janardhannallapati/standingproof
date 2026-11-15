@@ -6,7 +6,10 @@ Pure functions: text in, chunks out. No database and no model.
 import re
 from dataclasses import dataclass
 
-_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+# Deliberately simple: one fixed prefix, then the rest of the line. The closing hashes of
+# "## Title ##" are stripped in code. A pattern that also matched them had several parts
+# competing for the same spaces, and a crafted line made it take minutes.
+_HEADING = re.compile(r"^(#{1,6})[ \t]+(.*)$")
 _FENCE = re.compile(r"^\s*(```|~~~)")
 _PARAGRAPH_BREAK = re.compile(r"\n\s*\n")
 _SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+")
@@ -85,7 +88,8 @@ def chunk_markdown(text: str, *, max_chars: int, max_chunks: int) -> list[Chunk]
         if _FENCE.match(line):
             in_fence = not in_fence
         heading = None if in_fence else _HEADING.match(line)
-        if heading is None:
+        title = heading.group(2).rstrip().rstrip("#").rstrip() if heading else ""
+        if heading is None or not title:
             body.append(line)
             continue
         close_section()
@@ -93,7 +97,7 @@ def chunk_markdown(text: str, *, max_chars: int, max_chunks: int) -> list[Chunk]
         # A heading ends every open heading at its own level or deeper.
         while path and path[-1][0] >= level:
             path.pop()
-        path.append((level, heading.group(2)))
+        path.append((level, title))
     close_section()
 
     chunks: list[Chunk] = []

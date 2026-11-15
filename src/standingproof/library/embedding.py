@@ -115,7 +115,10 @@ class FastEmbedEmbedder:
         return [vector.tolist() for vector in self._get_model().passage_embed(texts)]
 
     def _query(self, text: str) -> list[float]:
-        return [vector.tolist() for vector in self._get_model().query_embed(text)][0]
+        vectors: list[list[float]] = [
+            vector.tolist() for vector in self._get_model().query_embed(text)
+        ]
+        return vectors[0]
 
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
         if not texts:
