@@ -5,6 +5,7 @@ model. A model is chosen by name in settings; hosted models also need their prov
 """
 
 import asyncio
+import os
 import re
 import threading
 from collections.abc import Sequence
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 
 DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 _VOYAGE_URL = "https://api.voyageai.com/v1/embeddings"
+_ORT_TELEMETRY_SWITCH = "ORT_DISABLE_TELEMETRY"
 _SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/\-]*")
 
 
@@ -117,6 +119,13 @@ class FastEmbedEmbedder:
             if self._model is None:
                 # Imported here: importing the runtime is slow, and code paths that never
                 # embed (health checks, questionnaire uploads) should not pay for it.
+                # The ONNX runtime has usage telemetry on by default: each process queues an
+                # event (machine details, the interpreter's path) and uploads the queue to
+                # its vendor. It reads this variable when it starts, so it is set before the
+                # import, and set unconditionally: this product sends nothing anywhere
+                # unless a hosted model was chosen. The runtime's own
+                # disable_telemetry_events() was tried and did not stop the upload.
+                os.environ[_ORT_TELEMETRY_SWITCH] = "1"
                 from fastembed import TextEmbedding
 
                 self._model = TextEmbedding(self.spec.name, cache_dir=self._cache_dir)
