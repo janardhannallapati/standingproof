@@ -12,7 +12,10 @@ dependencies = [
     "asyncpg>=0.32.0",
     "defusedxml>=0.7.1",
     "fastapi>=0.162.5",
+    "fastembed>=0.9.1",
+    "httpx2>=2.16.0",
     "openpyxl>=3.1.5",
+    "pgvector>=0.5.1",
     "pydantic-settings>=2.16.2",
     "python-multipart>=0.0.33",
     "redis>=8.1.0",
@@ -41,6 +44,9 @@ asyncio_default_fixture_loop_scope = "function"
 # A warning is a defect we have not looked at yet, so it fails the run.
 filterwarnings = ["error"]
 testpaths = ["tests"]
+# Tests marked `slow` load the real embedding model. Run them with: pytest -m slow
+addopts = "-m 'not slow'"
+markers = ["slow: loads the real embedding model (downloads it on first use)"]
 pythonpath = ["."]
 
 [tool.ruff]
