@@ -48,6 +48,10 @@ class ToolRegistry:
             raise ValueError(f"model-facing tools must be read-only: {writers}")
         self._tools = {t.name: t for t in tools}
 
+    def with_tools(self, *tools: Tool) -> "ToolRegistry":
+        """A new registry holding these tools as well. The same read-only rule applies."""
+        return ToolRegistry([*self._tools.values(), *tools])
+
     def definitions(self) -> list[dict[str, Any]]:
         # Sorted so the request prefix is byte-identical between calls (prompt caching).
         return [self._tools[name].definition() for name in sorted(self._tools)]

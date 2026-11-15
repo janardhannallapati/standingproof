@@ -65,6 +65,27 @@ class Settings(BaseSettings):
     # An observation younger than this is returned again, with no new call.
     evidence_max_age_seconds: int = 900
 
+    # Running a questionnaire. A run stops starting questions once it has spent its ceiling.
+    run_cost_limit_usd: float = 5.0
+    # How many questions one worker works on at once (the provider's rate limit is shared).
+    worker_concurrency: int = 4
+    # How long a worker may hold a question without renewing. Longer than run_max_seconds,
+    # so a healthy worker is never overtaken.
+    lease_seconds: int = 180
+    # A question is given up as failed after this many attempts.
+    question_max_attempts: int = 3
+    # The first wait before a question is retried after a provider failure; doubles each time.
+    retry_base_seconds: float = 10.0
+    # After the sweep queues an open question, how long before it may queue it again.
+    requeue_seconds: float = 60.0
+    # How often a worker looks for open questions that have no job on the queue.
+    sweep_seconds: float = 15.0
+    # On SIGTERM, how long questions in progress get to finish their current step.
+    shutdown_grace_seconds: float = 30.0
+    # Saved workflow state is deleted this long after a question finishes.
+    state_keep_days: int = 7
+    queue_stream: str = "standingproof:jobs"
+
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
 
