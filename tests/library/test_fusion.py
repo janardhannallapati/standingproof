@@ -38,3 +38,15 @@ def test_a_repeat_within_one_list_counts_once_at_its_best_rank() -> None:
     assert [f.key for f in fused] == ["a", "b"]
     assert fused[0].score == pytest.approx(1 / 61)
     assert fused[1].score == pytest.approx(1 / 62)
+
+
+def test_a_weight_scales_what_one_list_contributes() -> None:
+    rankings = {"keyword": ["a", "b"], "meaning": ["b", "a"]}
+
+    even = reciprocal_rank_fusion(rankings)
+    weighted = reciprocal_rank_fusion(rankings, weights={"keyword": 0.5})
+
+    # Unweighted it is a dead heat; with keyword halved, the meaning list decides.
+    assert even[0].score == pytest.approx(even[1].score)
+    assert [f.key for f in weighted] == ["b", "a"]
+    assert weighted[0].score == pytest.approx(0.5 / 62 + 1 / 61)

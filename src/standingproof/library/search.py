@@ -16,7 +16,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.library.embedding import Embedder, ModelSpec
-from standingproof.library.fusion import reciprocal_rank_fusion
+from standingproof.library.fusion import Fused, reciprocal_rank_fusion
 from standingproof.models import LibraryAnswer, PolicyChunk, PolicyDoc
 
 Kind = Literal["answer", "policy"]
@@ -30,6 +30,11 @@ _DEPTH_FACTOR = 4
 _MIN_DEPTH = 20
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._\-]*")
 _MAX_TOKENS = 50
+# Keyword evidence counts for half. Postgres full-text ranking has no notion of a rare word
+# against a common one, so a match on "data" scores like a match on "SAML"; its list is the
+# noisier of the two. Measured in tests/eval: the exact value hardly matters (0.1 to 1.0
+# gave the same recall), so this is a choice of principle, not a tuned number.
+_WEIGHTS: dict[str, float] = {"keyword": 0.5}
 
 
 @dataclass(frozen=True)
@@ -188,6 +193,16 @@ async def _load(
     return found
 
 
+def in_final_order(fused: Sequence[Fused[_Key]]) -> list[Fused[_Key]]:
+    """Best score first. On equal scores an approved answer goes before policy text: it is
+    the wording a person already signed off. Then by id, so the order never depends on what
+    the database happened to return first."""
+    return sorted(
+        fused,
+        key=lambda item: (-round(item.score, 12), item.key[0] != "answer", str(item.key[1])),
+    )
+
+
 async def search_library(
     session: AsyncSession,
     *,
@@ -214,12 +229,7 @@ async def search_library(
         rankings["meaning"] = await _meaning(
             session, tenant_id, vector, embedder.spec, today, depth
         )
-    # On equal scores an approved answer goes before policy text: it is the wording a person
-    # already signed off. Then by id, so the order never depends on what the database returned.
-    fused = sorted(
-        reciprocal_rank_fusion(rankings),
-        key=lambda item: (-round(item.score, 12), item.key[0] != "answer", str(item.key[1])),
-    )
+    fused = in_final_order(reciprocal_rank_fusion(rankings, weights=_WEIGHTS))
 
     # A control id typed exactly is a lookup, not a similarity question: it goes first.
     exact = await _control_ids(session, tenant_id, query, today)

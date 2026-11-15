@@ -49,14 +49,17 @@ MODELS: dict[str, ModelSpec] = {
         provider="local",
         dimensions=384,
         index_suffix="bge_small",
-        max_distance=None,
+        # Measured in tests/eval: the right source was never further than 0.41. This drops
+        # only text that is plainly unrelated. It cannot tell "no approved source" apart:
+        # questions with no source had nearest matches from 0.25 to 0.41, the same range.
+        max_distance=0.45,
     ),
     "voyage-4-lite": ModelSpec(
         name="voyage-4-lite",
         provider="voyage",
         dimensions=512,
         index_suffix="voyage_4_lite",
-        max_distance=None,
+        max_distance=None,  # not measured yet: no cut-off until it is
     ),
 }
 

@@ -1,20 +1,27 @@
 import asyncio
 import os
-from collections.abc import Callable, Iterator
+import uuid
+from collections.abc import Callable, Coroutine, Iterator
 from contextlib import ExitStack
+from typing import Any
 
 import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
-from sqlalchemy import text
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
 
 from alembic import command
+from standingproof.agent.tools import ToolRegistry
 from standingproof.app import create_app
 from standingproof.config import Settings, get_settings
-from standingproof.db import build_engine
+from standingproof.db import build_engine, build_session_factory
+from standingproof.library.embedding import Embedder
+from standingproof.library.tools import build_library_registry
+from standingproof.models import Tenant
 from tests.fakes import FakeEmbedder
 
 ClientFactory = Callable[..., TestClient]
@@ -98,3 +105,38 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
 @pytest.fixture
 def api(make_api: ClientFactory) -> TestClient:
     return make_api()
+
+
+class Db:
+    """One event loop and one connection pool for a test, both closed afterwards."""
+
+    def __init__(self, database_url: str) -> None:
+        # One loop for the whole test: a pool belongs to the loop it was first used on.
+        self.loop = asyncio.new_event_loop()
+        self._engine = build_engine(database_url)
+        self.sessions: async_sessionmaker[AsyncSession] = build_session_factory(self._engine)
+
+    def run[T](self, awaitable: Coroutine[Any, Any, T]) -> T:
+        return self.loop.run_until_complete(awaitable)
+
+    def tenant(self, name: str = "default") -> uuid.UUID:
+        async def lookup() -> uuid.UUID:
+            async with self.sessions() as session:
+                statement = select(Tenant.id).where(Tenant.name == name)
+                return (await session.execute(statement)).scalar_one()
+
+        return self.run(lookup())
+
+    def registry(self, name: str = "default", embedder: Embedder | None = None) -> ToolRegistry:
+        return build_library_registry(self.sessions, self.tenant(name), embedder or FakeEmbedder())
+
+    def close(self) -> None:
+        self.run(self._engine.dispose())
+        self.loop.close()
+
+
+@pytest.fixture
+def db(migrated_postgres_url: str) -> Iterator[Db]:
+    database = Db(migrated_postgres_url)
+    yield database
+    database.close()

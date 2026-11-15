@@ -1,64 +1,19 @@
 """The agent's two tools reading the database library instead of the in-memory list."""
 
-import asyncio
 import json
 import uuid
-from collections.abc import Coroutine, Iterator
-from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from standingproof.agent.library import build_registry
 from standingproof.agent.limits import Limits
 from standingproof.agent.loop import run_agent
-from standingproof.agent.tools import ToolRegistry
 from standingproof.agent.types import AnswerDraft, ToolCall
-from standingproof.db import build_engine, build_session_factory
 from standingproof.library.service import reembed_missing
-from standingproof.library.tools import build_library_registry
-from standingproof.models import Tenant
 from tests.agent.fakes import ScriptedModel, finishes, search, wants_tools
-from tests.conftest import ClientFactory
+from tests.conftest import ClientFactory, Db
 from tests.fakes import FakeEmbedder
 from tests.test_library_api import MFA, YESTERDAY, add_answer, count, upload_policy
-
-
-class Db:
-    """One event loop and one connection pool for a test, both closed afterwards."""
-
-    def __init__(self, database_url: str) -> None:
-        # One loop for the whole test: a pool belongs to the loop it was first used on.
-        self.loop = asyncio.new_event_loop()
-        self._engine = build_engine(database_url)
-        self.sessions: async_sessionmaker[AsyncSession] = build_session_factory(self._engine)
-
-    def run[T](self, awaitable: Coroutine[Any, Any, T]) -> T:
-        return self.loop.run_until_complete(awaitable)
-
-    def tenant(self, name: str = "default") -> uuid.UUID:
-        async def lookup() -> uuid.UUID:
-            async with self.sessions() as session:
-                statement = select(Tenant.id).where(Tenant.name == name)
-                return (await session.execute(statement)).scalar_one()
-
-        return self.run(lookup())
-
-    def registry(self, name: str = "default") -> ToolRegistry:
-        return build_library_registry(self.sessions, self.tenant(name), FakeEmbedder())
-
-    def close(self) -> None:
-        self.run(self._engine.dispose())
-        self.loop.close()
-
-
-@pytest.fixture
-def db(migrated_postgres_url: str) -> Iterator[Db]:
-    database = Db(migrated_postgres_url)
-    yield database
-    database.close()
 
 
 def policy_call(call_id: str, source_id: str) -> ToolCall:

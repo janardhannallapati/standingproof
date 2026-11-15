@@ -16,19 +16,26 @@ class Fused[K: Hashable]:
 
 
 def reciprocal_rank_fusion[K: Hashable](
-    rankings: Mapping[str, Sequence[K]], *, k: int = 60
+    rankings: Mapping[str, Sequence[K]],
+    *,
+    k: int = 60,
+    weights: Mapping[str, float] | None = None,
 ) -> list[Fused[K]]:
     """Score each item 1 / (k + rank) in every list it appears in, and sum.
 
     k damps the difference between neighbouring ranks; 60 is the value from the paper that
     introduced the method and needs no tuning. Ties keep the order items were first seen.
+
+    `weights` scales a list's contribution (default 1.0): a list known to be noisier can
+    count for less without being thrown away.
     """
+    weights = weights or {}
     scores: dict[K, float] = {}
     found_by: dict[K, list[str]] = {}
     for name, ranking in rankings.items():
         unique = list(dict.fromkeys(ranking))  # a repeat counts once, at its best rank
         for rank, key in enumerate(unique, start=1):
-            scores[key] = scores.get(key, 0.0) + 1.0 / (k + rank)
+            scores[key] = scores.get(key, 0.0) + weights.get(name, 1.0) / (k + rank)
             found_by.setdefault(key, []).append(name)
     # sorted() is stable and dicts keep insertion order, so equal scores stay in first-seen order.
     ordered = sorted(scores, key=lambda key: -scores[key])
