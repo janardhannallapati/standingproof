@@ -24,7 +24,15 @@ from standingproof.agent.types import AgentResult, AnswerDraft, HandoffReason, M
 
 
 class ModelCallError(Exception):
-    """The provider could not be reached or rejected the request, after the client's retries."""
+    """The provider could not be reached or rejected the request, after the client's retries.
+
+    `retryable` says whether trying again later could work (a rate limit, an outage) or
+    not (a request the provider will always reject).
+    """
+
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 class ModelClient(Protocol):

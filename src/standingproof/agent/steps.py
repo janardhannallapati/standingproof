@@ -9,6 +9,8 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from pydantic import BaseModel
+
 from standingproof.agent.claims import unsupported_claims
 from standingproof.agent.limits import Limits
 from standingproof.agent.tools import ToolOutcome
@@ -105,3 +107,19 @@ def tool_result_block(call: ToolCall, outcome: ToolOutcome) -> dict[str, Any]:
     if outcome.is_error:
         block["is_error"] = True
     return block
+
+
+def plain_content(content: Any) -> Any:
+    """A model turn's content as plain JSON values, so it can be saved and sent back.
+
+    The SDK returns objects. What the provider accepts back is the same data as dicts, with
+    fields it did not set left out. `parsed_output` is added by the SDK on our side and is
+    not part of the wire format.
+    """
+    if isinstance(content, BaseModel):
+        data = content.model_dump(mode="json", exclude_none=True)
+        data.pop("parsed_output", None)
+        return data
+    if isinstance(content, list):
+        return [plain_content(item) for item in content]
+    return content
