@@ -102,7 +102,8 @@ jobs:
       - name: The image and the tests use one Python version
         run: grep -q "^FROM python:$(cat .python-version)-slim AS runtime" Dockerfile
       - name: Build and start
-        run: docker compose up --build --detach --wait --wait-timeout 180
+        # With the stand-ins for the model provider and GitHub that the browser tests use.
+        run: docker compose -f compose.yaml -f compose.e2e.yaml up --build --detach --wait --wait-timeout 180
       - name: Liveness and readiness
         run: |
           curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8000/healthz
@@ -119,12 +120,12 @@ jobs:
           docker compose ps --status running --services | grep -qx worker
           docker compose exec -T postgres psql -U standingproof -d standingproof -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'workflow'" | grep -qv '^0$'
-      - name: The watcher is running, and with no secret the webhook route does not exist
+      - name: The watcher is running, and a delivery with no signature is refused
         run: |
           docker compose ps --status running --services | grep -qx watcher
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \
             -H 'X-GitHub-Event: ping' -H 'X-GitHub-Delivery: ci' -d '{}' \
-            http://127.0.0.1:8000/webhooks/github)" = 404
+            http://127.0.0.1:8000/webhooks/github)" = 401
       - name: A run on an unknown questionnaire is refused, so the route is wired
         run: |
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \
@@ -134,8 +135,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      # The whole path in a real browser, against the stack above. No model key: answers
-      # that match the library exactly are enough to approve, edit and reject.
+      # The whole path in a real browser, against the stack above. No model key and no
+      # network: answers that match the library exactly are approved, edited and rejected,
+      # and one answer is drafted by a scripted model from a look at a fake GitHub, sent,
+      # and reopened when that fake's setting changes.
       - name: End to end in a browser, with an accessibility check
         working-directory: web
         env:

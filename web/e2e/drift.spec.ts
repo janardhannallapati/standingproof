@@ -1,47 +1,28 @@
-import { execFileSync } from "node:child_process";
+import { createHmac, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import AxeBuilder from "@axe-core/playwright";
 import { type APIRequestContext, type Page, expect, request, test } from "@playwright/test";
 
+// Needs the stack started with compose.e2e.yaml on top of compose.yaml: it adds a scripted
+// model and a fake GitHub, so this test takes the real path with no key and no network.
 const API = process.env.E2E_API_URL ?? "http://127.0.0.1:8000";
-const SHEET = fileURLToPath(new URL("./fixtures/three-questions.xlsx", import.meta.url));
-const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
+const FAKES = process.env.E2E_FAKES_URL ?? "http://127.0.0.1:9100";
+const SHEET = fileURLToPath(new URL("./fixtures/drift-question.xlsx", import.meta.url));
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+// The value in compose.e2e.yaml. A made-up test value.
+const WEBHOOK_SECRET = "e2e-webhook-secret";
 
-const MFA = "Browser test: is multi-factor authentication required for employees?";
-const ENCRYPTION = "Browser test: is customer data encrypted at rest?";
-const SETTING = "github.org_two_factor on e2e-org";
-const REQUIRED = "The GitHub organisation e2e-org requires two-factor sign-in for its members.";
-const NOT_REQUIRED = "The GitHub organisation e2e-org does not require two-factor sign-in for its members.";
+const QUESTION = "Drift test: do code changes need a second person's review before they are merged?";
+const REPO = "e2e-org/app";
+const SETTING = `github.branch_protection on ${REPO}`;
+const NOT_PROTECTED = `Branch main of ${REPO} is not protected.`;
 
 let api: APIRequestContext;
+let fakes: APIRequestContext;
 let runId: string;
 let questionId: string;
-
-/**
- * One statement against the stack's own database.
- *
- * An answer rests on a live check only when a model drafted it from one, and this stack has
- * no model. So the test writes the two rows a model run and a later look would have left:
- * an observation the answer cites, and a newer one that reads differently. Everything from
- * there on is the product: the watcher compares them, and the API and the screen say so.
- */
-function sql(statement: string) {
-  const project = process.env.E2E_COMPOSE_PROJECT;
-  execFileSync(
-    "docker",
-    ["compose", ...(project ? ["-p", project] : []), "exec", "-T", "postgres", "psql", "-U", "standingproof", "-d", "standingproof", "-v", "ON_ERROR_STOP=1", "-c", statement],
-    { cwd: REPO_ROOT, stdio: "pipe" },
-  );
-}
-
-function observed(facts: string, statement: string, when: string): string {
-  return `INSERT INTO evidence (tenant_id, check_name, scope, status, facts, raw_result, statement, observed_at)
-    SELECT tenant_id, 'github.org_two_factor', 'e2e-org', 'observed', '${facts}', '{}', '${statement}', ${when}
-    FROM runs WHERE id = '${runId}' RETURNING id, tenant_id`;
-}
 
 async function question() {
   return (await api.get(`/run-questions/${questionId}`)).json();
@@ -52,70 +33,94 @@ async function violations(page: Page): Promise<string[]> {
   return results.violations.map((v) => `${v.id}: ${v.help} -> ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`);
 }
 
-/** An approved answer, recorded as sent, whose live setting then reads differently. */
+/** What GitHub sends when a branch protection rule changes, signed as GitHub signs it. */
+async function deliver() {
+  const body = JSON.stringify({ action: "deleted", repository: { full_name: REPO } });
+  return api.post("/webhooks/github", {
+    headers: {
+      "content-type": "application/json",
+      "x-github-event": "branch_protection_rule",
+      "x-github-delivery": randomUUID(),
+      "x-hub-signature-256": `sha256=${createHmac("sha256", WEBHOOK_SECRET).update(body).digest("hex")}`,
+    },
+    data: body,
+  });
+}
+
+/**
+ * The whole path, with nothing written to the database by the test:
+ * the worker drafts an answer from a look at (fake) GitHub, a reviewer approves it, makes
+ * the file and records it as sent; branch protection is switched off; a signed delivery
+ * arrives; the watcher looks for itself and reopens the answer.
+ */
 test.beforeAll(async () => {
   api = await request.newContext({ baseURL: API });
-  for (const [asked, answer] of [
-    [MFA, "Yes. Multi-factor authentication is required for all employee accounts."],
-    [ENCRYPTION, "Yes. Customer data is encrypted at rest using AES-256."],
-  ]) {
-    await api.post("/library/answers", { data: { question: asked, answer, owner: "security", expires_on: "2099-01-01" } });
-  }
+  fakes = await request.newContext({ baseURL: FAKES });
+  expect((await fakes.post("/control/protection", { data: { reviews: 2 } })).status()).toBe(200);
+  expect([200, 201]).toContain((await api.post("/connections", { data: { system: "github", scope: "e2e-org" } })).status());
+
   const uploaded = await api.post("/questionnaires", {
-    multipart: { file: { name: "three-questions.xlsx", mimeType: XLSX, buffer: readFileSync(SHEET) } },
+    multipart: { file: { name: "drift-question.xlsx", mimeType: XLSX, buffer: readFileSync(SHEET) } },
   });
+  expect([200, 201]).toContain(uploaded.status());
   runId = (await (await api.post(`/questionnaires/${(await uploaded.json()).id}/runs`)).json()).id;
-  expect(runId).toMatch(/^[0-9a-f-]{36}$/);
   await expect
     .poll(async () => (await (await api.get(`/runs/${runId}`)).json()).status, { timeout: 45_000 })
     .toBe("finished");
-  const listed = (await (await api.get(`/runs/${runId}/questions`)).json()).items;
-  questionId = listed.find((q: { question: string }) => q.question === MFA)?.id;
-  // Both ids go into SQL below. They come from our own API; check their shape all the same.
-  expect(questionId).toMatch(/^[0-9a-f-]{36}$/);
+  const [listed] = (await (await api.get(`/runs/${runId}/questions`)).json()).items;
+  questionId = listed.id;
+  // The scripted model looked at branch protection and answered with what the look said.
+  const drafted = await question();
+  expect([drafted.status, drafted.path]).toEqual(["ready", "drafted"]);
+  expect(drafted.answer).toContain("needs 2 approving reviews");
+  expect(drafted.sources[0].kind).toBe("evidence");
 
-  // What a model run would have left: the answer cites a look at the live setting.
-  sql(`WITH seen AS (${observed('{"two_factor_required": true}', REQUIRED, "now() - interval '14 days'")}),
-    cited AS (UPDATE run_questions rq SET citations = jsonb_build_array('evidence:' || seen.id)
-      FROM seen WHERE rq.id = '${questionId}' RETURNING rq.id, seen.id AS evidence_id, seen.tenant_id)
-    INSERT INTO answer_evidence (run_question_id, check_name, scope, tenant_id, evidence_id)
-    SELECT id, 'github.org_two_factor', 'e2e-org', tenant_id, evidence_id FROM cited`);
-
-  expect((await api.post(`/runs/${runId}/approve-ready`, { data: { count: 2 } })).status()).toBe(200);
-  const third = listed.find((q: { status: string }) => q.status === "needs_review");
-  expect(third, "the question with no approved answer").toBeTruthy();
-  const rejected = await api.post(`/run-questions/${third.id}/decision`, {
-    data: { decision: "reject", version: third.version, comment: "Finance answers this." },
-  });
-  expect(rejected.status()).toBe(200);
+  expect((await api.post(`/runs/${runId}/approve-ready`, { data: { count: 1 } })).status()).toBe(200);
   const file = await (await api.post(`/runs/${runId}/file`, { data: {} })).json();
   const sent = await api.post(`/runs/${runId}/file/${file.id}/sent`, { data: { customer: "Acme Corp" } });
   expect(sent.status()).toBe(201);
 
-  // What a later look would have left: the setting now reads differently.
-  sql(`WITH seen AS (${observed('{"two_factor_required": false}', NOT_REQUIRED, "now()")})
-    INSERT INTO drift_queue (evidence_id, tenant_id, trigger) SELECT id, tenant_id, 'schedule' FROM seen`);
-  // The watcher service compares them on its next pass.
+  // Branch protection is switched off, and GitHub says something changed.
+  await fakes.post("/control/protection", { data: { reviews: null } });
+  expect((await deliver()).status()).toBe(202);
   await expect.poll(async () => (await question()).reopening !== null, { timeout: 30_000 }).toBe(true);
 });
 
 test.afterAll(async () => {
+  // Leave the fake as the next run of this file expects to find it.
+  await fakes.post("/control/protection", { data: { reviews: 2 } });
+  await fakes.dispose();
   await api.dispose();
+});
+
+test("a delivery that is not signed with the secret is refused", async () => {
+  const refused = await api.post("/webhooks/github", {
+    headers: {
+      "content-type": "application/json",
+      "x-github-event": "branch_protection_rule",
+      "x-github-delivery": randomUUID(),
+      "x-hub-signature-256": `sha256=${"0".repeat(64)}`,
+    },
+    data: "{}",
+  });
+  expect(refused.status()).toBe(401);
 });
 
 test("the runs list marks the run, and the Changes page leads to the question", async ({ page }) => {
   await page.goto("/runs");
-  await expect(page.getByRole("link", { name: /three-questions\.xlsx.*1 answer reopened/ })).toBeVisible();
+  // The newest run is first. On a stack these tests have run on before, an earlier run's
+  // answer rests on the same setting and is, rightly, reopened as well.
+  await expect(page.getByRole("link", { name: /drift-question\.xlsx.*1 answer reopened/ }).first()).toBeVisible();
 
   await page.getByRole("link", { name: "Changes" }).click();
   const entry = page.getByRole("listitem").filter({ hasText: SETTING }).first();
   await expect(entry).toContainText("1 answer reopened");
-  await expect(entry).toContainText(NOT_REQUIRED);
-  await expect(entry).toContainText("Two-factor sign-in required: was yes, now no");
+  await expect(entry).toContainText(NOT_PROTECTED);
+  await expect(entry).toContainText("Approving reviews needed: was 2, now 0");
   await expect(entry).toContainText("Sent to Acme Corp");
 
-  await entry.getByRole("link", { name: new RegExp(MFA.slice(14, 44)) }).click();
-  await expect(page.getByRole("heading", { level: 1, name: MFA })).toBeVisible();
+  await entry.getByRole("link", { name: /Drift test: do code changes need/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: QUESTION })).toBeVisible();
 });
 
 test("the question says what changed and who has the answer, and keeping it puts the file back", async ({ page }) => {
@@ -127,7 +132,8 @@ test("the question says what changed and who has the answer, and keeping it puts
     page.getByText("Reopened: a live setting this answer rests on has changed since it was approved."),
   ).toBeVisible();
   const table = page.getByRole("table", { name: SETTING });
-  await expect(table.getByRole("row", { name: /Two-factor sign-in required/ })).toContainText("changed: no");
+  await expect(table.getByRole("row", { name: /Approving reviews needed/ })).toContainText("changed: 0");
+  await expect(page.getByText(/GitHub reported a change/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "The answer that was sent" })).toBeVisible();
   await expect(page.getByText(/^Sent with this wording to Acme Corp on /)).toBeVisible();
   await expect(page.getByText(/the setting has changed since/)).toBeVisible();
@@ -167,7 +173,7 @@ for (const scheme of ["light", "dark"] as const) {
 test("on a phone the Changes page and its links fit the screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/changes");
-  const link = page.getByRole("link", { name: new RegExp(MFA.slice(14, 44)) }).first();
+  const link = page.getByRole("link", { name: /Drift test: do code changes need/ }).first();
   await expect(link).toBeVisible();
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);

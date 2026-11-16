@@ -13,7 +13,8 @@ live system settings, and reopens them when those settings drift.
 - Slow tests (real embedding model; a worker process killed mid-run): `uv run pytest -m slow`
 - New migration: `uv run alembic revision -m "<what changes>"`
 - Web app (`web/`): `pnpm install --frozen-lockfile`, then `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
-- Browser test against a running stack: `cd web && pnpm e2e`
+- Browser tests: start the stack with the test stand-ins,
+  `docker compose -f compose.yaml -f compose.e2e.yaml up --build --detach --wait`, then `cd web && pnpm e2e`
 - After changing a route or a response model: `uv run python scripts/export_openapi.py`, then `cd web && pnpm gen:api`
 - Ask the agent one question (calls the paid API): `uv run python -m standingproof.agent "<question>"`
 - Re-record the checker's six cases (calls the paid API): `uv run python scripts/record_checker_cases.py`
@@ -203,6 +204,10 @@ live system settings, and reopens them when those settings drift.
 - A new web dependency: check its publisher and repository, pin an exact version, and do not
   allow its install scripts. pnpm refuses a release less than a day old; do not override that.
 - `NEXT_TELEMETRY_DISABLED=1` is set in the web scripts, the image and CI. Keep it.
+- A browser test changes the product only through its API and its screen. It does not
+  write to the database. What it needs from outside (a model's reply, GitHub's state) comes
+  from `web/e2e/fakes/server.py`, which `compose.e2e.yaml` puts in place of the real thing.
+  `compose.e2e.yaml` holds made-up test values and is never used for a deployment.
 
 - The web app's forwarder (`web/src/app/api/[...path]/route.ts`) refuses a POST that the
   browser says came from another site (`Sec-Fetch-Site`, `Origin`) or that is not JSON. Any
