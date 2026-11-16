@@ -1,6 +1,7 @@
 """The worker against real Postgres and Redis, with a scripted model."""
 
 import asyncio
+import dataclasses
 import uuid
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -397,4 +398,64 @@ def test_what_a_failed_attempt_cost_is_recorded_on_the_question(wf: Db, redis_ur
     [row] = items(wf, started.run.id)
     assert (row.status, row.reason, row.steps) == ("queued", "model_unavailable", 1)
     assert row.cost_usd > 0
+    rig.close()
+
+
+# --- A reviewer sends a question back, and a worker redrafts it. ---
+
+
+def test_a_redraft_is_made_by_the_worker_with_the_reviewers_instruction_and_announced(
+    wf: Db, redis_url: str
+) -> None:
+    from standingproof.workflow import review
+
+    owner = tenant(wf)
+    approved_answer(wf, owner, "Is MFA enforced?", "Yes, for all staff.")
+    started = start(wf, owner, questionnaire(wf, owner, ["Is MFA enforced?"]))
+    seen: list[dict[str, Any]] = []
+    announced: list[uuid.UUID] = []
+
+    class Recording(CountingModel):
+        async def complete(self, **request: Any) -> ModelTurn:
+            seen.append(request)
+            return await super().complete(**request)
+
+    async def announce(run_id: uuid.UUID) -> None:
+        announced.append(run_id)
+
+    rig = Rig(wf, redis_url, Recording())
+    rig.worker._deps = dataclasses.replace(rig.worker._deps, announce=announce)
+    rig.add(started.item_ids)
+    rig.work_through_the_queue()
+    [row] = items(wf, started.run.id)
+    assert (row.path, row.review, row.cost_usd) == ("reused", "pending", 0)
+    assert seen == []
+
+    async def send_back() -> None:
+        async with wf.sessions() as session:
+            await review.decide(
+                session,
+                tenant_id=owner,
+                item_id=row.id,
+                decision="redraft",
+                version=row.version,
+                reviewer="asha",
+                comment="Say that contractors are included.",
+                max_redrafts=2,
+                max_chars=4000,
+            )
+
+    wf.run(send_back())
+    rig.add([row.id])
+    rig.work_through_the_queue()
+
+    [after] = items(wf, started.run.id)
+    # The scripted model answers "no approved source"; what matters is the path it took.
+    assert (after.status, after.review, after.redrafts) == ("needs_review", "pending", 1)
+    assert after.version > row.version
+    assert after.cost_usd > 0
+    [request] = seen
+    assert "contractors are included" in request["system_addendum"]
+    assert "contractors" not in str(request["messages"])
+    assert announced.count(started.run.id) >= 4  # taken and saved, twice
     rig.close()

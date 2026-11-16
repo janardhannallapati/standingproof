@@ -44,6 +44,15 @@ ITEM_FAILED = "failed"
 ITEM_NOT_STARTED = "not_started"
 ITEM_OPEN = (ITEM_QUEUED, ITEM_RUNNING)
 
+# What a person has concluded about a question. Separate from its status, which is what
+# the agent concluded. None: there is nothing to review (still open, failed, never started).
+REVIEW_PENDING = "pending"
+REVIEW_APPROVED = "approved"
+REVIEW_EDITED = "edited"
+REVIEW_REJECTED = "rejected"
+REVIEW_REDRAFTING = "redrafting"
+REVIEW_EXPIRED = "expired"
+
 _UUID_DEFAULT = text("gen_random_uuid()")
 _NOW = text("now()")
 _ZERO = text("0")
@@ -319,5 +328,39 @@ class RunQuestion(Base):
     enqueue_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # pending | approved | edited | rejected | redrafting | expired, or NULL.
+    review: Mapped[str | None] = mapped_column(String(16))
+    # The wording a reviewer approved. `answer` stays what the model drafted.
+    final_answer: Mapped[str | None] = mapped_column(Text)
+    # Goes up on every change a reviewer could see. A decision names the version it saw.
+    version: Mapped[int] = mapped_column(Integer, server_default=_ZERO)
+    redrafts: Mapped[int] = mapped_column(Integer, server_default=_ZERO)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Set when the workflow's saved state for this question has been deleted.
     state_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ReviewDecision(Base):
+    """One decision by a person about one question. Append-only: the record of who approved
+    which wording, and when. The latest row for a question is its current decision."""
+
+    __tablename__ = "review_decisions"
+    __table_args__ = (Index("ix_review_decisions_question", "run_question_id", "decided_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    run_question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("run_questions.id", ondelete="CASCADE")
+    )
+    # approve | edit | reject | redraft
+    decision: Mapped[str] = mapped_column(String(16))
+    # The draft the reviewer was looking at when they decided.
+    shown_answer: Mapped[str | None] = mapped_column(Text)
+    # For approve and edit: the wording that was approved.
+    final_answer: Mapped[str | None] = mapped_column(Text)
+    # For reject: why. For redraft: the instruction to the agent.
+    comment: Mapped[str | None] = mapped_column(Text)
+    # True when approved together with others, without being opened.
+    batch: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
+    decided_by: Mapped[str] = mapped_column(String(200))
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)

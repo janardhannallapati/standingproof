@@ -15,7 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.models import (
     ITEM_NOT_STARTED,
+    ITEM_OPEN,
     ITEM_QUEUED,
+    REVIEW_EXPIRED,
+    REVIEW_PENDING,
+    REVIEW_REDRAFTING,
     RUN_CANCELLED,
     RUN_FINISHED,
     RUN_RUNNING,
@@ -204,15 +208,44 @@ async def page_of_questions(
     return [(item, question) for item, question in await session.execute(statement)]
 
 
+async def expire_unreviewed(session: AsyncSession, *, keep_days: int) -> int:
+    """Close questions that have waited for a decision longer than `keep_days`.
+
+    Nothing is approved or rejected: they become `expired`, which no file is ever written
+    from, and their saved state can then be deleted like any other.
+    """
+    rows = await session.execute(
+        update(RunQuestion)
+        .where(
+            RunQuestion.review == REVIEW_PENDING,
+            RunQuestion.finished_at < NOW - timedelta(days=keep_days),
+        )
+        .values(review=REVIEW_EXPIRED, version=RunQuestion.version + 1, reviewed_at=NOW)
+        .returning(RunQuestion.id)
+    )
+    expired = len(rows.all())
+    await session.commit()
+    return expired
+
+
 async def finished_with_state(
     session: AsyncSession, *, keep_days: int, limit: int
 ) -> list[uuid.UUID]:
-    """Questions that finished more than `keep_days` ago and still have saved state."""
+    """Questions whose saved state is no longer needed and is still there.
+
+    A question waiting for a decision, or being redrafted, keeps its state however old it
+    is: a redraft continues from it. Otherwise the clock starts at the decision, or at the
+    end of the work for a question nobody can review (failed, never started).
+    """
+    settled = func.coalesce(RunQuestion.reviewed_at, RunQuestion.finished_at)
     rows = await session.execute(
         select(RunQuestion.id)
         .where(
-            RunQuestion.finished_at < NOW - timedelta(days=keep_days),
             RunQuestion.state_deleted_at.is_(None),
+            RunQuestion.status.not_in(ITEM_OPEN),
+            RunQuestion.review.is_distinct_from(REVIEW_PENDING),
+            RunQuestion.review.is_distinct_from(REVIEW_REDRAFTING),
+            settled < NOW - timedelta(days=keep_days),
         )
         .limit(limit)
     )

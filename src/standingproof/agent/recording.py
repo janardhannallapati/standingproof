@@ -18,9 +18,16 @@ class RecordingModel:
         self._turns: list[dict[str, Any]] = []
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_addendum: str | None = None,
     ) -> ModelTurn:
-        turn = await self._inner.complete(system=system, messages=messages, tools=tools)
+        turn = await self._inner.complete(
+            system=system, messages=messages, tools=tools, system_addendum=system_addendum
+        )
         record = turn.model_dump(mode="json", exclude={"assistant_content"})
         record["assistant_content"] = plain_content(turn.assistant_content)
         self._turns.append(record)
@@ -37,7 +44,12 @@ class ReplayModel:
         self.calls = 0
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_addendum: str | None = None,
     ) -> ModelTurn:
         if self.calls >= len(self._turns):
             raise AssertionError(

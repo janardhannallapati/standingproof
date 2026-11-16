@@ -86,6 +86,16 @@ class Settings(BaseSettings):
     state_keep_days: int = 7
     queue_stream: str = "standingproof:jobs"
 
+    # Review. Until sign-in exists, every decision is recorded under this name.
+    dev_reviewer: str = "dev-reviewer"
+    # How many times a reviewer may send one question back to the agent.
+    max_redrafts: int = 2
+    # Web origins whose pages may open a live connection, comma-separated. A WebSocket is
+    # not covered by CORS, so this list is the control.
+    allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    # A question nobody has decided is closed, and its saved state deleted, after this long.
+    review_keep_days: int = 30
+
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
 

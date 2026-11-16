@@ -32,8 +32,17 @@ class QuestionState(TypedDict):
     steps: int
     # Seconds spent inside model calls and tools. Time the worker was down is not counted.
     elapsed: float
-    # Set once, by the step that ends the question. None while it is still being worked on.
+    # Set by the step that ends a round of work. None while the question is being worked on.
     outcome: dict[str, Any] | None
+    # The model's last finished turn, kept so a redraft can continue the conversation.
+    last_turn: list[dict[str, Any]] | None
+    # The reviewer's words for the current redraft. Sent in the system message, never in
+    # the conversation, where the questionnaire's own text lives.
+    instruction: str | None
+    # How many times a reviewer has sent the question back.
+    redrafts: int
+    # Totals when the current round began. The per-question limits apply to one round.
+    round_start: dict[str, float]
 
 
 def initial_state(question: str) -> QuestionState:
@@ -48,6 +57,10 @@ def initial_state(question: str) -> QuestionState:
         steps=0,
         elapsed=0.0,
         outcome=None,
+        last_turn=None,
+        instruction=None,
+        redrafts=0,
+        round_start={"steps": 0, "cost_usd": 0.0, "elapsed": 0.0},
     )
 
 

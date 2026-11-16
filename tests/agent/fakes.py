@@ -13,10 +13,22 @@ class ScriptedModel:
         self.requests: list[dict[str, Any]] = []
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_addendum: str | None = None,
     ) -> ModelTurn:
         # Copy the list: the loop keeps appending to its own.
-        self.requests.append({"system": system, "messages": list(messages), "tools": tools})
+        self.requests.append(
+            {
+                "system": system,
+                "messages": list(messages),
+                "tools": tools,
+                "system_addendum": system_addendum,
+            }
+        )
         if not self._turns:
             raise AssertionError("the loop called the model more times than the test scripted")
         return self._turns.pop(0)

@@ -15,6 +15,7 @@ from standingproof.config import Settings
 from standingproof.db import build_engine, build_session_factory
 from standingproof.library.embedding import Embedder, build_embedder
 from standingproof.workflow.checkpoint import open_checkpointer
+from standingproof.workflow.events import publish_changed
 from standingproof.workflow.graph import build_graph
 from standingproof.workflow.queue import JobQueue
 from standingproof.workflow.worker import Worker, WorkerDeps
@@ -65,6 +66,7 @@ async def serve(
                     embedder=embedder,
                     backends=backends,
                     saver=saver,
+                    announce=lambda run_id: publish_changed(redis, run_id),
                 ),
             )
             log.info("worker %s started", name)

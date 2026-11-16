@@ -172,6 +172,38 @@ The work is done by the `worker` service, not by the API. Run more of them to go
 - Without `ANTHROPIC_API_KEY` the worker still reuses exact approved answers and sends every
   other question to review.
 
+## Review a run
+
+When a question has been drafted, or handed over with a reason, it waits for a person. Nothing
+is approved by the software.
+
+```sh
+curl localhost:8000/run-questions/<id>            # the draft, with the text of each source
+curl -X POST localhost:8000/run-questions/<id>/decision -H "content-type: application/json" \
+  -d '{"decision": "approve", "version": 1}'
+```
+
+| Decision | What it records |
+|---|---|
+| `approve` | The draft's exact wording becomes the final answer |
+| `edit` | Your wording (`answer`) becomes the final answer; the draft is kept beside it. A term such as "certified" that no cited source uses comes back as a warning |
+| `reject` | No final answer, with your `comment` |
+| `redraft` | Your `comment` goes to the agent as an instruction, and a new draft comes back for review. At most twice per question |
+
+- **Every decision is a record:** who, when, what they were shown and what they approved.
+  Records are only ever added.
+- **`version`** is the question's version when you read it. If someone else decided first, or a
+  redraft arrived, your decision is refused with `409` and nothing changes.
+- **`POST /runs/<id>/approve-ready`** with `{"count": n}` approves every draft that passed all
+  automatic checks. `n` must be the number you were shown. Each is recorded as approved in a
+  batch.
+- **Live updates:** `WS /runs/<id>/events` sends `{"type": "changed"}` whenever the run
+  changes. It carries no data; ask the API for the new state.
+- A question nobody decides within `SP_REVIEW_KEEP_DAYS` (default 30) is closed as `expired`.
+
+Until sign-in exists, every decision is recorded under the name in `SP_DEV_REVIEWER`, and a
+deployment with `SP_ENVIRONMENT=prod` refuses every request.
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.

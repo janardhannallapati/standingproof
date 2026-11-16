@@ -28,14 +28,25 @@ class AnthropicModel:
         self._max_tokens = max_tokens
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_addendum: str | None = None,
     ) -> ModelTurn:
+        # The breakpoint caches tools + system, which are identical on every call. Anything
+        # that differs per call (a reviewer's instruction) comes after it.
+        system_blocks: list[dict[str, Any]] = [
+            {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
+        ]
+        if system_addendum:
+            system_blocks.append({"type": "text", "text": system_addendum})
         try:
             response = await self._client.messages.parse(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                # The breakpoint caches tools + system, which are identical on every call.
-                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+                system=system_blocks,  # type: ignore[arg-type]
                 messages=messages,  # type: ignore[arg-type]
                 tools=tools,  # type: ignore[arg-type]
                 # The reply must validate against AnswerDraft. Newer models reject a forced

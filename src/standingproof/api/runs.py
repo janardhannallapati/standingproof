@@ -16,6 +16,7 @@ from redis.exceptions import RedisError
 
 from standingproof.api.deps import RedisDep, SessionDep, SettingsDep, TenantDep
 from standingproof.workflow import runs
+from standingproof.workflow.events import publish_changed
 from standingproof.workflow.queue import JobQueue
 
 log = logging.getLogger(__name__)
@@ -50,6 +51,9 @@ class RunQuestionOut(BaseModel):
     note: str | None
     steps: int
     cost_usd: Decimal
+    # What a person has decided: pending, approved, edited, rejected, redrafting, expired.
+    review: str | None
+    version: int
 
 
 class RunQuestionPage(BaseModel):
@@ -150,6 +154,8 @@ async def list_run_questions(
             note=item.note,
             steps=item.steps,
             cost_usd=item.cost_usd,
+            review=item.review,
+            version=item.version,
         )
         for item, question in rows
     ]
@@ -158,8 +164,11 @@ async def list_run_questions(
 
 
 @router.post("/runs/{run_id}/cancel", responses={404: {"description": "No such run."}})
-async def cancel_run(run_id: uuid.UUID, session: SessionDep, tenant_id: TenantDep) -> RunOut:
+async def cancel_run(
+    run_id: uuid.UUID, session: SessionDep, tenant_id: TenantDep, redis: RedisDep
+) -> RunOut:
     """Stop starting questions. Ones already in progress finish; nothing is undone."""
     if not await runs.cancel_run(session, tenant_id=tenant_id, run_id=run_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Run not found.")
+    await publish_changed(redis, run_id)
     return await _out(session, tenant_id, run_id)

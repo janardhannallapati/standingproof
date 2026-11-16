@@ -109,3 +109,20 @@ live system settings, and reopens them when those settings drift.
   created by `python -m standingproof.workflow setup`, not by a migration.
 - `LANGSMITH_TRACING=false` is set in the image. Never enable tracing to a hosted service:
   it would send customer text out.
+- Only `workflow/review.py` approves anything. A worker, a graph step or a model result never
+  sets `final_answer` or a review state other than `pending`.
+- `review_decisions` is append-only. A decision and the question's review state are written
+  in one transaction, and every change a reviewer could see raises the question's `version`.
+- `status` is what the agent concluded; `review` is what a person concluded. Do not fold one
+  into the other.
+- A reviewer's instruction goes to the model only as `system_addendum`. Never put it in a
+  message, and never put text from a questionnaire, a file or a tool result in the system
+  message.
+- At the `review` step the graph calls `interrupt()` first. On resume the step runs again from
+  its first line, so nothing may come before that call.
+- A live message says that a run changed and nothing else. Whoever receives it asks the API,
+  where the tenant check is. Do not add data to it.
+- A WebSocket route checks `Origin` against `Settings.allowed_origins` and the tenant before
+  `accept()`. Use `anyio` task groups in it, not `asyncio.create_task`.
+- Saved state of a question that is `pending` or `redrafting` is never pruned.
+
