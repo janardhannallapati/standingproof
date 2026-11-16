@@ -71,6 +71,24 @@ class Settings(BaseSettings):
     # An observation younger than this is returned again, with no new call.
     evidence_max_age_seconds: int = 900
 
+    # Drift: noticing that a setting changed after an answer rested on it.
+    # The secret GitHub signs webhook deliveries with. Unset: the route answers 404.
+    github_webhook_secret: SecretStr | None = None
+    # A delivery larger than this is refused unread. The events we act on are a few KB.
+    webhook_max_bytes: int = 1024 * 1024
+    # A setting is looked at for a webhook no more often than this, however many arrive.
+    webhook_min_gap_seconds: float = 30.0
+    # How long after a delivery before looking, so the change is visible to a read.
+    webhook_settle_seconds: float = 2.0
+    # Every setting an answer rests on is looked at again this long after it was last seen,
+    recheck_seconds: float = 24 * 60 * 60
+    # or this long after a look that could not reach the system.
+    recheck_retry_seconds: float = 60 * 60
+    # How often the watcher looks for deliveries, due settings and new observations.
+    drift_poll_seconds: float = 5.0
+    # How many of each the watcher handles in one pass.
+    drift_batch: int = 20
+
     # Running a questionnaire. A run stops starting questions once it has spent its ceiling.
     run_cost_limit_usd: float = 5.0
     # How many questions one worker works on at once (the provider's rate limit is shared).
@@ -105,7 +123,13 @@ class Settings(BaseSettings):
     # Until sign-in exists, every request acts as this one tenant.
     dev_tenant_name: str = "default"
 
-    @field_validator("anthropic_api_key", "github_token", "voyage_api_key", mode="before")
+    @field_validator(
+        "anthropic_api_key",
+        "github_token",
+        "voyage_api_key",
+        "github_webhook_secret",
+        mode="before",
+    )
     @classmethod
     def _blank_is_absent(cls, value: object) -> object:
         # Compose passes an unset variable through as "". An empty key is no key: code that
