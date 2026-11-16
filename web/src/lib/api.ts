@@ -14,6 +14,7 @@ export type DecisionBody = Schemas["DecisionIn"];
 export type Decision = DecisionBody["decision"];
 export type FilePreview = Schemas["FilePreviewOut"];
 export type FilledFile = Schemas["FilledFileOut"];
+export type SentRecord = Schemas["SentOut"];
 
 export class ApiError extends Error {
   constructor(
@@ -101,4 +102,12 @@ export function makeFile(runId: string): Promise<FilledFile> {
 /** Where the browser fetches the file from: this app's own origin. */
 export function fileUrl(runId: string, fileId: string): string {
   return `/api/runs/${runId}/file/${fileId}`;
+}
+
+/** Records that a reviewer sent this file to a customer. Safe to repeat. */
+export function recordSent(runId: string, fileId: string, customer: string): Promise<SentRecord> {
+  return call(`/runs/${runId}/file/${fileId}/sent`, {
+    method: "POST",
+    body: JSON.stringify({ customer }),
+  });
 }
