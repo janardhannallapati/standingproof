@@ -72,5 +72,5 @@ files = ["src"]
 
 # AWS's SDK ships no type information. Its replies are plain dicts, checked where they are read.
 [[tool.mypy.overrides]]
-module = ["boto3.*", "botocore.*"]
+module = ["boto3.*", "botocore.*", "defusedxml.*"]
 ignore_missing_imports = true

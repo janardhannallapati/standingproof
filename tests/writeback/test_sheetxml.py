@@ -127,3 +127,74 @@ def test_a_cell_is_found_inside_a_range() -> None:
     assert in_range("C5", "C5")
     assert not in_range("C10", "C7:C9")
     assert not in_range("B8", "C7:C9")
+
+
+# --- Found by an automated security review of the first commit. ---
+
+
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "",
+        "C",
+        "5",
+        "C0",
+        "5C",
+        "ABCD1",
+        "C12345678",
+        "C5:D6",
+        "Ç5",
+        "C5 ",
+        "C-5",
+        "XFE1",
+        "A1048577",
+    ],
+)
+def test_a_reference_that_is_not_a_cell_of_a_real_sheet_is_refused(ref: str) -> None:
+    with pytest.raises(UnsafeXmlError):
+        cell_position(ref)
+
+
+def test_the_last_cell_of_a_sheet_is_accepted() -> None:
+    assert cell_position("XFD1048576") == (16_384, 1_048_576)
+
+
+@pytest.mark.parametrize(
+    "inner",
+    [
+        b'<row r="x"/>',
+        b'<row r="0"/>',
+        b'<row r="1048577"/>',
+        b'<row r="1"><c r="ZZZZZZZZ9"/></row>',
+    ],
+)
+def test_a_row_or_cell_numbered_outside_a_sheet_is_refused(inner: bytes) -> None:
+    with pytest.raises(UnsafeXmlError):
+        scan(sheet(inner))
+
+
+def test_a_merge_or_dropdown_range_that_is_not_a_range_is_refused() -> None:
+    with pytest.raises(UnsafeXmlError):
+        scan(sheet(b"", b'<mergeCells><mergeCell ref="A1:ZZZZZZ9"/></mergeCells>'))
+    bad = b'<dataValidations><dataValidation type="list" sqref="A1 nonsense"/></dataValidations>'
+    with pytest.raises(UnsafeXmlError):
+        scan(sheet(b"", bad))
+
+
+def test_more_ranges_than_a_real_sheet_has_are_refused() -> None:
+    merges = b"".join(b'<mergeCell ref="A%d"/>' % n for n in range(1, 50_002))
+    with pytest.raises(UnsafeXmlError):
+        scan(sheet(b"", b"<mergeCells>" + merges + b"</mergeCells>"))
+
+
+def test_a_long_sheet_is_read_in_time_proportional_to_its_size() -> None:
+    import time
+
+    rows = b"".join(b'<row r="%d"><c r="A%d"/></row>' % (n, n) for n in range(1, 60_001))
+    began = time.perf_counter()
+
+    index = scan(sheet(rows))
+
+    assert len(index.rows) == 60_000
+    # Copying the file once per row (the defect) took minutes at this size.
+    assert time.perf_counter() - began < 10

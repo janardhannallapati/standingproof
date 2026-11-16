@@ -59,9 +59,12 @@ class SheetIndex:
     merged: list[str] = field(default_factory=list)
     validations: list[ListValidation] = field(default_factory=list)
     protected: bool = False
+    _by_number: dict[int, Row] = field(default_factory=dict, repr=False)
 
     def row(self, number: int) -> Row | None:
-        return next((row for row in self.rows if row.number == number), None)
+        if len(self._by_number) != len(self.rows):
+            self._by_number = {row.number: row for row in self.rows}
+        return self._by_number.get(number)
 
     def merged_range(self, ref: str) -> str | None:
         return next((area for area in self.merged if in_range(ref, area)), None)
@@ -74,16 +77,57 @@ class SheetIndex:
         return None
 
 
+# The last column (XFD) and row a sheet can have, and how many ranges we will read.
+MAX_COLUMN = 16_384
+MAX_ROW = 1_048_576
+_MAX_RANGES = 50_000
+_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_DIGITS = "0123456789"
+
+
 def cell_position(ref: str) -> tuple[int, int]:
-    """("C5") -> (3, 5). Dollar signs of an absolute reference are ignored."""
-    letters = "".join(ch for ch in ref if ch.isalpha()).upper()
-    digits = "".join(ch for ch in ref if ch.isdigit())
-    if not letters or not digits:
+    """("C5") -> (3, 5). Dollar signs of an absolute reference are allowed.
+
+    Strict, because the reference comes from an uploaded file: one to three letters, then
+    one to seven digits, inside the size of a real sheet. Anything else is refused.
+    """
+    text = ref.upper()
+    position = 1 if text.startswith("$") else 0
+    start = position
+    while position < len(text) and text[position] in _LETTERS:
+        position += 1
+    letters = text[start:position]
+    if position < len(text) and text[position] == "$":
+        position += 1
+    digits = text[position:]
+    if not 1 <= len(letters) <= 3 or not 1 <= len(digits) <= 7:
+        raise UnsafeXmlError("a cell reference is not a column and a row")
+    if any(digit not in _DIGITS for digit in digits):
         raise UnsafeXmlError("a cell reference is not a column and a row")
     column = 0
     for letter in letters:
-        column = column * 26 + (ord(letter) - ord("A") + 1)
-    return column, int(digits)
+        column = column * 26 + _LETTERS.index(letter) + 1
+    row = int(digits)
+    if column > MAX_COLUMN or not 1 <= row <= MAX_ROW:
+        raise UnsafeXmlError("a cell reference is outside the sheet")
+    return column, row
+
+
+def _row_number(text: str) -> int:
+    if not 1 <= len(text) <= 7 or any(digit not in _DIGITS for digit in text):
+        raise UnsafeXmlError("a row number is not a number")
+    number = int(text)
+    if not 1 <= number <= MAX_ROW:
+        raise UnsafeXmlError("a row number is outside the sheet")
+    return number
+
+
+def _checked_range(area: str) -> str:
+    """The range as given, after making sure both of its corners are real cells."""
+    first, _, last = area.partition(":")
+    cell_position(first)
+    cell_position(last or first)
+    return area
 
 
 def in_range(ref: str, area: str) -> bool:
@@ -131,6 +175,16 @@ class _Reader:
         self.cell: Cell | None = None
         self.validation: ListValidation | None = None
         self.formula: list[str] | None = None
+        self.ranges = 0
+
+    def ends_empty(self, tag_end: int) -> bool:
+        """True if the tag that ends at `tag_end` is self-closing. Looks at two bytes only."""
+        return self.xml[tag_end - 2 : tag_end] == b"/>"
+
+    def count_range(self) -> None:
+        self.ranges += 1
+        if self.ranges > _MAX_RANGES:
+            raise UnsafeXmlError("the sheet has more merged or dropdown ranges than we read")
 
     def refuse(self, *_: object) -> None:
         raise UnsafeXmlError("the sheet declares a doctype or an entity")
@@ -147,25 +201,30 @@ class _Reader:
         if local == "sheetData":
             self.index.data_start = position
             self.index.data_tag_end = _tag_end(self.xml, position)
-            self.index.data_self_closing = self.xml[: self.index.data_tag_end].endswith(b"/>")
+            self.index.data_self_closing = self.ends_empty(self.index.data_tag_end)
         elif local == "row" and "r" in attributes:
             tag_end = _tag_end(self.xml, position)
             self.row = Row(
-                number=int(attributes["r"]),
+                number=_row_number(attributes["r"]),
                 start=position,
                 tag_end=tag_end,
-                self_closing=self.xml[:tag_end].endswith(b"/>"),
+                self_closing=self.ends_empty(tag_end),
             )
         elif local == "c" and self.row is not None and "r" in attributes:
+            cell_position(attributes["r"])  # refused here if it is not a real cell
             self.cell = Cell(ref=attributes["r"], start=position, style=attributes.get("s"))
         elif local in ("v", "f", "is") and self.cell is not None:
             self.cell.empty = False
         elif local == "mergeCell" and "ref" in attributes:
-            self.index.merged.append(attributes["ref"])
+            self.count_range()
+            self.index.merged.append(_checked_range(attributes["ref"]))
         elif local == "sheetProtection":
             self.index.protected = attributes.get("sheet") in ("1", "true")
         elif local == "dataValidation" and attributes.get("type") == "list":
-            self.validation = ListValidation(ranges=attributes.get("sqref", "").split(), values=[])
+            ranges = [_checked_range(area) for area in attributes.get("sqref", "").split()]
+            for _ in ranges:
+                self.count_range()
+            self.validation = ListValidation(ranges=ranges, values=[])
         elif local == "formula1" and self.validation is not None:
             self.formula = []
 
@@ -190,9 +249,7 @@ class _Reader:
             self.row = None
         elif local == "c" and self.cell is not None and self.row is not None:
             # A self-closing element's end is reported at the position just past it.
-            self_closing = self.xml[self.cell.start : position].endswith(b"/>") and (
-                _tag_end(self.xml, self.cell.start) == position
-            )
+            self_closing = _tag_end(self.xml, self.cell.start) == position
             self.cell.end = self.closed(position, self_closing)
             self.row.cells.append(self.cell)
             self.cell = None
