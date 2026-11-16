@@ -129,3 +129,25 @@ def test_the_models_are_the_products_defaults_not_this_machines_environment(
     monkeypatch.setenv("SP_DRAFT_MODEL", "something-else")
 
     assert Config.current().draft_model == "claude-opus-5-5"
+
+
+def test_an_evals_settings_take_nothing_from_the_shell(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SP_EMBEDDING_MODEL", "voyage-4-lite")
+    monkeypatch.setenv("VOYAGE_API_KEY", "pa-not-a-key")
+    monkeypatch.setenv("SP_SEARCH_MAX_RESULTS", "1")
+    monkeypatch.setenv("SP_GITHUB_TOKEN", "github_pat_not_a_token")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-not-a-key")
+
+    made = fingerprint.settings(github_orgs="harborlight")
+
+    assert made.embedding_model == "BAAI/bge-small-en-v1.5"
+    assert (made.voyage_api_key, made.github_token, made.anthropic_api_key) == (None, None, None)
+    assert (made.search_max_results, made.github_orgs) == (20, "harborlight")
+
+
+def test_output_limits_and_the_embedding_model_are_parts_too() -> None:
+    parts = drafter()
+
+    assert parts["drafter.max_tokens"] == "16000"
+    assert parts["checker.max_tokens"] == "8000"
+    assert parts["world.embedding"] == "BAAI/bge-small-en-v1.5"

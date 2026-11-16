@@ -3,11 +3,17 @@
 This is the only part of the eval that can spend money. It is given its clients, so the
 tests drive it with scripted ones; `__main__` gives it real ones after a person has said yes.
 
-Three rules it keeps:
-- No case starts unless the ceiling has room for the most that case could cost.
+Rules it keeps:
+- No request is sent unless the ceiling has room for the most that one request could cost.
+  Every completed request is counted, whether or not its case ended in a recording.
 - A provider failure is not a result. The case is tried once more, then the run stops and
   is marked incomplete; an incomplete run cannot become the baseline.
 - A case already recorded from the same inputs is not paid for again.
+- The manifest says "did not finish" from the first moment, so a run that dies cannot be
+  mistaken for the run before it.
+
+What the ceiling cannot see: a request the provider billed but never answered (a timeout),
+and a second run started beside this one. Each run has its own ceiling.
 """
 
 import datetime as dt
@@ -34,6 +40,7 @@ from evals.world import build_world
 from standingproof.agent.checker import CheckerClient, run_check
 from standingproof.agent.limits import Limits
 from standingproof.agent.loop import ModelCallError, ModelClient, run_agent
+from standingproof.agent.pricing import cost_usd
 from standingproof.agent.tools import ToolOutcome, ToolRegistry
 from standingproof.agent.types import (
     AnswerDraft,
@@ -41,11 +48,37 @@ from standingproof.agent.types import (
     HandoffReason,
     ModelTurn,
     ToolCall,
+    Usage,
 )
 from standingproof.library.embedding import Embedder
 
-# The most one check could cost: its output limit, on the larger of the two check models.
+# The most one request could cost, in US dollars. Drafter: its output limit of 16,000 tokens
+# at $20 a million is $0.32, and 20,000 tokens of input, far more than any case here sends,
+# is $0.08. Checker: 8,000 tokens out at $10 a million, and the same allowance for input.
+DRAFT_CALL_AT_MOST = 0.40
 CHECK_AT_MOST = 0.10
+
+
+class _CeilingReachedError(Exception):
+    pass
+
+
+class Meter:
+    """What the run has spent, and whether one more request fits under the ceiling."""
+
+    def __init__(self, ceiling: float) -> None:
+        self.ceiling = ceiling
+        self.spent = 0.0
+
+    def room(self, at_most: float) -> bool:
+        return self.spent + at_most <= self.ceiling
+
+    def before(self, at_most: float) -> None:
+        if not self.room(at_most):
+            raise _CeilingReachedError
+
+    def add(self, model: str, usage: Usage) -> None:
+        self.spent += cost_usd(model, usage)
 
 
 @dataclass
@@ -58,22 +91,31 @@ class Clients:
 class _LastTurn:
     """Passes turns through and remembers the last one, as the model gave it."""
 
-    def __init__(self, inner: ModelClient) -> None:
+    def __init__(self, inner: ModelClient, meter: Meter) -> None:
         self._inner = inner
+        self._meter = meter
         self.last: ModelTurn | None = None
 
     async def complete(self, **request: Any) -> ModelTurn:
+        self._meter.before(DRAFT_CALL_AT_MOST)
         self.last = await self._inner.complete(**request)
+        self._meter.add(self.last.model, self.last.usage)
         return self.last
 
 
 class _LastCheck:
-    def __init__(self, inner: CheckerClient) -> None:
+    def __init__(self, inner: CheckerClient, meter: Meter) -> None:
         self._inner = inner
+        self._meter = meter
+        # Whether the checker was asked at all. The loop skips it when a case is at its limit.
+        self.asked = False
         self.turn: CheckTurn | None = None
 
     async def check(self, *, system: str, messages: list[dict[str, Any]]) -> CheckTurn:
+        self._meter.before(CHECK_AT_MOST)
+        self.asked = True
         self.turn = await self._inner.check(system=system, messages=messages)
+        self._meter.add(self.turn.model, self.turn.usage)
         return self.turn
 
 
@@ -104,11 +146,7 @@ class _Recorded:
 
 
 class _ProviderFailedError(Exception):
-    """The provider failed part-way. `spent` is what the attempt had cost by then."""
-
-    def __init__(self, spent: float = 0.0) -> None:
-        super().__init__()
-        self.spent = spent
+    """The provider could not be reached. What the attempt cost is already on the meter."""
 
 
 async def _draft(
@@ -120,10 +158,11 @@ async def _draft(
     clients: Clients,
     embedder: Embedder,
     config: Config,
+    meter: Meter,
 ) -> DrafterRun:
     world = await build_world(sessions, cases, case, embedder=embedder, variant=variant)
-    model = _LastTurn(clients.model)
-    checker = _LastCheck(clients.checker)
+    model = _LastTurn(clients.model, meter)
+    checker = _LastCheck(clients.checker, meter)
     registry = _Recorded(world.registry)
     try:
         result = await run_agent(
@@ -135,9 +174,11 @@ async def _draft(
         )
     finally:
         await world.aclose()
-    unchecked = result.check is not None and checker.turn is None
-    if result.handoff == HandoffReason.MODEL_ERROR or unchecked:
-        raise _ProviderFailedError(result.cost_usd)
+    # A check that was asked for and did not come back. One the loop skipped because the
+    # case had reached its own limit is a result, and is recorded as not checked.
+    check_failed = checker.asked and checker.turn is None
+    if result.handoff == HandoffReason.MODEL_ERROR or check_failed:
+        raise _ProviderFailedError
     return DrafterRun(
         case=case.name,
         run=number,
@@ -158,9 +199,14 @@ async def _draft(
 
 
 async def _check(
-    case: CheckerCase, number: int, variant: CheckerVariant, checker: CheckerClient, config: Config
+    case: CheckerCase,
+    number: int,
+    variant: CheckerVariant,
+    checker: CheckerClient,
+    config: Config,
+    meter: Meter,
 ) -> CheckerRun:
-    seen = _LastCheck(checker)
+    seen = _LastCheck(checker, meter)
     draft = AnswerDraft(status="answered", answer=case.answer, citations=case.citations, note="")
     try:
         result, _ = await run_check(seen, question=case.question, draft=draft, sources=case.sources)
@@ -205,6 +251,7 @@ def _units(
     embedder: Embedder,
     clients: Clients,
     config: Config,
+    meter: Meter,
 ) -> list[_Unit]:
     units: list[_Unit] = []
     drafter_plan: list[tuple[DrafterVariant, list[tuple[str, int]]]] = [
@@ -215,11 +262,20 @@ def _units(
         for name, number in pairs:
             case = drafts.by_name[name]
             start = partial(
-                _draft, sessions, drafts, case, number, drafter_variant, clients, embedder, config
+                _draft,
+                sessions,
+                drafts,
+                case,
+                number,
+                drafter_variant,
+                clients,
+                embedder,
+                config,
+                meter,
             )
             today = of_drafter_case(drafts, case, drafter_variant, config)
             units.append(
-                _Unit("drafter", drafter_variant, name, number, config.max_cost_usd, today, start)
+                _Unit("drafter", drafter_variant, name, number, DRAFT_CALL_AT_MOST, today, start)
             )
     checker_plan: list[tuple[CheckerVariant, list[tuple[str, int]], CheckerClient]] = [
         ("main", plan.checker, clients.checker),
@@ -236,7 +292,7 @@ def _units(
                     number,
                     CHECK_AT_MOST,
                     of_checker_case(labelled, checker_variant, config),
-                    partial(_check, labelled, number, checker_variant, client, config),
+                    partial(_check, labelled, number, checker_variant, client, config, meter),
                 )
             )
     return units
@@ -262,38 +318,54 @@ async def run_plan(
 ) -> Manifest:
     drafts = drafter or load_drafter()
     checks = checker or load_checker()
-    spent, recorded, reused, stopped = 0.0, 0, 0, ""
+    meter = Meter(ceiling)
+    recorded, reused = 0, 0
+    full = f"the ceiling of ${ceiling:.2f} has no room for another request"
 
-    for unit in _units(plan, drafts, checks, sessions, embedder, clients, config):
-        if unit.recorded(root):
-            reused += 1
-            continue
-        run: Run | None = None
-        for _attempt in range(2):
-            if spent + unit.at_most > ceiling:
-                stopped = f"the ceiling of ${ceiling:.2f} has no room for another case"
-                break
-            try:
-                run = await unit.start()
-                break
-            except _ProviderFailedError as failed:
-                spent += failed.spent
-        else:
-            stopped = "the model provider could not be reached; this case was not recorded"
-        if run is None:
-            break
-        spent += run.cost_usd
-        recorded += 1
-        write(run, root)
-        say(f"{path_of(run, root).relative_to(root)}  ${run.cost_usd:.4f}  total ${spent:.4f}")
+    def manifest(stopped: str) -> Manifest:
+        return Manifest(
+            complete=not stopped,
+            stopped=stopped,
+            spent_usd=meter.spent,
+            recorded=recorded,
+            reused=reused,
+            finished_at=dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
+        )
 
-    manifest = Manifest(
-        complete=not stopped,
-        stopped=stopped,
-        spent_usd=spent,
-        recorded=recorded,
-        reused=reused,
-        finished_at=dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
-    )
-    _save_manifest(manifest, root)
-    return manifest
+    stopped = "the run did not finish"
+    _save_manifest(manifest(stopped), root)
+    try:
+        stopped = ""
+        for unit in _units(plan, drafts, checks, sessions, embedder, clients, config, meter):
+            if unit.recorded(root):
+                reused += 1
+                continue
+            run: Run | None = None
+            for _attempt in range(2):
+                if not meter.room(unit.at_most):
+                    stopped = full
+                    break
+                try:
+                    run = await unit.start()
+                    break
+                except _CeilingReachedError:
+                    stopped = full
+                    break
+                except _ProviderFailedError:
+                    continue
+            else:
+                stopped = "the model provider could not be reached; this case was not recorded"
+            if run is None:
+                break
+            recorded += 1
+            write(run, root)
+            say(
+                f"{path_of(run, root).relative_to(root)}  ${run.cost_usd:.4f}  "
+                f"total ${meter.spent:.4f}"
+            )
+    except BaseException:
+        stopped = "the run did not finish"
+        raise
+    finally:
+        _save_manifest(manifest(stopped), root)
+    return manifest(stopped)

@@ -244,3 +244,23 @@ def test_no_committed_recording_holds_anything_shaped_like_a_key() -> None:
 
     for path in RECORDINGS.glob("*/*.json"):
         assert not looks_secret(path.read_text()), path.name
+
+
+@pytest.mark.parametrize("ceiling", ["nan", "inf", "0", "-1", "500"])
+def test_a_ceiling_that_is_not_a_sane_amount_is_refused(
+    repo: Repo, ceiling: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(cli, "real_run", lambda *_, **__: pytest.fail("ran with a bad ceiling"))
+
+    assert repo.run("run", "--smoke", "--ceiling", ceiling, "--approved-usd", ceiling) == 2
+    assert "ceiling must be" in repo.said
+
+
+def test_the_real_client_goes_to_the_provider_whatever_the_shell_says(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://elsewhere.example")
+
+    client = cli.provider_client("not-a-key")
+
+    assert client.base_url.host == "api.anthropic.com"

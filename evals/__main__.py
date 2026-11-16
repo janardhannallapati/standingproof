@@ -11,10 +11,12 @@ import argparse
 import asyncio
 import datetime as dt
 import json
+import math
 import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from evals.cases import SETS, load_checker, load_drafter
 from evals.fingerprint import Config, settings
@@ -24,14 +26,27 @@ from evals.result import load_result, not_whole, problems
 from evals.score import BASELINE, as_baseline, load_baseline
 from evals.transcript import RECORDINGS
 
+if TYPE_CHECKING:
+    import anthropic
+
 REPORT = Path(__file__).parent / "REPORT.md"
 CEILING, SMOKE_CEILING = 4.00, 0.75
+# No single run may be given more than this, whoever asks.
+HIGHEST_CEILING = 10.00
+PROVIDER = "https://api.anthropic.com"
 NOT_APPROVED, INCOMPLETE = 2, 3
+
+
+def provider_client(key: str) -> "anthropic.AsyncAnthropic":
+    """The real client. Its address is fixed here: the SDK would otherwise take one from
+    ANTHROPIC_BASE_URL and send the key there."""
+    import anthropic
+
+    return anthropic.AsyncAnthropic(api_key=key, base_url=PROVIDER, timeout=60.0, max_retries=2)
 
 
 def real_run(plan: Plan, *, ceiling: float, root: Path, out: Callable[[str], None]) -> int:
     """Start a throwaway Postgres, the real embedding model and the real clients, and run."""
-    import anthropic
     from alembic.config import Config as AlembicConfig
     from testcontainers.postgres import PostgresContainer
 
@@ -49,9 +64,7 @@ def real_run(plan: Plan, *, ceiling: float, root: Path, out: Callable[[str], Non
     config = Config.current()
 
     async def go(url: str) -> bool:
-        client = anthropic.AsyncAnthropic(
-            api_key=key.get_secret_value(), timeout=60.0, max_retries=2
-        )
+        client = provider_client(key.get_secret_value())
         engine = build_engine(url)
         try:
             manifest = await run_plan(
@@ -130,7 +143,12 @@ def main(
     drafter, checker = load_drafter(sets / "drafter.json"), load_checker(sets / "checker.json")
     if args.command in ("estimate", "run"):
         plan = plan_for(drafter, checker, smoke=args.smoke)
-        ceiling = args.ceiling or (SMOKE_CEILING if args.smoke else CEILING)
+        ceiling = SMOKE_CEILING if args.smoke else CEILING
+        if args.ceiling is not None:
+            ceiling = args.ceiling
+        if not (math.isfinite(ceiling) and 0 < ceiling <= HIGHEST_CEILING):
+            out(f"the ceiling must be more than $0 and at most ${HIGHEST_CEILING:.2f}")
+            return NOT_APPROVED
         _print_estimate(plan, ceiling, out)
         if args.command == "estimate":
             return 0

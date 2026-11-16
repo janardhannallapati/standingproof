@@ -9,7 +9,7 @@ import pytest
 from evals.cases import load_checker, load_drafter
 from evals.fingerprint import Config, of_drafter_case
 from evals.plan import Plan, approved, estimate, load_manifest, plan_for
-from evals.run import Clients, run_plan
+from evals.run import DRAFT_CALL_AT_MOST, Clients, run_plan
 from evals.transcript import CheckerRun, DrafterRun, read_all
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.types import AnswerDraft, CheckTurn, ModelTurn, ToolCall, Usage
@@ -184,13 +184,78 @@ def test_the_cheaper_reading_is_recorded_with_its_own_model(db: Db, tmp_path: Pa
 
 
 def test_a_run_stops_starting_cases_at_the_ceiling(db: Db, tmp_path: Path) -> None:
-    # Room for one drafter case at its worst (the per-question limit), not for two.
-    manifest, used = go(db, tmp_path, ceiling=CONFIG.max_cost_usd + 0.01)
+    # Room for every call of the first case at its worst, and for none of the second.
+    manifest, used = go(db, tmp_path, ceiling=DRAFT_CALL_AT_MOST + 0.02)
 
     assert not manifest.complete and "ceiling" in manifest.stopped
     assert used.model.calls == 2
-    assert manifest.spent_usd < CONFIG.max_cost_usd + 0.01
+    assert manifest.spent_usd <= DRAFT_CALL_AT_MOST + 0.02
     assert len(read_all(tmp_path)) == 1
+
+
+def test_the_ceiling_is_checked_before_every_call_not_only_every_case(
+    db: Db, tmp_path: Path
+) -> None:
+    class Wordy(LooksThenAnswers):
+        async def complete(self, **request: Any) -> ModelTurn:
+            turn = await super().complete(**request)
+            # 10,000 output tokens: $0.20 on the drafter's model.
+            return turn.model_copy(update={"usage": Usage(output_tokens=10_000)})
+
+    ceiling = DRAFT_CALL_AT_MOST + 0.05
+    manifest, used = go(db, tmp_path, ceiling=ceiling, model=Wordy())
+
+    # The second turn of the first case could have passed the ceiling, so it was not made.
+    assert used.model.calls == 1
+    assert manifest.spent_usd == pytest.approx(0.20) and manifest.spent_usd <= ceiling
+    assert not manifest.complete and "ceiling" in manifest.stopped
+    assert read_all(tmp_path) == []
+
+
+def test_a_run_that_dies_does_not_leave_the_last_runs_manifest_standing(
+    db: Db, tmp_path: Path
+) -> None:
+    go(db, tmp_path)
+    assert load_manifest(tmp_path).complete  # type: ignore[union-attr]
+
+    class Broken(LooksThenAnswers):
+        async def complete(self, **request: Any) -> ModelTurn:
+            raise RuntimeError("a bug, not a provider failure")
+
+    other = Plan(drafter=[("b-org-2fa-off", 1)], docs_only=[], checker=[], cheaper=[])
+    with pytest.raises(RuntimeError):
+        go(db, tmp_path, plan=other, model=Broken())
+
+    manifest = load_manifest(tmp_path)
+    assert manifest is not None and not manifest.complete and "did not finish" in manifest.stopped
+
+
+def test_a_case_that_reaches_its_own_limit_before_the_check_is_a_result(
+    db: Db, tmp_path: Path
+) -> None:
+    import dataclasses
+
+    # Two turns cost $0.024, over this limit, so the loop skips the check itself.
+    tight = dataclasses.replace(CONFIG, max_cost_usd=0.02)
+    plan = Plan(drafter=[("b-reviews-two-vs-one", 1)], docs_only=[], checker=[], cheaper=[])
+    used = clients()
+
+    manifest = db.run(
+        run_plan(
+            plan,
+            sessions=db.sessions,
+            embedder=FakeEmbedder(),
+            clients=used,
+            config=tight,
+            ceiling=4.0,
+            root=tmp_path,
+            say=lambda _line: None,
+        )
+    )
+
+    [run] = read_all(tmp_path)
+    assert manifest.complete and (used.model.calls, used.checker.calls) == (2, 0)
+    assert isinstance(run, DrafterRun) and run.check_turn is None and run.final_draft is not None
 
 
 def test_what_is_already_recorded_is_not_paid_for_again(db: Db, tmp_path: Path) -> None:

@@ -11,16 +11,19 @@ changes what the drafter reads without changing any part below.
 """
 
 import hashlib
+import inspect
 import json
 import uuid
 from dataclasses import dataclass
 from typing import Any, Literal, cast
 
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from evals.cases import CheckerCase, DrafterCase, DrafterSet
 from standingproof.agent import prompts
 from standingproof.agent.checker import check_messages
+from standingproof.agent.model import AnthropicChecker, AnthropicModel
 from standingproof.agent.tools import ToolRegistry
 from standingproof.agent.types import AnswerDraft, CheckVerdict
 from standingproof.checks.service import CheckBackends
@@ -33,9 +36,30 @@ DrafterVariant = Literal["full", "docs_only"]
 CheckerVariant = Literal["main", "cheaper"]
 
 
+class _Isolated(Settings):
+    """The product's settings, read from nowhere: no .env file and no environment variable."""
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings,)
+
+
 def settings(**values: Any) -> Settings:
-    """The product's settings with no .env file read: an eval takes nothing from a deployment."""
-    return Settings(_env_file=None, **values)  # type: ignore[call-arg]
+    """Defaults plus what is passed. An eval takes nothing from a shell or a deployment: a
+    key, a hosted embedding model or a search limit set there would change what is measured,
+    or spend money this run does not count."""
+    return _Isolated(**values)
+
+
+def _max_tokens(client: type) -> str:
+    return str(inspect.signature(client).parameters["max_tokens"].default)
 
 
 def _default(field: str) -> Any:
@@ -93,6 +117,7 @@ def _checker_parts(config: Config, variant: CheckerVariant) -> dict[str, str]:
         "checker.request": _sha(check_messages("Q?", sample, {"S-1": ["T."], "S-2": ["U."]})),
         "checker.model": config.check_model if variant == "main" else config.cheaper_check_model,
         "checker.effort": config.check_effort,
+        "checker.max_tokens": _max_tokens(AnthropicChecker),
     }
 
 
@@ -111,6 +136,9 @@ def of_drafter_case(
         "drafter.model": config.draft_model,
         "drafter.effort": config.draft_effort,
         "drafter.limits": f"{config.max_steps}/{config.max_cost_usd}/{config.max_seconds}",
+        "drafter.max_tokens": _max_tokens(AnthropicModel),
+        # The model that decides what a search returns to the drafter.
+        "world.embedding": _default("embedding_model"),
         **_checker_parts(config, "main"),
         "case": _sha(world),
     }
