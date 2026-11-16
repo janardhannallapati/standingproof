@@ -114,8 +114,8 @@ class AnthropicModel:
 class AnthropicChecker:
     """The Anthropic implementation of CheckerClient.
 
-    The request has no `tools` and nothing is cached: each check is one short request that
-    shares no prefix long enough to be worth a cache entry.
+    The request has no `tools`. Nothing is cached: no cache breakpoint is set, and whether
+    one would pay for a request this short has not been measured.
     """
 
     def __init__(
