@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 // browser keeps it fresh.
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;
+  // A link from the Changes page names the question to open.
+  const { question } = await props.searchParams;
   let run, questions, filename;
   try {
     [run, questions] = await Promise.all([getRun(id), getRunQuestions(id)]);
@@ -26,6 +28,7 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
       questions={questions}
       filename={filename}
       eventsUrl={`${publicApi}/runs/${id}/events`}
+      initialQuestionId={typeof question === "string" ? question : null}
     />
   );
 }

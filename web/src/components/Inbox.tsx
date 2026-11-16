@@ -31,6 +31,8 @@ type Props = {
   // Where the browser opens the live connection. A public address, never a secret.
   eventsUrl: string | null;
   maxRedrafts?: number;
+  // The question to open first, when a link named one. Otherwise the first in the list.
+  initialQuestionId?: string | null;
 };
 
 const POLL_MS = 5000;
@@ -45,7 +47,14 @@ function typing(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-export function Inbox({ run: firstRun, questions: firstQuestions, filename, eventsUrl, maxRedrafts = 2 }: Props) {
+export function Inbox({
+  run: firstRun,
+  questions: firstQuestions,
+  filename,
+  eventsUrl,
+  maxRedrafts = 2,
+  initialQuestionId = null,
+}: Props) {
   const client = useQueryClient();
   const runId = firstRun.id;
   const refresh = useCallback(() => {
@@ -69,9 +78,11 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
   }).data;
 
   const ordered = useMemo(() => inListOrder(questions), [questions]);
-  const [selectedId, setSelectedId] = useState<string | null>(ordered[0]?.id ?? null);
+  const linked = ordered.find((q) => q.id === initialQuestionId)?.id ?? null;
+  const [selectedId, setSelectedId] = useState<string | null>(linked ?? ordered[0]?.id ?? null);
   // On a phone the list and the question are two screens; this says which is showing.
-  const [showDetail, setShowDetail] = useState(false);
+  // A link to one question opens that question.
+  const [showDetail, setShowDetail] = useState(linked !== null);
   const [mode, setMode] = useState<Mode>("view");
   const [notice, setNotice] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -165,8 +176,11 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
       if (key === "k") return step(-1);
       if (!current || current.review !== "pending" || mode !== "view" || decision.isPending) return;
       const hasDraft = Boolean(current.answer?.trim());
-      if (key === "a" && hasDraft) onDecide("approve");
-      else if (key === "e") setMode("edit");
+      if (key === "a") {
+        // Not on a reopened question: there the choice is to keep, and that takes a click.
+        if (!hasDraft || current.reopening) return;
+        onDecide("approve");
+      } else if (key === "e") setMode("edit");
       else if (key === "r") setMode("reject");
       else if (key === "d" && current.redrafts < maxRedrafts) setMode("redraft");
       else return;

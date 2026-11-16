@@ -1,13 +1,14 @@
 "use client";
 
 import type { Decision, ReviewQuestion } from "@/lib/api";
-import { checkLine, chipFor, fineMoney, groupOf, reasonText } from "@/lib/labels";
+import { checkLine, chipFor, fineMoney, groupOf, reasonText, sentList } from "@/lib/labels";
 
 import { CheckFindings } from "./CheckFindings";
 import { DecisionBar, type Mode } from "./DecisionBar";
 import { MarkedAnswer } from "./MarkedAnswer";
 import { SourceCard } from "./SourceCard";
 import { StatusChip } from "./StatusChip";
+import { WhatChanged } from "./WhatChanged";
 
 type Props = {
   question: ReviewQuestion;
@@ -21,6 +22,14 @@ type Props = {
 };
 
 function why(question: ReviewQuestion): { fine: boolean; text: string } {
+  if (question.reopening) {
+    // Says that the setting changed, never that the answer is wrong: a person judges that.
+    const since = question.reopening.was_review ? "approved" : "drafted";
+    return {
+      fine: false,
+      text: `Reopened: a live setting this answer rests on has changed since it was ${since}.`,
+    };
+  }
   const group = groupOf(question);
   const checked = checkLine(question.check);
   // What the agent concluded, not what a person then decided: a draft the checker disputed
@@ -56,6 +65,17 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
   const working = groupOf(question) === "working";
   const shown = question.final_answer ?? question.answer;
   const check = question.check ?? null;
+  const reopening = question.reopening ?? null;
+  const sent = reopening?.sent_to ?? [];
+  // The settings that changed, as the sources name them ("check on scope").
+  const changed = new Set((reopening?.settings ?? []).map((s) => `${s.check_name} on ${s.scope}`));
+  const answerTitle = !question.final_answer
+    ? "Proposed answer"
+    : !reopening
+      ? "Approved answer"
+      : sent.length > 0
+        ? "The answer that was sent"
+        : "The approved answer";
   // Findings point at words of the wording that was checked, and at no other wording.
   const disputed = check?.outcome === "disagrees" && check.on_current_answer ? check.findings : [];
   return (
@@ -77,11 +97,11 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
         </p>
       ) : null}
 
+      {reopening ? <WhatChanged reopening={reopening} /> : null}
+
       {mode !== "edit" ? (
         <div className="grid gap-1.5">
-          <h2 className="text-[12.5px] font-semibold text-muted">
-            {question.final_answer ? "Approved answer" : "Proposed answer"}
-          </h2>
+          <h2 className="text-[12.5px] font-semibold text-muted">{answerTitle}</h2>
           <p
             className={`min-h-16 rounded-md border border-line bg-surface px-3.5 py-3 text-[15px] leading-normal whitespace-pre-wrap ${
               shown ? "" : "text-muted"
@@ -95,6 +115,9 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
           </p>
           {question.final_answer && question.answer && question.final_answer !== question.answer ? (
             <p className="text-[12.5px] text-muted">The agent&apos;s draft was: {question.answer}</p>
+          ) : null}
+          {sent.length > 0 ? (
+            <p className="text-[12.5px] text-muted">Sent with this wording {sentList(sent)}.</p>
           ) : null}
         </div>
       ) : null}
@@ -123,7 +146,12 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
           </p>
         ) : (
           question.sources.map((source) => (
-            <SourceCard key={source.id} source={source} answer={shown} />
+            <SourceCard
+              key={source.id}
+              source={source}
+              answer={shown}
+              changedSince={source.kind === "evidence" && changed.has(source.label ?? "")}
+            />
           ))
         )}
       </div>
