@@ -136,6 +136,11 @@ class Db:
         self.loop = asyncio.new_event_loop()
         self._engine = build_engine(database_url)
         self.sessions: async_sessionmaker[AsyncSession] = build_session_factory(self._engine)
+        self._closers: list[Callable[[], Coroutine[Any, Any, object]]] = []
+
+    def closing(self, closer: Callable[[], Coroutine[Any, Any, object]]) -> None:
+        """Have something closed on this loop when the test ends, passed or failed."""
+        self._closers.append(closer)
 
     def run[T](self, awaitable: Coroutine[Any, Any, T]) -> T:
         return self.loop.run_until_complete(awaitable)
@@ -152,6 +157,8 @@ class Db:
         return build_library_registry(self.sessions, self.tenant(name), embedder or FakeEmbedder())
 
     def close(self) -> None:
+        for closer in self._closers:
+            self.run(closer())
         self.run(self._engine.dispose())
         self.loop.close()
 
