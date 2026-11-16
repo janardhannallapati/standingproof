@@ -1,5 +1,6 @@
 """The checker's call to the provider, against a stand-in for the SDK client. No network."""
 
+import asyncio
 from types import SimpleNamespace
 from typing import Any
 
@@ -128,3 +129,35 @@ async def test_a_connection_failure_can_be_retried() -> None:
         await ask(Messages(error=anthropic.APIConnectionError(request=REQUEST)))
 
     assert caught.value.retryable is True
+
+
+class HeldMessages(Messages):
+    """A stand-in whose calls stay in progress until let go."""
+
+    def __init__(self) -> None:
+        super().__init__(reply())
+        self.running = 0
+        self.let_go = asyncio.Event()
+
+    async def parse(self, **kwargs: Any) -> Any:
+        self.running += 1
+        try:
+            await self.let_go.wait()
+            return await super().parse(**kwargs)
+        finally:
+            self.running -= 1
+
+
+async def test_checks_that_start_together_do_not_all_write_the_cache() -> None:
+    messages = HeldMessages()
+    one = checker(messages)
+    request = {"system": "instructions", "messages": [{"role": "user", "content": "x"}]}
+
+    tasks = [asyncio.create_task(one.check(**request)) for _ in range(3)]
+    for _ in range(50):
+        await asyncio.sleep(0)
+
+    assert messages.running == 1  # the other two wait for the first to write the cache
+    messages.let_go.set()
+    await asyncio.gather(*tasks)
+    assert len(messages.calls) == 3
