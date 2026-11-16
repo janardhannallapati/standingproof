@@ -1,0 +1,18 @@
+{
+  "turns": [
+    {
+      "stop_reason": "end_turn",
+      "verdict": {
+        "verdict": "supported",
+        "findings": []
+      },
+      "usage": {
+        "input_tokens": 1322,
+        "output_tokens": 18,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "model": "claude-sonnet-5-5"
+    }
+  ]
+}

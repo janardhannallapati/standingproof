@@ -1,0 +1,31 @@
+{
+  "turns": [
+    {
+      "stop_reason": "end_turn",
+      "verdict": {
+        "verdict": "not_supported",
+        "findings": [
+          {
+            "kind": "contradicted",
+            "quote": "Yes.",
+            "source_id": "EV-0001",
+            "explanation": "The observed setting in EV-0001 shows the default branch 'main' in demo-app has no branch protection rule, which conflicts with the claim that protection is enforced."
+          },
+          {
+            "kind": "contradicted",
+            "quote": "require a pull request with at least one approving review",
+            "source_id": "EV-0001",
+            "explanation": "The observed state shows no branch protection rule on 'main', so the policy statement in POL-SDLC-02 is not enforced and the observed setting outweighs it."
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1325,
+        "output_tokens": 207,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "model": "claude-sonnet-5-5"
+    }
+  ]
+}
