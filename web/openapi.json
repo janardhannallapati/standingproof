@@ -397,6 +397,63 @@
         "title": "DraftCheckOut",
         "type": "object"
       },
+      "EmptyCellOut": {
+        "properties": {
+          "cell": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cell"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "sheet": {
+            "title": "Sheet",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "sheet",
+          "cell",
+          "question",
+          "reason",
+          "detail",
+          "comment"
+        ],
+        "title": "EmptyCellOut",
+        "type": "object"
+      },
       "EvidenceOut": {
         "properties": {
           "check_name": {
@@ -494,6 +551,104 @@
           "next_before"
         ],
         "title": "EvidencePage",
+        "type": "object"
+      },
+      "FilePreviewOut": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilledFileOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "left_empty": {
+            "items": {
+              "$ref": "#/components/schemas/EmptyCellOut"
+            },
+            "title": "Left Empty",
+            "type": "array"
+          },
+          "protected_sheets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Protected Sheets",
+            "type": "array"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "undecided": {
+            "title": "Undecided",
+            "type": "integer"
+          },
+          "written": {
+            "items": {
+              "$ref": "#/components/schemas/WrittenCellOut"
+            },
+            "title": "Written",
+            "type": "array"
+          }
+        },
+        "required": [
+          "filename",
+          "ready",
+          "undecided",
+          "written",
+          "left_empty",
+          "protected_sheets",
+          "latest"
+        ],
+        "title": "FilePreviewOut",
+        "type": "object"
+      },
+      "FilledFileOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "sha256",
+          "size_bytes",
+          "created_at",
+          "created_by",
+          "current"
+        ],
+        "title": "FilledFileOut",
         "type": "object"
       },
       "FindingOut": {
@@ -1571,6 +1726,44 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WrittenCellOut": {
+        "properties": {
+          "cell": {
+            "title": "Cell",
+            "type": "string"
+          },
+          "how": {
+            "title": "How",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "sheet": {
+            "title": "Sheet",
+            "type": "string"
+          },
+          "wording": {
+            "title": "Wording",
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "sheet",
+          "cell",
+          "question",
+          "wording",
+          "how"
+        ],
+        "title": "WrittenCellOut",
         "type": "object"
       }
     }
@@ -2723,6 +2916,152 @@
         "summary": "Cancel Run",
         "tags": [
           "runs"
+        ]
+      }
+    },
+    "/runs/{run_id}/file": {
+      "post": {
+        "description": "Write the approved answers into the uploaded workbook, once.\n\nSafe to repeat: the same decisions always give the same file, and a second request\n(after a timeout, a double click, a crash) returns the first result with 200.",
+        "operationId": "make_file_runs__run_id__file_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "This file was already made for these decisions."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilledFileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such run."
+          },
+          "409": {
+            "description": "A question is undecided, or its wording changed after its decision."
+          },
+          "422": {
+            "description": "The workbook could not be written to safely. Nothing was made."
+          }
+        },
+        "summary": "Make File",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/runs/{run_id}/file/preview": {
+      "get": {
+        "description": "Which cells a file made now would fill, and which it would leave empty and why.\n\nStores nothing. Text here comes from the questionnaire and from reviewers: show it as\ntext.",
+        "operationId": "preview_file_runs__run_id__file_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilePreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such run."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview File",
+        "tags": [
+          "files"
+        ]
+      }
+    },
+    "/runs/{run_id}/file/{file_id}": {
+      "get": {
+        "description": "The filled workbook's bytes.",
+        "operationId": "download_file_runs__run_id__file__file_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "No such file."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download File",
+        "tags": [
+          "files"
         ]
       }
     },

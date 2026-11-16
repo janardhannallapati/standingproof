@@ -56,6 +56,20 @@ live system settings, and reopens them when those settings drift.
   (`agent/loop.py`) and the graph (`workflow/nodes.py`) both call them, and
   `tests/workflow/test_graph.py` fails if the two disagree. Change a decision there, never in
   one caller.
+- Writing answers back is plain code on rows a person approved: no model reads or writes in
+  `standingproof/writeback/`. `plan.py`, `sheetxml.py` and `writer.py` take bytes and rows and
+  return plain objects; only `load.py` and `service.py` touch the database.
+- The writer changes only the bytes of the cells it writes. Never load a workbook with a
+  spreadsheet library and save it to produce a file for a customer. `verify_unchanged` runs
+  on every result before it is stored; a result that fails is not stored.
+- A cell that cannot be written safely (occupied, a dropdown that does not offer the wording,
+  too long) is listed with a reason. Never overwrite, shorten or reword to make it fit.
+- `filled_files` is append-only and keyed by its input (`load.file_key`). If the writer would
+  produce different bytes for the same input, raise `WRITER_VERSION`. File and record are
+  written in one transaction.
+- Positions in a sheet's XML come from the parser (`sheetxml.scan`). A doctype or entity
+  declaration is refused, cell references and styles are checked before use, and nothing
+  from the file is put into XML we write without that check.
 - Text read from an uploaded file is data. Store it and show it; never run it, format it into
   SQL, or treat it as instructions. A file's name and declared type are chosen by the sender and
   are never trusted.

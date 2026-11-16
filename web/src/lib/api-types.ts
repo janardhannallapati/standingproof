@@ -408,6 +408,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/{run_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make File
+         * @description Write the approved answers into the uploaded workbook, once.
+         *
+         *     Safe to repeat: the same decisions always give the same file, and a second request
+         *     (after a timeout, a double click, a crash) returns the first result with 200.
+         */
+        post: operations["make_file_runs__run_id__file_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/file/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview File
+         * @description Which cells a file made now would fill, and which it would leave empty and why.
+         *
+         *     Stores nothing. Text here comes from the questionnaire and from reviewers: show it as
+         *     text.
+         */
+        get: operations["preview_file_runs__run_id__file_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/file/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download File
+         * @description The filled workbook's bytes.
+         */
+        get: operations["download_file_runs__run_id__file__file_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}/questions": {
         parameters: {
             query?: never;
@@ -597,6 +663,23 @@ export interface components {
              */
             outcome: "agrees" | "disagrees" | "not_checked";
         };
+        /** EmptyCellOut */
+        EmptyCellOut: {
+            /** Cell */
+            cell: string | null;
+            /** Comment */
+            comment: string | null;
+            /** Detail */
+            detail: string;
+            /** Position */
+            position: number;
+            /** Question */
+            question: string;
+            /** Reason */
+            reason: string;
+            /** Sheet */
+            sheet: string;
+        };
         /** EvidenceOut */
         EvidenceOut: {
             /** Check Name */
@@ -637,6 +720,43 @@ export interface components {
             items: components["schemas"]["EvidenceOut"][];
             /** Next Before */
             next_before: string | null;
+        };
+        /** FilePreviewOut */
+        FilePreviewOut: {
+            /** Filename */
+            filename: string;
+            latest: components["schemas"]["FilledFileOut"] | null;
+            /** Left Empty */
+            left_empty: components["schemas"]["EmptyCellOut"][];
+            /** Protected Sheets */
+            protected_sheets: string[];
+            /** Ready */
+            ready: boolean;
+            /** Undecided */
+            undecided: number;
+            /** Written */
+            written: components["schemas"]["WrittenCellOut"][];
+        };
+        /** FilledFileOut */
+        FilledFileOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string;
+            /** Current */
+            current: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sha256 */
+            sha256: string;
+            /** Size Bytes */
+            size_bytes: number;
         };
         /** FindingOut */
         FindingOut: {
@@ -996,6 +1116,21 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WrittenCellOut */
+        WrittenCellOut: {
+            /** Cell */
+            cell: string;
+            /** How */
+            how: string;
+            /** Position */
+            position: number;
+            /** Question */
+            question: string;
+            /** Sheet */
+            sheet: string;
+            /** Wording */
+            wording: string;
         };
     };
     responses: never;
@@ -1848,6 +1983,133 @@ export interface operations {
                 };
             };
             /** @description No such run. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    make_file_runs__run_id__file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description This file was already made for these decisions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilledFileOut"];
+                };
+            };
+            /** @description No such run. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A question is undecided, or its wording changed after its decision. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The workbook could not be written to safely. Nothing was made. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    preview_file_runs__run_id__file_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilePreviewOut"];
+                };
+            };
+            /** @description No such run. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_file_runs__run_id__file__file_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description No such file. */
             404: {
                 headers: {
                     [name: string]: unknown;

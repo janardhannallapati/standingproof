@@ -255,6 +255,38 @@ API, whose address the browser never sees. Develop it with `cd web && pnpm insta
 Until sign-in exists, every decision is recorded under the name in `SP_DEV_REVIEWER`, and a
 deployment with `SP_ENVIRONMENT=prod` refuses every request.
 
+## Get the filled file back
+
+When every question of a run has a decision, the approved answers can be written into the
+spreadsheet that was uploaded.
+
+```sh
+curl localhost:8000/runs/<run-id>/file/preview            # what would change
+curl -X POST localhost:8000/runs/<run-id>/file            # make it: 201, or 200 if it exists
+curl -OJ localhost:8000/runs/<run-id>/file/<file-id>      # download
+```
+
+- **Only the answer cells change.** Every file inside the workbook is copied as it is, and
+  in a sheet only the bytes of the written cells are replaced or added. After writing, the
+  result is compared with the upload; a result that differs anywhere else is not stored and
+  the request answers 422.
+- **Made once.** The same decisions always give the same file. Asking again, at the same
+  moment or after a failure, returns the first one. A changed decision gives a new file and
+  the earlier one is kept.
+- **Not made early.** 409 while any question is undecided, or if a question's approved
+  wording is not the wording its decision recorded.
+- **Left empty, and listed with the reason:** a rejected, expired or unanswered question; a
+  question with no answer column; a cell that already has content; a dropdown cell, unless
+  the approved wording is exactly one of its values; wording longer than a cell holds
+  (32,767 characters) or with characters a workbook cannot carry.
+- **A merged answer cell** gets the wording in the range's first cell.
+- Answers are written as text. Wording that begins with `=` stays text and is never a
+  formula.
+
+Limits: `.xlsx` only. The tests read every result back with a spreadsheet library and
+compare it with the upload; no test opens the result in Excel. A second column for comments
+beside a Yes/No dropdown is not supported yet.
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.
