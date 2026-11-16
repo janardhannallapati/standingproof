@@ -10,7 +10,7 @@ import anthropic
 from standingproof.agent.library import LIBRARY, build_registry
 from standingproof.agent.limits import Limits
 from standingproof.agent.loop import ModelClient, run_agent
-from standingproof.agent.model import AnthropicModel
+from standingproof.agent.model import AnthropicChecker, AnthropicModel
 from standingproof.agent.recording import RecordingModel
 from standingproof.config import get_settings
 
@@ -39,6 +39,11 @@ async def _main(question: str, record_to: Path | None) -> int:
             max_cost_usd=settings.run_max_cost_usd,
             max_seconds=settings.run_max_seconds,
         ),
+        checker=(
+            AnthropicChecker(client, model=settings.check_model, effort=settings.check_effort)
+            if settings.check_enabled
+            else None
+        ),
     )
 
     if result.draft is not None:
@@ -48,6 +53,10 @@ async def _main(question: str, record_to: Path | None) -> int:
         print(f"note:      {result.draft.note or '-'}")
     else:
         print(f"handed to a person: {result.handoff}")
+    if result.check is not None:
+        print(f"checker:   {result.check.outcome}")
+        for found in result.check.findings:
+            print(f"  {found.kind}: {found.quote!r} - {found.explanation}")
     usage = result.usage
     print(
         f"steps: {result.steps}  cost: ${result.cost_usd:.4f}  "

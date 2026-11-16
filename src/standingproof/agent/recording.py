@@ -4,9 +4,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from standingproof.agent.checker import CheckerClient
 from standingproof.agent.loop import ModelClient
 from standingproof.agent.steps import plain_content
-from standingproof.agent.types import ModelTurn
+from standingproof.agent.types import CheckTurn, ModelTurn
 
 
 class RecordingModel:
@@ -54,6 +55,39 @@ class ReplayModel:
         if self.calls >= len(self._turns):
             raise AssertionError(
                 "the loop asked for more turns than were recorded; re-record this cassette"
+            )
+        turn = self._turns[self.calls]
+        self.calls += 1
+        return turn
+
+
+class RecordingChecker:
+    """Wraps a real checker and writes every reply to a file."""
+
+    def __init__(self, inner: CheckerClient, path: Path) -> None:
+        self._inner = inner
+        self._path = path
+        self._turns: list[dict[str, Any]] = []
+
+    async def check(self, *, system: str, messages: list[dict[str, Any]]) -> CheckTurn:
+        turn = await self._inner.check(system=system, messages=messages)
+        self._turns.append(turn.model_dump(mode="json"))
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._path.write_text(json.dumps({"turns": self._turns}, indent=2) + "\n")
+        return turn
+
+
+class ReplayChecker:
+    """Returns recorded checker replies in order. Never touches the network."""
+
+    def __init__(self, path: Path) -> None:
+        self._turns = [CheckTurn.model_validate(t) for t in json.loads(path.read_text())["turns"]]
+        self.calls = 0
+
+    async def check(self, *, system: str, messages: list[dict[str, Any]]) -> CheckTurn:
+        if self.calls >= len(self._turns):
+            raise AssertionError(
+                "the checker was asked more times than were recorded; re-record this cassette"
             )
         turn = self._turns[self.calls]
         self.calls += 1

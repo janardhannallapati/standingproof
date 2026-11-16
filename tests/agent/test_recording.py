@@ -1,8 +1,21 @@
 from pathlib import Path
 
-from standingproof.agent.recording import RecordingModel, ReplayModel
+from standingproof.agent.recording import (
+    RecordingChecker,
+    RecordingModel,
+    ReplayChecker,
+    ReplayModel,
+)
 from standingproof.agent.types import AnswerDraft
-from tests.agent.fakes import ScriptedModel, finishes, search, wants_tools
+from tests.agent.fakes import (
+    ScriptedChecker,
+    ScriptedModel,
+    checker_says,
+    disputes,
+    finishes,
+    search,
+    wants_tools,
+)
 
 
 async def test_recorded_turns_replay_identically(tmp_path: Path) -> None:
@@ -22,3 +35,17 @@ async def test_recorded_turns_replay_identically(tmp_path: Path) -> None:
     assert replayed_first.usage == first.usage
     assert replayed_second.draft == second.draft
     assert replay.calls == 2
+
+
+async def test_recorded_checker_replies_replay_identically(tmp_path: Path) -> None:
+    cassette = tmp_path / "check.json"
+    recorder = RecordingChecker(
+        ScriptedChecker([checker_says("not_supported", disputes("and contractors"))]), cassette
+    )
+    recorded = await recorder.check(system="s", messages=[])
+
+    replay = ReplayChecker(cassette)
+    replayed = await replay.check(system="s", messages=[])
+
+    assert replayed == recorded
+    assert replay.calls == 1
