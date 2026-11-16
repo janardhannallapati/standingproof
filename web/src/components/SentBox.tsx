@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 
 import { ApiError, type SentRecord, recordSent } from "@/lib/api";
 
@@ -26,6 +26,9 @@ export function SentBox({ runId, fileId, records: first }: Props) {
   const [customer, setCustomer] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // Read out when a record is made: the new line in the list is otherwise silent.
+  const [said, setSaid] = useState("");
+  const input = useRef<HTMLInputElement>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -33,6 +36,9 @@ export function SentBox({ runId, fileId, records: first }: Props) {
     const name = customer.trim();
     if (!name) {
       setProblem("Say who the file was sent to.");
+      setSaid("");
+      // Back to the field that is the problem, not left on the button.
+      input.current?.focus();
       return;
     }
     setBusy(true);
@@ -42,6 +48,7 @@ export function SentBox({ runId, fileId, records: first }: Props) {
       // Recording the same customer twice returns the first record: show it once.
       setRecords((had) => (had.some((each) => each.id === record.id) ? had : [...had, record]));
       setCustomer("");
+      setSaid(`Recorded as sent to ${record.customer}.`);
     } catch (error) {
       setProblem(error instanceof ApiError ? error.message : "That was not recorded. Try again.");
     } finally {
@@ -75,6 +82,9 @@ export function SentBox({ runId, fileId, records: first }: Props) {
           </label>
           <input
             id={field}
+            ref={input}
+            aria-invalid={problem ? true : undefined}
+            aria-describedby={problem ? `${field}-problem` : undefined}
             value={customer}
             onChange={(event) => setCustomer(event.target.value)}
             maxLength={200}
@@ -87,10 +97,17 @@ export function SentBox({ runId, fileId, records: first }: Props) {
         </Button>
       </form>
       {problem ? (
-        <p role="alert" className="rounded-md bg-review-bg px-3 py-2.5 font-medium text-review">
+        <p
+          id={`${field}-problem`}
+          role="alert"
+          className="rounded-md bg-review-bg px-3 py-2.5 font-medium text-review"
+        >
           {problem}
         </p>
       ) : null}
+      <p role="status" className="sr-only">
+        {said}
+      </p>
       <p className="text-[12.5px] text-muted">
         Do this after you have sent the file. It records that you said so, with the wording of
         each answer as it went out.

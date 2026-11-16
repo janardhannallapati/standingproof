@@ -139,7 +139,8 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
         </p>
       ) : null}
 
-      {fileId ? <SentBox runId={runId} fileId={fileId} records={preview.sent} /> : null}
+      {/* Keyed by the file: another file starts with its own records. */}
+      {fileId ? <SentBox key={fileId} runId={runId} fileId={fileId} records={preview.sent} /> : null}
 
       <div className="grid gap-1.5">
         <h2 id="written" className="text-[12.5px] font-semibold text-muted">

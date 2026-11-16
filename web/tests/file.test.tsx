@@ -220,6 +220,8 @@ describe("recording a file as sent", () => {
     const item = await screen.findByText(/to Acme Corp on 16 Nov 2026 by asha · 2 answers/);
     expect(item.closest("li")).toHaveTextContent("Sent");
     expect(screen.getByLabelText("Sent to")).toHaveValue("");
+    // Said aloud for someone who cannot see the new line appear.
+    expect(screen.getByRole("status")).toHaveTextContent("Recorded as sent to Acme Corp.");
   });
 
   it("does not send an empty name", async () => {
@@ -231,6 +233,11 @@ describe("recording a file as sent", () => {
 
     expect(fetched).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent("Say who the file was sent to.");
+    // The field is marked as the problem, described by the message, and has the focus.
+    const field = screen.getByLabelText("Sent to");
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(field).toHaveAccessibleDescription("Say who the file was sent to.");
+    expect(field).toHaveFocus();
   });
 
   it("lists earlier records, and says when one was for an older file", () => {
