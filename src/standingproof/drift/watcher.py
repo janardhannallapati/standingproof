@@ -87,6 +87,8 @@ class Watcher:
                 by_setting.setdefault(setting, []).append(delivery)
             for setting, group in by_setting.items():
                 outcome = "looked"
+                # Up to when waiting deliveries count as dealt with by this decision.
+                upto = now
                 if not await is_watched(session, setting):
                     # No answer rests on it, so there is nothing a look could reopen. A
                     # sender who names repository after repository gets no look for any.
@@ -94,13 +96,18 @@ class Watcher:
                 else:
                     last = await self._last_look(session, setting)
                     newest = max(delivery.received_at for delivery in group)
-                    # A look made after the newest delivery arrived has already answered them.
+                    # A look made after the newest delivery arrived has already answered
+                    # them, and every other delivery that arrived before that look.
+                    upto = last if last is not None else now
                     if last is None or last < newest:
                         if last is not None and last > now - gap:
                             # Too soon after the last look. They stay waiting, so the last
                             # delivery of a burst still gets its look when the gap has passed.
                             continue
                         await self._look(setting, "webhook")
+                        # The look answers what had settled when this pass began. A
+                        # delivery that came later may be about a later change.
+                        upto = now - settle
                 for delivery in group:
                     delivery.handled_at = now
                     delivery.outcome = outcome
@@ -111,7 +118,7 @@ class Watcher:
                     tenant_id=setting.tenant_id,
                     check_name=setting.check_name,
                     scope=setting.scope,
-                    upto=now,
+                    upto=upto,
                     outcome=outcome,
                     now=now,
                 )

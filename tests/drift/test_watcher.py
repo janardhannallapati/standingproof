@@ -354,3 +354,53 @@ def test_handled_deliveries_are_removed_after_the_keep_time(wf: Db) -> None:
 
     # The old handled one is gone; the recent one and the one just answered remain.
     assert scene.outcomes() == ["looked", "looked"]
+
+
+def test_a_delivery_that_arrived_after_the_last_look_is_never_marked_without_one(wf: Db) -> None:
+    # One look answers the deliveries that came before it, and only those.
+    scene = Scene(wf, drift_batch=1, recheck_seconds=10**9)
+    scene.deliver()
+    wf.run(scene._look())
+    scene.github.reviews = None
+    scene.deliver()
+
+    scene.tick()
+    assert sorted(map(str, scene.outcomes())) == ["None", "looked"]
+    assert len(scene.looks()) == 2
+
+    scene.tick()
+    assert scene.outcomes() == ["looked", "looked"]
+    assert len(scene.looks()) == 3
+    assert item_row(wf, scene.item).review == "pending"
+
+
+def test_a_delivery_still_settling_is_not_marked_by_a_look_for_an_older_one(wf: Db) -> None:
+    scene = Scene(wf, webhook_settle_seconds=5, recheck_seconds=10**9)
+    scene.deliver()
+    scene.ahead = dt.timedelta(seconds=6)
+    scene.tick()
+    assert scene.outcomes() == ["looked"]
+
+    # A second one arrives; a pass that starts 6 s after the FIRST is too early for it.
+    scene.ahead = dt.timedelta(0)
+    scene.deliver()
+    scene.deliver()
+    wf.run(_age_one_delivery(wf, seconds=10))
+    scene.tick()
+
+    assert sorted(map(str, scene.outcomes())) == ["None", "looked", "looked"]
+
+
+async def _age_one_delivery(db: Db, *, seconds: int) -> None:
+    from sqlalchemy import text
+
+    async with db.sessions() as session:
+        await session.execute(
+            text(
+                "UPDATE webhook_deliveries "
+                "SET received_at = received_at - make_interval(secs => :s) "
+                "WHERE id = (SELECT id FROM webhook_deliveries WHERE handled_at IS NULL LIMIT 1)"
+            ),
+            {"s": seconds},
+        )
+        await session.commit()

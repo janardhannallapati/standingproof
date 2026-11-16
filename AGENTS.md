@@ -97,7 +97,8 @@ live system settings, and reopens them when those settings drift.
   and is the only drift table updated in place. A webhook delivery is a wake-up, not a
   record: it is deleted some days after it was dealt with.
 - The watcher looks for a webhook only at a setting some answer rests on, and marks every
-  waiting delivery for a setting when one look has answered them. Keep both: they bound
+  waiting delivery for a setting when one look has answered them: the ones that arrived
+  before that look and had settled, never a later one. Keep both: they bound
   what a holder of the secret can make this deployment do.
 - A change is examined against the answers that are waiting or decided at that moment.
   Wherever an answer comes to rest later (a draft saved, an earlier draft put back), call
