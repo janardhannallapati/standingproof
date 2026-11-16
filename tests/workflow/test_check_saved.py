@@ -24,8 +24,8 @@ from tests.agent.fakes import (
     wants_tools,
 )
 from tests.conftest import Db
+from tests.workflow.rig import Rig
 from tests.workflow.seed import approved_answer, items, questionnaire, start, tenant, wf
-from tests.workflow.test_worker import Rig
 
 __all__ = ["wf"]
 
@@ -95,7 +95,6 @@ def test_a_disputed_draft_is_saved_for_a_person_with_one_check_row(wf: Db, redis
     ]
     # The check was paid for by this question: its cost is in the question's total.
     assert row.cost_usd > check.cost_usd
-    rig.close()
 
 
 def test_a_draft_the_checker_agrees_with_is_ready_and_the_check_is_kept(
@@ -117,7 +116,6 @@ def test_a_draft_the_checker_agrees_with_is_ready_and_the_check_is_kept(
     assert (row.status, row.reason) == ("ready", None)
     [check] = checks(wf, row.id)
     assert (check.outcome, check.findings) == ("agrees", [])
-    rig.close()
 
 
 def test_a_reused_answer_has_no_check_row(wf: Db, redis_url: str) -> None:
@@ -134,7 +132,6 @@ def test_a_reused_answer_has_no_check_row(wf: Db, redis_url: str) -> None:
     [row] = items(wf, started.run.id)
     assert (row.status, row.path) == ("ready", "reused")
     assert checks(wf, row.id) == []
-    rig.close()
 
 
 def test_a_redraft_adds_a_second_row_and_leaves_the_first_alone(wf: Db, redis_url: str) -> None:
@@ -175,7 +172,6 @@ def test_a_redraft_adds_a_second_row_and_leaves_the_first_alone(wf: Db, redis_ur
     first_check, second_check = checks(wf, row.id)
     assert (first_check.outcome, first_check.answer_checked) == ("disagrees", WORDING)
     assert (second_check.outcome, second_check.answer_checked) == ("agrees", second)
-    rig.close()
 
 
 def test_a_worker_that_lost_its_lease_saves_no_check(wf: Db, redis_url: str) -> None:
@@ -249,4 +245,23 @@ def test_a_question_the_worker_gave_back_leaves_its_cause_for_the_test(
     [(reason, trace)] = rig.given_back
     assert reason == "internal_error"
     assert "RuntimeError: the cause a test needs to see" in trace
-    rig.close()
+
+
+def test_a_result_that_could_not_be_saved_leaves_its_cause_for_the_test(
+    wf: Db, redis_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def refuses(*_: Any, **__: Any) -> bool:
+        raise RuntimeError("the database said no")
+
+    setup = Setup(wf)
+    rig = Rig(
+        wf, redis_url, setup.drafter(WORDING), checker=ScriptedChecker([checker_says("supported")])
+    )
+    monkeypatch.setattr(results, "save_result", refuses)
+    rig.add(setup.started.item_ids)
+
+    rig.work_through_the_queue()
+
+    [(reason, trace)] = rig.given_back
+    assert reason == "not_handled"
+    assert "RuntimeError: the database said no" in trace

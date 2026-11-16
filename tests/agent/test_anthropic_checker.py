@@ -71,10 +71,33 @@ async def test_the_reply_must_be_a_verdict() -> None:
     assert call["output_format"] is CheckVerdict
     assert call["model"] == "claude-sonnet-5-5"
     assert call["output_config"] == {"effort": "medium"}
-    assert call["system"] == "instructions"
     assert turn.verdict == VERDICT
     assert (turn.usage.input_tokens, turn.usage.output_tokens) == (900, 40)
     assert turn.model == "claude-sonnet-5-5"
+
+
+async def test_the_instruction_is_the_cached_part_and_nothing_else_is() -> None:
+    messages = Messages(reply())
+
+    await ask(messages)
+
+    [call] = messages.calls
+    # The instruction is the same for every check, so the breakpoint sits at its end.
+    # The question, the draft and the sources differ every time and come after it.
+    assert call["system"] == [
+        {"type": "text", "text": "instructions", "cache_control": {"type": "ephemeral"}}
+    ]
+    assert call["messages"] == [{"role": "user", "content": "x"}]
+
+
+async def test_tokens_read_from_the_cache_are_counted() -> None:
+    cached = reply()
+    cached.usage.cache_read_input_tokens = 800
+    cached.usage.input_tokens = 100
+
+    turn = await ask(Messages(cached))
+
+    assert (turn.usage.input_tokens, turn.usage.cache_read_input_tokens) == (100, 800)
 
 
 async def test_a_reply_that_did_not_finish_has_no_verdict() -> None:

@@ -114,8 +114,8 @@ class AnthropicModel:
 class AnthropicChecker:
     """The Anthropic implementation of CheckerClient.
 
-    The request has no `tools`. Nothing is cached: no cache breakpoint is set, and whether
-    one would pay for a request this short has not been measured.
+    The request has no `tools`. The instruction is the same for every check, so a cache
+    breakpoint sits at its end; the question, the draft and the sources come after it.
     """
 
     def __init__(
@@ -136,7 +136,7 @@ class AnthropicChecker:
             self._client.messages.parse(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                system=system,
+                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
                 messages=messages,  # type: ignore[arg-type]
                 output_format=CheckVerdict,
                 output_config={"effort": self._effort},
