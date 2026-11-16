@@ -195,7 +195,7 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
   return (
     <div className="flex min-h-full flex-col">
       <RunHeader run={run} filename={filename} live={live} needs={needsCount} ready={readyCount} />
-      <div className="grid flex-1 md:grid-cols-[400px_1fr]">
+      <main className="grid flex-1 md:grid-cols-[400px_1fr]">
         <div className={`border-line md:block md:border-r ${showDetail ? "hidden" : ""}`}>
           <QuestionList
             questions={questions}
@@ -230,7 +230,7 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
             </p>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

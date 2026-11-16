@@ -12,6 +12,9 @@ live system settings, and reopens them when those settings drift.
 - Run locally: `docker compose up --build`, then `curl localhost:8000/readyz`
 - Slow tests (real embedding model; a worker process killed mid-run): `uv run pytest -m slow`
 - New migration: `uv run alembic revision -m "<what changes>"`
+- Web app (`web/`): `pnpm install --frozen-lockfile`, then `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
+- Browser test against a running stack: `cd web && pnpm e2e`
+- After changing a route or a response model: `uv run python scripts/export_openapi.py`, then `cd web && pnpm gen:api`
 - Ask the agent one question (calls the paid API): `uv run python -m standingproof.agent "<question>"`
 
 ## Rules
@@ -125,4 +128,17 @@ live system settings, and reopens them when those settings drift.
 - A WebSocket route checks `Origin` against `Settings.allowed_origins` and the tenant before
   `accept()`. Use `anyio` task groups in it, not `asyncio.create_task`.
 - Saved state of a question that is `pending` or `redrafting` is never pruned.
+- `web/src/lib/api-types.ts` is generated from `web/openapi.json`, which is exported from the
+  API. Never edit either by hand; a test and a CI step fail when one is stale.
+- In `web/`, every colour comes from the tokens in `src/app/globals.css`. A component names a
+  token (`bg-surface`, `text-muted`), never a colour.
+- Text from the API is rendered as text. `dangerouslySetInnerHTML` fails the lint.
+- A state is shown as a mark and a word as well as a colour. Every control is reachable and
+  usable by keyboard, has a visible focus ring, and is at least 44 px tall on a phone. The
+  browser test runs an accessibility check in both themes; a violation fails it.
+- The browser calls only `/api/...` on the web app's own origin. The API's address
+  (`API_URL`) is server-side only and must never appear in `web/.next/static`; CI searches.
+- A new web dependency: check its publisher and repository, pin an exact version, and do not
+  allow its install scripts. pnpm refuses a release less than a day old; do not override that.
+- `NEXT_TELEMETRY_DISABLED=1` is set in the web scripts, the image and CI. Keep it.
 

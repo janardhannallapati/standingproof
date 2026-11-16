@@ -53,6 +53,43 @@ jobs:
       - name: Retrieval quality on the golden set; a killed worker loses nothing
         run: uv run pytest -m slow -s -v
 
+  # The reviewer's screen: lint, types, component tests, a production build.
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # The framework reports anonymous usage to its vendor unless told not to.
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Enable pnpm at the version in package.json
+        run: corepack enable
+      # The lockfile is the only source of versions. Install scripts of dependencies do
+      # not run unless the project allows them by name, and it allows none.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: The committed API types match the committed OpenAPI document
+        run: pnpm gen:api && git diff --exit-code -- src/lib/api-types.ts
+      - name: Lint
+        run: pnpm lint
+      - name: Type check
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Nothing sent to the browser holds a secret or an internal address
+        run: |
+          ! grep -rIlE "sk-ant-|ANTHROPIC_API_KEY|github_pat_|AKIA[0-9A-Z]{16}|API_URL|api:8000|SP_DATABASE_URL" .next/static
+
   # Builds the image that ships and proves it starts. The test job runs from source, so
   # without this a change that only breaks the image would pass.
   image:
@@ -86,6 +123,22 @@ jobs:
         run: |
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \
             http://127.0.0.1:8000/questionnaires/00000000-0000-0000-0000-000000000000/runs)" = 404
+      - name: The reviewer's screen is served
+        run: curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/healthz
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      # The whole path in a real browser, against the stack above. No model key: answers
+      # that match the library exactly are enough to approve, edit and reject.
+      - name: End to end in a browser, with an accessibility check
+        working-directory: web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+          pnpm e2e
       - name: Logs on failure
         if: failure()
         run: docker compose logs --no-color
