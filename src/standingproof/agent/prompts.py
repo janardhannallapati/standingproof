@@ -76,8 +76,9 @@ Report a finding for each of these:
 - not_answered: the question asks for something the draft neither answers nor says it cannot
   answer.
 
-For each finding give `kind`; `quote`, the exact words copied from the draft that the finding
-is about (leave it empty for not_answered); `source_id`, the id of the source the finding rests
+For each finding give `kind`; `quote`, the shortest run of words that carries the problem,
+copied exactly from the draft (a few words, not the whole sentence; leave it empty for
+not_answered); `source_id`, the id of the source the finding rests
 on, or empty if there is none; and `explanation`, one plain sentence a reviewer can check
 against the source.
 

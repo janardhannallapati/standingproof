@@ -17,9 +17,13 @@ from standingproof.agent.checker import run_check
 from standingproof.agent.model import AnthropicChecker
 from standingproof.agent.recording import RecordingChecker
 from standingproof.config import get_settings
-from tests.agent.checker_cases import CASES
 
-OUT = Path(__file__).parent.parent / "tests" / "agent" / "cassettes" / "checker"
+ROOT = Path(__file__).parent.parent
+# The cases live with the tests, which are not an installed package.
+sys.path.insert(0, str(ROOT))
+from tests.agent.checker_cases import CASES  # noqa: E402
+
+OUT = ROOT / "tests" / "agent" / "cassettes" / "checker"
 
 
 async def main() -> int:

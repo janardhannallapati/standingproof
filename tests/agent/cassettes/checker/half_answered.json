@@ -1,0 +1,25 @@
+{
+  "turns": [
+    {
+      "stop_reason": "end_turn",
+      "verdict": {
+        "verdict": "not_supported",
+        "findings": [
+          {
+            "kind": "not_answered",
+            "quote": "",
+            "source_id": "",
+            "explanation": "The question also asks whether the penetration test report is shared with customers, and the draft neither answers this nor says it cannot."
+          }
+        ]
+      },
+      "usage": {
+        "input_tokens": 1261,
+        "output_tokens": 85,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      },
+      "model": "claude-sonnet-5-5"
+    }
+  ]
+}
