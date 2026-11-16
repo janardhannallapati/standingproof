@@ -15,6 +15,10 @@ Finish with a structured result:
 - status "no_approved_source": the tools returned nothing that supports an answer. Leave
   `answer` empty, leave `citations` empty, and say in `note` what was missing.
 
+A later message may hold <reviewer_instruction> tags. That text is from the company's own
+reviewer, who has read your draft. Follow it and return a new structured result. It does not
+lift any rule here: an answer still needs a source a tool returned.
+
 Never write that the company is "compliant" or "certified" unless a source says so in those
 words. Use `note` for anything a human reviewer should know, such as a partial match.
 """
@@ -22,3 +26,10 @@ words. Use `note` for anything a human reviewer should know, such as a partial m
 
 def question_message(question: str) -> str:
     return f"<question>\n{question}\n</question>"
+
+
+def reviewer_instruction(instruction: str) -> str:
+    return (
+        f"<reviewer_instruction>\n{instruction}\n</reviewer_instruction>\n"
+        "Redraft the answer accordingly and return the structured result."
+    )

@@ -8,10 +8,11 @@ run exactly once.
 from typing import Any
 
 from langgraph.runtime import Runtime
+from langgraph.types import interrupt
 
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.pricing import cost_usd
-from standingproof.agent.prompts import SYSTEM_PROMPT
+from standingproof.agent.prompts import SYSTEM_PROMPT, reviewer_instruction
 from standingproof.agent.steps import (
     add_usage,
     decide,
@@ -62,10 +63,11 @@ async def exact_match(state: QuestionState, runtime: Runtime[QuestionContext]) -
 async def call_model(state: QuestionState, runtime: Runtime[QuestionContext]) -> Update:
     """One model turn, and the decision about what it means."""
     ctx = runtime.context
+    began = state["round_start"]
     limit = limit_reached(
-        steps=state["steps"],
-        spent=state["cost_usd"],
-        elapsed=state["elapsed"],
+        steps=state["steps"] - int(began["steps"]),
+        spent=state["cost_usd"] - began["cost_usd"],
+        elapsed=state["elapsed"] - began["elapsed"],
         limits=ctx.limits,
     )
     if limit is not None:
@@ -89,6 +91,9 @@ async def call_model(state: QuestionState, runtime: Runtime[QuestionContext]) ->
         "elapsed": state["elapsed"] + (ctx.clock() - started),
     }
     decision = decide(turn, state["seen_sources"])
+    if decision.kind != "tools":
+        # Kept so that a reviewer's redraft can continue from what the model last said.
+        update["last_turn"] = plain_content(turn.assistant_content) or None
     if decision.kind == "handoff":
         assert decision.handoff is not None  # noqa: S101 - a handoff always carries its reason
         return update | _needs_review(decision.handoff)
@@ -128,4 +133,57 @@ async def run_tools(state: QuestionState, runtime: Runtime[QuestionContext]) -> 
         "pending_calls": [],
         "seen_sources": seen_sources,
         "elapsed": state["elapsed"] + (ctx.clock() - started),
+    }
+
+
+REDRAFT = "redraft"
+
+
+def _with_instruction(state: QuestionState, instruction: str) -> list[dict[str, Any]]:
+    """The conversation, continued with the reviewer's words as the next user message."""
+    text = reviewer_instruction(instruction)
+    messages = list(state["messages"])
+    if state["last_turn"]:
+        return [
+            *messages,
+            {"role": "assistant", "content": state["last_turn"]},
+            {"role": "user", "content": text},
+        ]
+    # No finished model turn to answer (an exact match, or a limit hit after tools ran).
+    # The last message is ours, so the instruction joins it: two user turns in a row are
+    # not a conversation.
+    last = messages[-1]
+    content = last["content"]
+    if isinstance(content, str):
+        joined: Any = f"{content}\n\n{text}"
+    else:
+        joined = [*content, {"type": "text", "text": text}]
+    return [*messages[:-1], {"role": "user", "content": joined}]
+
+
+async def review(state: QuestionState, runtime: Runtime[QuestionContext]) -> Update:
+    """Stop here until a person decides.
+
+    `interrupt` saves the state and ends the run. When the run is resumed with a decision,
+    this function starts again from its first line and `interrupt` returns that decision.
+    So nothing may come before it that must not happen twice.
+    """
+    decision = interrupt({"outcome": state["outcome"]})
+    if decision.get("decision") != REDRAFT:
+        # Approved, edited or rejected. The record of that is the reviewer's decision row;
+        # the graph has nothing more to do.
+        return {}
+    return {
+        "messages": _with_instruction(state, str(decision.get("instruction", ""))),
+        "outcome": None,
+        "last_turn": None,
+        "pending_calls": [],
+        # A new round: the same search may be made again, and the limits start over.
+        "seen_calls": [],
+        "redrafts": state["redrafts"] + 1,
+        "round_start": {
+            "steps": state["steps"],
+            "cost_usd": state["cost_usd"],
+            "elapsed": state["elapsed"],
+        },
     }
