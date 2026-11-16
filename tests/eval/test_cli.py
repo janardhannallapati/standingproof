@@ -324,6 +324,57 @@ def test_more_shapes_of_credential_are_recognised(text: str) -> None:
     assert looks_secret(text)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "-----BEGIN DSA PRIVATE KEY-----",
+        "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+        "-----BEGIN PRIVATE KEY-----",
+    ],
+)
+def test_every_kind_of_private_key_header_is_recognised(text: str) -> None:
+    assert looks_secret(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        json.dumps({"a": "see https://vault.internal:8200\nsecurity@harborlight.example"}),
+        "policy-pa-ssword-rotation-policy-2024.md",
+        "THEQUICKBROWNFOXAKIAJUMPSOVERTHELAZYDOGAGAIN",
+        "https://example.com/a:b@c",
+        "git@github.com:org/repo",
+    ],
+)
+def test_ordinary_text_is_not_taken_for_a_credential(text: str) -> None:
+    assert not looks_secret(text)
+
+
+def test_the_client_does_not_retry_behind_the_meters_back() -> None:
+    assert cli.provider_client("not-a-key").max_retries == 0
+
+
+def test_accept_refuses_a_result_with_a_check_that_did_not_finish(repo: Repo) -> None:
+    repo.record()
+    unread = repo.root / "checker-main" / "wider-contractors.2.json"
+    data = json.loads(unread.read_text())
+    data["turn"] = None
+    unread.write_text(json.dumps(data))
+
+    assert repo.run("accept", "--note", "x") == 1
+    assert "did not finish" in repo.said and not repo.baseline.exists()
+
+
+def test_a_comparison_recording_must_be_run_one(repo: Repo) -> None:
+    repo.record()
+    one = repo.root / "checker-cheaper" / "sound-backups.1.json"
+    data = json.loads(one.read_text()) | {"run": 2}
+    one.unlink()
+    (one.parent / "sound-backups.2.json").write_text(json.dumps(data))
+
+    assert repo.run("accept", "--note", "x") == 1
+
+
 def test_nothing_else_the_eval_commits_holds_anything_shaped_like_a_key() -> None:
     from evals.transcript import RECORDINGS
 

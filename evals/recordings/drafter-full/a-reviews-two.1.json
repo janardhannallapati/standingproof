@@ -1,0 +1,106 @@
+{
+ "kind": "drafter",
+ "case": "a-reviews-two",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "51e365271586a8ef"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Changes to the default branch (main) of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged. The rule applies to administrators too.",
+  "citations": [
+   "answer:814e432a-32c8-4b88-880b-f208f6924b5a",
+   "evidence:31524c4e-6a56-4c9b-8ba5-abd549aa45d3"
+  ],
+  "note": "The approved answer (CC8.1, valid until 2027-11-16) matches a live GitHub check of harborlight/app taken at 2026-11-16T16:04:11Z. That check shows the main branch is protected, needs 2 approving reviews, and the rule applies to administrators. Both sources cover only the harborlight/app repository. If the customer is asking about other repositories, we have no evidence for those."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "code review approvals before merge to main branch"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:814e432a-32c8-4b88-880b-f208f6924b5a",
+    "answer:6dd7a3e2-6acb-4ccc-9092-ce0670b3c760",
+    "answer:20409821-dd84-4591-912c-1762e45a9ca7",
+    "answer:d6434953-9608-4f8c-8332-2bf10442485d",
+    "answer:fd4b4f21-50ee-48f0-9016-9b67b51586b1"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:31524c4e-6a56-4c9b-8ba5-abd549aa45d3"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:814e432a-32c8-4b88-880b-f208f6924b5a": [
+   "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
+  ],
+  "answer:6dd7a3e2-6acb-4ccc-9092-ce0670b3c760": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  ],
+  "answer:20409821-dd84-4591-912c-1762e45a9ca7": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:d6434953-9608-4f8c-8332-2bf10442485d": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:fd4b4f21-50ee-48f0-9016-9b67b51586b1": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "evidence:31524c4e-6a56-4c9b-8ba5-abd549aa45d3": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-16 16:04 UTC."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 637,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 1155,
+   "cache_read_input_tokens": 0
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 2826,
+  "output_tokens": 434,
+  "cache_creation_input_tokens": 3179,
+  "cache_read_input_tokens": 4048
+ },
+ "cost_usd": 0.0323471,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

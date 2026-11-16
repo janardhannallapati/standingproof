@@ -185,9 +185,9 @@ def test_no_pattern_of_any_case_is_slow_on_text_a_model_could_write() -> None:
     assert time.perf_counter() - started < 2.0
 
 
-def test_yes_counts_only_as_the_first_word_of_the_answer() -> None:
+def test_yes_counts_only_as_the_first_word_of_a_line() -> None:
     case = DRAFTER["b-org-2fa-off"]
-    opens_with_no = "No. Two-factor sign-in is not required.\nYes is what the library says."
+    opens_with_no = "No. Two-factor sign-in is not required. Yes is what the library says."
     run = drafted(
         case.name,
         opens_with_no,
@@ -198,3 +198,17 @@ def test_yes_counts_only_as_the_first_word_of_the_answer() -> None:
     assert grade_draft(case, run).grade == "right"
     said_yes = drafted(case.name, "Yes. It is not optional.", [LIBRARY])
     assert grade_draft(case, said_yes).grade == "wrong"
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "Regarding two-factor, no exceptions:\nYes, it is required for all members.",
+        "\n" * 12 + "Yes. It is not optional.",
+        "  - Yes, without exception.",
+    ],
+)
+def test_yes_at_the_start_of_any_line_is_still_a_yes(answer: str) -> None:
+    case = DRAFTER["b-org-2fa-off"]
+
+    assert grade_draft(case, drafted(case.name, answer, [LIBRARY])).grade == "wrong"

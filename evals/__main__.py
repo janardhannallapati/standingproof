@@ -39,10 +39,11 @@ NOT_APPROVED, INCOMPLETE = 2, 3
 
 def provider_client(key: str) -> "anthropic.AsyncAnthropic":
     """The real client. Its address is fixed here: the SDK would otherwise take one from
-    ANTHROPIC_BASE_URL and send the key there."""
+    ANTHROPIC_BASE_URL and send the key there. It does not retry: a retry inside the client
+    is a request the run's meter never sees, and the run retries a case once itself."""
     import anthropic
 
-    return anthropic.AsyncAnthropic(api_key=key, base_url=PROVIDER, timeout=60.0, max_retries=2)
+    return anthropic.AsyncAnthropic(api_key=key, base_url=PROVIDER, timeout=120.0, max_retries=0)
 
 
 def real_run(plan: Plan, *, ceiling: float, root: Path, out: Callable[[str], None]) -> int:

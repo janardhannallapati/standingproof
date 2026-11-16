@@ -9,7 +9,15 @@ from evals.cases import CheckerSet, DrafterSet
 from evals.fingerprint import Config, differences, of_checker_case, of_drafter_case
 from evals.graders import GradedCheck, GradedDraft, grade_check, grade_draft
 from evals.plan import RUNS, Manifest, load_manifest
-from evals.score import Baseline, CheckerScore, DrafterScore, gate, score_checker, score_drafter
+from evals.score import (
+    Baseline,
+    CheckerScore,
+    DrafterScore,
+    gate,
+    score_checker,
+    score_drafter,
+    unread,
+)
 from evals.transcript import DrafterRun, read_all
 
 OWNER_LABELS = "owner-labels.json"
@@ -109,8 +117,9 @@ def not_whole(result: Result) -> list[str]:
     missing = [*result.drafter.missing, *result.checker.missing]
     if missing:
         found.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
-    alone = {g.case for g in result.graded_docs_only}
-    cheaper = {g.case for g in result.graded_cheaper}
+    found += unread(result.drafter, result.checker)
+    alone = {g.case for g in result.graded_docs_only if g.run == 1}
+    cheaper = {g.case for g in result.graded_cheaper if g.run == 1}
     absent = [
         f"{case.name} (library only)"
         for case in result.drafter_set.cases

@@ -241,6 +241,19 @@ def test_a_check_that_did_not_finish_is_not_a_catch_the_gate_accepts() -> None:
     assert any("did not finish" in problem for problem in gate(clean, drafter, checker))
 
 
+def test_a_drafted_answer_nobody_checked_fails_the_gate_by_name() -> None:
+    name = DRAFTER.cases[0].name
+    unread = GradedDraft(name, 1, "safe", False, None, "not_checked", True, None, ())
+    graded = [unread if (g.case, g.run) == (name, 1) else g for g in all_right()]
+    clean = BASE.model_copy(update={"drafter_wrong_cases": [], "drafter_right_cases": 32})
+
+    drafter = score_drafter(DRAFTER, graded, runs=3)
+
+    assert drafter.unchecked == [name]
+    problems = gate(clean, drafter, score_checker(CHECKER, perfect(), runs=3))
+    assert len(problems) == 1 and name in problems[0]
+
+
 def test_three_copies_of_one_run_are_not_three_runs() -> None:
     name = DRAFTER.cases[0].name
     graded = [g for g in all_right() if g.case != name] + [draft(name, "right", 1)] * 3

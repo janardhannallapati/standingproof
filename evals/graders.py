@@ -21,8 +21,9 @@ from standingproof.agent.steps import decide, judge_check, not_checked
 from standingproof.agent.types import AnswerDraft, CheckResult, HandoffReason, ModelTurn, Usage
 
 Grade = Literal["right", "safe", "wrong"]
-# How a case's patterns are matched. Not multi-line: a pattern anchored to the start means
-# the start of the answer, and is tried at one position, not at every line.
+# How a case's patterns are matched. A pattern that means "at the start of a line" says so
+# itself with (?m), and must then bound what it skips: an unbounded run before the word
+# is tried again from every line and takes quadratic time on text a model wrote.
 FLAGS = re.IGNORECASE
 
 # Handoffs the loop decides before, or instead of, reading a final turn.

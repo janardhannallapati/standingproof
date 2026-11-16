@@ -9,7 +9,7 @@ import pytest
 from evals.cases import load_checker, load_drafter
 from evals.fingerprint import Config, of_drafter_case
 from evals.plan import Plan, approved, estimate, load_manifest, plan_for
-from evals.run import DRAFT_CALL_AT_MOST, Clients, run_plan
+from evals.run import CHECK_AT_MOST, DRAFT_CALL_AT_MOST, Clients, run_plan
 from evals.transcript import CheckerRun, DrafterRun, read_all
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.types import AnswerDraft, CheckTurn, ModelTurn, ToolCall, Usage
@@ -284,6 +284,8 @@ def test_a_provider_failure_is_not_recorded_as_a_result(db: Db, tmp_path: Path) 
 
     assert not manifest.complete and "provider" in manifest.stopped
     assert used.model.calls == 2  # tried, tried once more, then stopped the whole run
+    # A request that failed may still have been billed, so it counts at the most it could cost.
+    assert manifest.spent_usd == pytest.approx(2 * DRAFT_CALL_AT_MOST)
     assert [run for run in read_all(tmp_path) if isinstance(run, DrafterRun)] == []
 
 
@@ -303,4 +305,20 @@ def test_money_spent_on_an_attempt_that_failed_still_counts(db: Db, tmp_path: Pa
 
     # Two attempts, two drafter turns each, were paid for before the check failed.
     assert used.model.calls == 4
-    assert manifest.spent_usd == pytest.approx(4 * 0.012)
+    assert manifest.spent_usd == pytest.approx(4 * 0.012 + 2 * CHECK_AT_MOST)
+
+
+def test_a_recording_that_may_not_be_written_stops_the_run_cleanly(db: Db, tmp_path: Path) -> None:
+    class Leaks(LooksThenAnswers):
+        async def complete(self, **request: Any) -> ModelTurn:
+            turn = await super().complete(**request)
+            if turn.draft is not None:
+                leaked = turn.draft.model_copy(update={"note": "key AKIAIOSFODNN7EXAMPLE"})
+                turn = turn.model_copy(update={"draft": leaked})
+            return turn
+
+    manifest, _ = go(db, tmp_path, model=Leaks())
+
+    assert not manifest.complete and "credential" in manifest.stopped
+    assert manifest.recorded == 0 and read_all(tmp_path) == []
+    assert manifest.spent_usd > 0

@@ -12,8 +12,10 @@ Rules it keeps:
 - The manifest says "did not finish" from the first moment, so a run that dies cannot be
   mistaken for the run before it.
 
-What the ceiling cannot see: a request the provider billed but never answered (a timeout),
-and a second run started beside this one. Each run has its own ceiling.
+A request that fails is counted at the most it could have cost, since it may still be
+billed, and the client is built with no retries of its own, so one call here is one request.
+What the ceiling cannot see: a second run started beside this one (each run has its own
+ceiling), and a request whose input is larger than the allowance in the figures below.
 """
 
 import datetime as dt
@@ -35,7 +37,16 @@ from evals.fingerprint import (
     of_drafter_case,
 )
 from evals.plan import Manifest, Plan
-from evals.transcript import MANIFEST, CheckerRun, DrafterRun, Run, ToolUse, path_of, write
+from evals.transcript import (
+    MANIFEST,
+    CheckerRun,
+    DrafterRun,
+    Run,
+    SecretShapedError,
+    ToolUse,
+    path_of,
+    write,
+)
 from evals.world import build_world
 from standingproof.agent.checker import CheckerClient, run_check
 from standingproof.agent.limits import Limits
@@ -98,7 +109,13 @@ class _LastTurn:
 
     async def complete(self, **request: Any) -> ModelTurn:
         self._meter.before(DRAFT_CALL_AT_MOST)
-        self.last = await self._inner.complete(**request)
+        try:
+            self.last = await self._inner.complete(**request)
+        except ModelCallError:
+            # A request that failed on our side may still be billed. Count the most it
+            # could have cost: the ceiling must err towards stopping early.
+            self._meter.spent += DRAFT_CALL_AT_MOST
+            raise
         self._meter.add(self.last.model, self.last.usage)
         return self.last
 
@@ -114,7 +131,11 @@ class _LastCheck:
     async def check(self, *, system: str, messages: list[dict[str, Any]]) -> CheckTurn:
         self._meter.before(CHECK_AT_MOST)
         self.asked = True
-        self.turn = await self._inner.check(system=system, messages=messages)
+        try:
+            self.turn = await self._inner.check(system=system, messages=messages)
+        except ModelCallError:
+            self._meter.spent += CHECK_AT_MOST
+            raise
         self._meter.add(self.turn.model, self.turn.usage)
         return self.turn
 
@@ -357,8 +378,12 @@ async def run_plan(
                 stopped = "the model provider could not be reached; this case was not recorded"
             if run is None:
                 break
+            try:
+                write(run, root)
+            except SecretShapedError as refused:
+                stopped = str(refused)
+                break
             recorded += 1
-            write(run, root)
             say(
                 f"{path_of(run, root).relative_to(root)}  ${run.cost_usd:.4f}  "
                 f"total ${meter.spent:.4f}"

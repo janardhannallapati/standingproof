@@ -1,0 +1,44 @@
+{
+ "kind": "checker",
+ "case": "uncited-branch-unprotected",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "299c40de6c21eea0"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "Yes.",
+     "source_id": "EV-BP0",
+     "explanation": "The observed setting in EV-BP0 shows branch main of harborlight/app is not protected, which conflicts with the policy statement and the draft's claim that protection is enforced."
+    },
+    {
+     "kind": "contradicted",
+     "quote": "Changes to the default branch require a pull request with two approving reviews.",
+     "source_id": "EV-BP0",
+     "explanation": "EV-BP0 records that the main branch is not protected, so the requirement of a pull request with two approvals is not enforced as observed."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 167,
+   "output_tokens": 211,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0025595,
+ "check_model": "claude-sonnet-5-5"
+}

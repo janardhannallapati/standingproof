@@ -1,0 +1,84 @@
+{
+ "kind": "drafter",
+ "case": "d-mfa-staff",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "29a1b0d90a9bfceb"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor.",
+  "citations": [
+   "answer:a64069ba-f9e3-45e4-9ae9-e450a46cf2e5",
+   "policy:eb499ca6-3b39-403f-9eb6-b0e922985761"
+  ],
+  "note": "This uses the approved answer for control CC6.1 word for word. Its owner is security@harborlight.example and it is valid until 2027-11-16. Section 4.2 of the Access Control Policy backs it up: all workforce members must sign in with a second factor. I didn't check any live settings because no GitHub organisation or AWS account was given. If the customer wants proof that the requirement is actually enforced on those systems, someone with the right organisation or account ID should run the live checks."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "MFA for staff"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:eb499ca6-3b39-403f-9eb6-b0e922985761",
+    "policy:27d269b8-7526-4830-88bf-57c8ab3901be",
+    "answer:a64069ba-f9e3-45e4-9ae9-e450a46cf2e5"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:eb499ca6-3b39-403f-9eb6-b0e922985761": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "policy:27d269b8-7526-4830-88bf-57c8ab3901be": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:a64069ba-f9e3-45e4-9ae9-e450a46cf2e5": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 308,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 916,
+  "output_tokens": 395,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 5203
+ },
+ "cost_usd": 0.011693100000000001,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

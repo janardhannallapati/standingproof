@@ -83,6 +83,8 @@ class DrafterScore:
     judge: dict[str, int]
     # Cases with fewer recordings than `runs`.
     missing: list[str]
+    # Cases with a drafted answer that no checker read (the check was skipped or cut short).
+    unchecked: list[str]
 
 
 def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int) -> DrafterScore:
@@ -117,6 +119,11 @@ def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int
         looked=(sum(bool(g.looked) for g in asked), len(asked)),
         judge=judge,
         missing=_missing([case.name for case in cases.cases], grouped, runs),
+        unchecked=[
+            case.name
+            for case in cases.cases
+            if any(g.check == "not_checked" for g in grouped.get(case.name, []))
+        ],
     )
 
 
@@ -215,8 +222,6 @@ class Baseline(BaseModel):
     drafter_right_cases: int
     checker_missed_cases: list[str]
     checker_false_alarm_cases: int
-    # Checks that did not finish. Such a draft goes to a person, but nothing read it.
-    checker_not_checked_runs: int = 0
     accepted_on: str
     note: str
 
@@ -232,10 +237,25 @@ def as_baseline(drafter: DrafterScore, checker: CheckerScore, *, on: str, note: 
         drafter_right_cases=drafter.right_cases,
         checker_missed_cases=checker.missed_cases,
         checker_false_alarm_cases=len(checker.false_alarm_cases),
-        checker_not_checked_runs=checker.not_checked_runs,
         accepted_on=on,
         note=note,
     )
+
+
+def unread(drafter: DrafterScore, checker: CheckerScore) -> list[str]:
+    """Drafts no checker read. Such a draft goes to a person, but it measures nothing, so a
+    result that has any is neither accepted as a baseline nor passed against one."""
+    problems: list[str] = []
+    if checker.not_checked_runs:
+        problems.append(
+            f"{checker.not_checked_runs} checks of labelled drafts did not finish: "
+            "an unread draft is not a catch"
+        )
+    if drafter.unchecked:
+        problems.append(
+            f"a drafted answer's check did not finish, in: {', '.join(drafter.unchecked)}"
+        )
+    return problems
 
 
 def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> list[str]:
@@ -252,11 +272,7 @@ def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> li
     newly_missed = sorted(set(checker.missed_cases) - set(baseline.checker_missed_cases))
     if newly_missed:
         problems.append(f"the checker agreed with a planted defect: {', '.join(newly_missed)}")
-    if checker.not_checked_runs > baseline.checker_not_checked_runs:
-        problems.append(
-            f"{checker.not_checked_runs} checks did not finish, against "
-            f"{baseline.checker_not_checked_runs} in the baseline: an unread draft is not a catch"
-        )
+    problems += unread(drafter, checker)
     if drafter.right_cases < baseline.drafter_right_cases - SOFT_SLACK:
         problems.append(
             f"{drafter.right_cases} cases right, against {baseline.drafter_right_cases} "

@@ -18,6 +18,10 @@ RECORDINGS = Path(__file__).parent / "recordings"
 MANIFEST = "RUN.json"
 
 
+class SecretShapedError(ValueError):
+    """A recording that would put something shaped like a credential in a public file."""
+
+
 class MisplacedError(Exception):
     """A file among the recordings that is not a recording in its own place."""
 
@@ -83,7 +87,7 @@ def write(run: Run, root: Path = RECORDINGS) -> Path:
     text = json.dumps(run.model_dump(mode="json"), indent=1) + "\n"
     if looks_secret(text):
         # These files are committed to a public repository.
-        raise ValueError(f"{path.name} holds text shaped like a credential; not written")
+        raise SecretShapedError(f"{path.name} holds text shaped like a credential; not written")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
     return path
@@ -117,8 +121,11 @@ def read_all(root: Path = RECORDINGS) -> list[Run]:
 # committed.
 _SECRET = re.compile(
     r"sk-ant-[A-Za-z0-9_-]{8,}|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{30,}"
-    r"|A[KS]IA[0-9A-Z]{16}|\bpa-[A-Za-z0-9_-]{20,}|://[^/\s:@]{1,64}:[^/\s:@]{1,128}@"
-    r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+    r"|\bA[KS]IA[0-9A-Z]{16}\b|(?<![\w-])pa-[A-Za-z0-9_]{20,}"
+    # A password in a URL. A backslash is excluded so that, in JSON text, an escaped line
+    # break ends the host instead of joining it to an email address on the next line.
+    r"|://[^/\s:@\\]{1,64}:[^/\s:@\\]{1,128}@"
+    r"|-----BEGIN [A-Z ]{0,30}PRIVATE KEY-----"
 )
 
 
