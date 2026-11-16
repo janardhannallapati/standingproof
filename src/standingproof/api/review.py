@@ -9,10 +9,12 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from redis.exceptions import RedisError
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from standingproof.api.deps import RedisDep, SessionDep, SettingsDep, TenantDep
+from standingproof.api.drift import ReopeningOut, reopening_out
 from standingproof.api.runs import ItemStatus
+from standingproof.drift.view import reopening_of
 from standingproof.library import sources
 from standingproof.models import (
     REVIEW_REDRAFTING,
@@ -90,12 +92,16 @@ class ReviewQuestionOut(BaseModel):
     warnings: list[str] = []
     # None: the draft was not sent to the checker (reused, nothing drafted, or switched off).
     check: DraftCheckOut | None = None
+    # Set while the question waits again because a live setting it rests on has changed:
+    # what changed, and which customers have the approved wording.
+    reopening: ReopeningOut | None = None
 
 
 class DecisionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    decision: Literal["approve", "edit", "reject", "redraft"]
+    # `keep` is for a reopened question only: the answer stands as it was.
+    decision: Literal["approve", "edit", "reject", "redraft", "keep"]
     version: int = Field(ge=0)
     # For `edit`: the wording to approve.
     answer: str | None = None
@@ -121,6 +127,8 @@ class RunListItem(BaseModel):
     status: Literal["running", "finished", "cancelled"]
     created_at: datetime
     finished_at: datetime | None
+    # How many of its answers wait again because a live setting changed.
+    reopened: int = 0
 
 
 class RunList(BaseModel):
@@ -187,6 +195,7 @@ async def _question_out(
             model=latest.model,
             on_current_answer=latest.answer_checked == (item.final_answer or item.answer),
         ),
+        reopening=reopening_out(await reopening_of(session, item)),
     )
 
 
@@ -195,8 +204,17 @@ async def list_runs(
     session: SessionDep, tenant_id: TenantDep, limit: Annotated[int, Query(ge=1, le=100)] = 20
 ) -> RunList:
     """The newest runs first."""
+    reopened = (
+        select(func.count())
+        .where(
+            RunQuestion.tenant_id == tenant_id,
+            RunQuestion.run_id == Run.id,
+            RunQuestion.reopened_at.is_not(None),
+        )
+        .scalar_subquery()
+    )
     rows = await session.execute(
-        select(Run, Questionnaire.filename)
+        select(Run, Questionnaire.filename, reopened)
         .join(Questionnaire, Questionnaire.id == Run.questionnaire_id)
         .where(Run.tenant_id == tenant_id)
         .order_by(Run.created_at.desc())
@@ -208,11 +226,12 @@ async def list_runs(
                 id=run.id,
                 questionnaire_id=run.questionnaire_id,
                 filename=filename,
-                status=run.status,  # type: ignore[arg-type]
+                status=run.status,
                 created_at=run.created_at,
                 finished_at=run.finished_at,
+                reopened=count,
             )
-            for run, filename in rows
+            for run, filename, count in rows
         ]
     )
 

@@ -191,6 +191,143 @@
         "title": "Body_upload_questionnaire_questionnaires_post",
         "type": "object"
       },
+      "ChangeList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ChangeList",
+        "type": "object"
+      },
+      "ChangeOut": {
+        "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/ReopenedAnswerOut"
+            },
+            "title": "Answers",
+            "type": "array"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangedFactOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "check_name": {
+            "title": "Check Name",
+            "type": "string"
+          },
+          "detected_at": {
+            "format": "date-time",
+            "title": "Detected At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "now": {
+            "$ref": "#/components/schemas/ObservationOut"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "trigger": {
+            "title": "Trigger",
+            "type": "string"
+          },
+          "was": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "check_name",
+          "scope",
+          "was",
+          "now",
+          "changes",
+          "trigger",
+          "id",
+          "detected_at",
+          "answers"
+        ],
+        "title": "ChangeOut",
+        "type": "object"
+      },
+      "ChangedFactOut": {
+        "properties": {
+          "fact": {
+            "title": "Fact",
+            "type": "string"
+          },
+          "now": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Now"
+          },
+          "was": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was"
+          }
+        },
+        "required": [
+          "fact",
+          "was",
+          "now"
+        ],
+        "title": "ChangedFactOut",
+        "type": "object"
+      },
       "CheckList": {
         "properties": {
           "checks": {
@@ -335,7 +472,8 @@
               "approve",
               "edit",
               "reject",
-              "redraft"
+              "redraft",
+              "keep"
             ],
             "title": "Decision",
             "type": "string"
@@ -351,6 +489,17 @@
           "version"
         ],
         "title": "DecisionIn",
+        "type": "object"
+      },
+      "DeliveryOut": {
+        "properties": {
+          "accepted": {
+            "default": true,
+            "title": "Accepted",
+            "type": "boolean"
+          }
+        },
+        "title": "DeliveryOut",
         "type": "object"
       },
       "DraftCheckOut": {
@@ -797,6 +946,25 @@
         "title": "ManualMapping",
         "type": "object"
       },
+      "ObservationOut": {
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "statement",
+          "observed_at"
+        ],
+        "title": "ObservationOut",
+        "type": "object"
+      },
       "PolicyOut": {
         "properties": {
           "chunk_count": {
@@ -1001,6 +1169,97 @@
         "title": "Readiness",
         "type": "object"
       },
+      "ReopenedAnswerOut": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "run_id": {
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "run_question_id": {
+            "format": "uuid",
+            "title": "Run Question Id",
+            "type": "string"
+          },
+          "sent_to": {
+            "items": {
+              "$ref": "#/components/schemas/SentToOut"
+            },
+            "title": "Sent To",
+            "type": "array"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "run_question_id",
+          "run_id",
+          "filename",
+          "position",
+          "question",
+          "waiting",
+          "sent_to"
+        ],
+        "title": "ReopenedAnswerOut",
+        "type": "object"
+      },
+      "ReopeningOut": {
+        "description": "Why a question is waiting for a decision again.",
+        "properties": {
+          "reopened_at": {
+            "format": "date-time",
+            "title": "Reopened At",
+            "type": "string"
+          },
+          "sent_to": {
+            "items": {
+              "$ref": "#/components/schemas/SentToOut"
+            },
+            "title": "Sent To",
+            "type": "array"
+          },
+          "settings": {
+            "items": {
+              "$ref": "#/components/schemas/SettingChangeOut"
+            },
+            "title": "Settings",
+            "type": "array"
+          },
+          "was_review": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Was Review"
+          }
+        },
+        "required": [
+          "reopened_at",
+          "was_review",
+          "settings",
+          "sent_to"
+        ],
+        "title": "ReopeningOut",
+        "type": "object"
+      },
       "ReviewQuestionOut": {
         "properties": {
           "answer": {
@@ -1092,6 +1351,16 @@
           "redrafts": {
             "title": "Redrafts",
             "type": "integer"
+          },
+          "reopening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReopeningOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "review": {
             "anyOf": [
@@ -1237,6 +1506,11 @@
             "format": "uuid",
             "title": "Questionnaire Id",
             "type": "string"
+          },
+          "reopened": {
+            "default": 0,
+            "title": "Reopened",
+            "type": "integer"
           },
           "status": {
             "enum": [
@@ -1406,6 +1680,11 @@
               }
             ],
             "title": "Reason"
+          },
+          "reopened": {
+            "default": false,
+            "title": "Reopened",
+            "type": "boolean"
           },
           "review": {
             "anyOf": [
@@ -1645,6 +1924,11 @@
             "title": "Id",
             "type": "string"
           },
+          "reopened": {
+            "default": 0,
+            "title": "Reopened",
+            "type": "integer"
+          },
           "sent_at": {
             "format": "date-time",
             "title": "Sent At",
@@ -1664,6 +1948,71 @@
           "current"
         ],
         "title": "SentOut",
+        "type": "object"
+      },
+      "SentToOut": {
+        "properties": {
+          "customer": {
+            "title": "Customer",
+            "type": "string"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer",
+          "sent_at"
+        ],
+        "title": "SentToOut",
+        "type": "object"
+      },
+      "SettingChangeOut": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ChangedFactOut"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "check_name": {
+            "title": "Check Name",
+            "type": "string"
+          },
+          "now": {
+            "$ref": "#/components/schemas/ObservationOut"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "trigger": {
+            "title": "Trigger",
+            "type": "string"
+          },
+          "was": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservationOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "check_name",
+          "scope",
+          "was",
+          "now",
+          "changes",
+          "trigger"
+        ],
+        "title": "SettingChangeOut",
         "type": "object"
       },
       "SheetPreviewOut": {
@@ -1816,6 +2165,69 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "WatchedList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WatchedOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "WatchedList",
+        "type": "object"
+      },
+      "WatchedOut": {
+        "properties": {
+          "answers": {
+            "title": "Answers",
+            "type": "integer"
+          },
+          "check_name": {
+            "title": "Check Name",
+            "type": "string"
+          },
+          "last_looked_at": {
+            "format": "date-time",
+            "title": "Last Looked At",
+            "type": "string"
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Observed At"
+          },
+          "last_status": {
+            "title": "Last Status",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_name",
+          "scope",
+          "answers",
+          "last_status",
+          "last_looked_at",
+          "last_observed_at"
+        ],
+        "title": "WatchedOut",
+        "type": "object"
+      },
       "WrittenCellOut": {
         "properties": {
           "cell": {
@@ -1867,6 +2279,52 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/changes": {
+      "get": {
+        "description": "The newest changes seen to live settings, with the answers each one reopened.\n\nRead-only: an answer is decided on its own question, one at a time. The statements are\nbuilt by this product from named facts; no text from the remote system is in them.",
+        "operationId": "list_changes_changes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Changes",
+        "tags": [
+          "drift"
+        ]
+      }
+    },
     "/checks": {
       "get": {
         "operationId": "list_checks_checks_get",
@@ -1885,6 +2343,28 @@
         "summary": "List Checks",
         "tags": [
           "checks"
+        ]
+      }
+    },
+    "/checks/watched": {
+      "get": {
+        "description": "The settings answers rest on, and how the last look at each went.",
+        "operationId": "list_watched_checks_watched_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchedList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Watched",
+        "tags": [
+          "drift"
         ]
       }
     },
@@ -3366,6 +3846,88 @@
         "summary": "Get Source",
         "tags": [
           "review"
+        ]
+      }
+    },
+    "/webhooks/github": {
+      "post": {
+        "description": "Record that GitHub says something changed. Answers at once; nothing is looked at here.\n\nSet the webhook's content type to `application/json` and give it the secret in\n`SP_GITHUB_WEBHOOK_SECRET`. A delivery that arrives twice is recorded once.",
+        "operationId": "github_delivery_webhooks_github_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Hub-Signature-256",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hub-Signature-256"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-GitHub-Delivery",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Github-Delivery",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-GitHub-Event",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Github-Event",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "The delivery or event header is not in GitHub's form."
+          },
+          "401": {
+            "description": "The signature does not match."
+          },
+          "404": {
+            "description": "No webhook secret is configured for this deployment."
+          },
+          "413": {
+            "description": "The delivery is too large."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Github Delivery",
+        "tags": [
+          "webhooks"
         ]
       }
     }

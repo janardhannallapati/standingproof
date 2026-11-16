@@ -106,7 +106,7 @@ async def preview(session: AsyncSession, tenant_id: uuid.UUID, run_id: uuid.UUID
     plan, protected = await asyncio.to_thread(_plan, loaded.content, loaded.rows)
     key = file_key(loaded.upload_sha256, loaded.rows)
     latest = await _latest(session, run_id, key)
-    recorded = await list_sent(session, run_id, key)
+    recorded = await list_sent(session, tenant_id, run_id, key)
     return Preview(filled_name(loaded.filename), loaded.rows, plan, protected, latest, recorded)
 
 

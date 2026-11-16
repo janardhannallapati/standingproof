@@ -119,6 +119,12 @@ jobs:
           docker compose ps --status running --services | grep -qx worker
           docker compose exec -T postgres psql -U standingproof -d standingproof -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'workflow'" | grep -qv '^0$'
+      - name: The watcher is running, and with no secret the webhook route does not exist
+        run: |
+          docker compose ps --status running --services | grep -qx watcher
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \
+            -H 'X-GitHub-Event: ping' -H 'X-GitHub-Delivery: ci' -d '{}' \
+            http://127.0.0.1:8000/webhooks/github)" = 404
       - name: A run on an unknown questionnaire is refused, so the route is wired
         run: |
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 -X POST \

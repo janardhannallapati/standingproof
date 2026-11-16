@@ -132,6 +132,7 @@ async def run_check(
         scope=body.scope,
         backends=backends,
         settings=settings,
+        trigger="manual",
     )
     if evidence.status == "denied":
         # The attempt is already stored. The caller is told why, and nothing was called.

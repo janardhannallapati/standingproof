@@ -62,6 +62,7 @@ class Rig:
         name: str = "w1",
         stream: str | None = None,
         checker: Any = None,
+        backends: Any = None,
         **settings: Any,
     ):
         self.db = db
@@ -90,7 +91,7 @@ class Rig:
                 model=model,
                 checker=checker,
                 embedder=FakeEmbedder(),
-                backends=no_backends(),
+                backends=backends or no_backends(),
             ),
         )
         db.run(self.queue.ensure_group())

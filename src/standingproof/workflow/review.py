@@ -25,12 +25,13 @@ from standingproof.models import (
     REVIEW_REJECTED,
     RUN_FINISHED,
     RUN_RUNNING,
+    AnswerReopening,
     ReviewDecision,
     Run,
     RunQuestion,
 )
 
-Decision = Literal["approve", "edit", "reject", "redraft"]
+Decision = Literal["approve", "edit", "reject", "redraft", "keep"]
 
 _NOW = func.now()
 
@@ -59,28 +60,54 @@ async def _apply(
     comment: str | None,
     reviewer: str,
     batch: bool,
+    # For `keep`: the review state to put back, and the wording that was on the screen.
+    restore: str | None = None,
+    shown: str | None = None,
 ) -> None:
     session.add(
         ReviewDecision(
             tenant_id=item.tenant_id,
             run_question_id=item.id,
             decision=decision,
-            shown_answer=item.answer,
+            shown_answer=shown if shown is not None else item.answer,
             final_answer=final_answer,
             comment=comment,
             batch=batch,
             decided_by=reviewer,
         )
     )
-    item.review = {
-        "approve": REVIEW_APPROVED,
-        "edit": REVIEW_EDITED,
-        "reject": REVIEW_REJECTED,
-        "redraft": REVIEW_REDRAFTING,
-    }[decision]
+    item.review = (
+        restore
+        or {
+            "approve": REVIEW_APPROVED,
+            "edit": REVIEW_EDITED,
+            "reject": REVIEW_REJECTED,
+            "redraft": REVIEW_REDRAFTING,
+            "keep": REVIEW_APPROVED,
+        }[decision]
+    )
     item.final_answer = final_answer
     item.version += 1
     item.reviewed_at = _NOW
+    # Whatever was decided, a person has now looked at the change.
+    item.reopened_at = None
+
+
+async def _review_before_reopening(session: AsyncSession, item: RunQuestion) -> str | None:
+    """What the question's review state was when it was reopened: `approved`, `edited`,
+    or None for a draft nobody had decided. The first reopening since `reopened_at`."""
+    return (
+        await session.execute(
+            select(AnswerReopening.was_review)
+            .where(
+                AnswerReopening.tenant_id == item.tenant_id,
+                AnswerReopening.run_question_id == item.id,
+                AnswerReopening.reopened_at >= item.reopened_at,
+            )
+            .order_by(AnswerReopening.reopened_at, AnswerReopening.id)
+            .limit(1)
+        )
+    ).scalar_one_or_none()
 
 
 async def _reopen_run(session: AsyncSession, run_id: uuid.UUID) -> None:
@@ -132,8 +159,27 @@ async def decide(
     comment = (comment or "").strip() or None
     warnings: list[str] = []
     final_answer: str | None = None
+    restore: str | None = None
+    shown: str | None = None
+    reopened = item.reopened_at is not None
 
-    if decision == "approve":
+    if decision == "keep":
+        if not reopened:
+            raise ReviewConflictError("this question was not reopened; approve it instead")
+        restore = await _review_before_reopening(session, item)
+        # An answer that had been decided keeps its approved wording, which for an edit is
+        # the reviewer's and not the agent's draft. A draft nobody had decided is approved.
+        final_answer = item.final_answer if restore is not None else item.answer
+        if not (final_answer or "").strip():
+            raise InvalidDecisionError("there is no answer to keep; write one instead")
+        shown = final_answer
+    elif decision == "approve":
+        if reopened:
+            # Approve means "the agent's draft is right". Here the question is whether an
+            # answer still stands after a change, which may not be the agent's draft.
+            raise ReviewConflictError(
+                "a setting this answer rests on has changed; keep it, edit it or withdraw it"
+            )
         if not (item.answer or "").strip():
             raise InvalidDecisionError("there is no draft to approve; write an answer instead")
         final_answer = item.answer
@@ -169,6 +215,8 @@ async def decide(
         comment=comment,
         reviewer=reviewer,
         batch=False,
+        restore=restore,
+        shown=shown,
     )
     await session.commit()
     await session.refresh(item)
@@ -197,6 +245,8 @@ async def approve_ready(
                     RunQuestion.run_id == run_id,
                     RunQuestion.status == ITEM_READY,
                     RunQuestion.review == REVIEW_PENDING,
+                    # A setting it rests on has changed: it must be opened and read.
+                    RunQuestion.reopened_at.is_(None),
                 )
                 .order_by(RunQuestion.position)
                 .with_for_update()

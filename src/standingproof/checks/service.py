@@ -20,7 +20,7 @@ from standingproof.checks.github import GITHUB_CHECKS, GitHubClient
 from standingproof.checks.outcome import CheckOutcome, not_configured, unavailable
 from standingproof.checks.registry import CHECKS, CheckDef
 from standingproof.config import Settings
-from standingproof.models import Connection, Evidence
+from standingproof.models import Connection, DriftQueue, Evidence
 
 _SYSTEM_SCOPE_KIND = {"github": "org", "aws": "account"}
 _MAX_NAME_CHARS = 100
@@ -162,8 +162,15 @@ async def run_check(
     scope: str,
     backends: CheckBackends,
     settings: Settings,
+    max_age: dt.timedelta | None = None,
+    trigger: str = "run",
 ) -> Evidence:
-    """Decide, then look. Returns the stored evidence, whatever the outcome was."""
+    """Decide, then look. Returns the stored evidence, whatever the outcome was.
+
+    `max_age` is how old an observation may be and still be returned with no new look;
+    the default is the deployment's setting, and zero always looks. `trigger` records why
+    the look was made: run (an agent drafting), schedule, webhook or manual.
+    """
     check = CHECKS.get(name)
     # A connection counts only while the operator still declares its scope.
     connections = [
@@ -179,7 +186,8 @@ async def run_check(
     else:
         if check.system == "github":
             scope = scope.lower()  # GitHub names are case-insensitive; one spelling per scope
-        max_age = dt.timedelta(seconds=settings.evidence_max_age_seconds)
+        if max_age is None:
+            max_age = dt.timedelta(seconds=settings.evidence_max_age_seconds)
         fresh = await _fresh(session, tenant_id, check, scope, now - max_age)
         if fresh is not None:
             return fresh
@@ -205,6 +213,11 @@ async def run_check(
         observed_at=now,
     )
     session.add(evidence)
+    if outcome.status == "observed":
+        # In the same transaction as the observation: whoever compares observations with
+        # the answers that rest on them (standingproof.drift) can never miss this one.
+        await session.flush()
+        session.add(DriftQueue(evidence_id=evidence.id, tenant_id=tenant_id, trigger=trigger))
     await session.commit()
     return evidence
 

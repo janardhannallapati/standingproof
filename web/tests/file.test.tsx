@@ -197,7 +197,7 @@ describe("a dropdown with a comments column", () => {
 
 describe("recording a file as sent", () => {
   const latest = { id: "f1", sha256: "ab", size_bytes: 6000, created_at: "2026-11-16T10:00:00Z", created_by: "asha", current: true };
-  const record = { id: "s1", customer: "Acme Corp", sent_by: "asha", sent_at: "2026-11-16T11:00:00Z", answers: 2, current: true };
+  const record = { id: "s1", customer: "Acme Corp", sent_by: "asha", sent_at: "2026-11-16T11:00:00Z", answers: 2, current: true, reopened: 0 };
 
   it("is not offered before a file exists for these decisions", () => {
     render(<FilePreview runId="r1" preview={preview()} />);

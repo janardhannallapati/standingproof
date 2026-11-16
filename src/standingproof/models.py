@@ -340,6 +340,9 @@ class RunQuestion(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Set when the workflow's saved state for this question has been deleted.
     state_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when a live setting this answer rests on was seen to have changed, and cleared by
+    # the next decision. Separate from `status` (the agent) and `review` (a person).
+    reopened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ReviewDecision(Base):
@@ -448,3 +451,124 @@ class SentFile(Base):
     answers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
     sent_by: Mapped[str] = mapped_column(String(200))
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class AnswerEvidence(Base):
+    """Which observation an answer rests on, per setting. The one drift table that is
+    updated in place: it points at the evidence the answer cited, or was last reopened
+    against. Its history is in `answer_reopenings`."""
+
+    __tablename__ = "answer_evidence"
+    __table_args__ = (
+        # "Which answers rest on this setting?" is the question a new observation asks.
+        Index("ix_answer_evidence_setting", "tenant_id", "check_name", "scope"),
+    )
+
+    run_question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("run_questions.id", ondelete="CASCADE"), primary_key=True
+    )
+    check_name: Mapped[str] = mapped_column(String(100), primary_key=True)
+    scope: Mapped[str] = mapped_column(String(300), primary_key=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    evidence_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("evidence.id", ondelete="CASCADE"))
+
+
+class DriftQueue(Base):
+    """An observation nobody has compared with the answers yet. Written in the same
+    transaction as its evidence and deleted in the one that examines its setting, so an
+    observation is never lost between the two and never examined by halves."""
+
+    __tablename__ = "drift_queue"
+
+    evidence_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evidence.id", ondelete="CASCADE"), primary_key=True
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    # Why the setting was looked at: run | schedule | webhook | manual
+    trigger: Mapped[str] = mapped_column(String(16))
+    queued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class DriftEvent(Base):
+    """One observation that differed from the one before it, or from what an answer
+    rested on. Append-only."""
+
+    __tablename__ = "drift_events"
+    __table_args__ = (Index("ix_drift_events_tenant", "tenant_id", "detected_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    check_name: Mapped[str] = mapped_column(String(100))
+    scope: Mapped[str] = mapped_column(String(300))
+    # The observation that differed. One event per observation, however often it is examined.
+    evidence_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evidence.id", ondelete="CASCADE"), unique=True
+    )
+    # The observation before it, when that one differs. None: only answers differed.
+    previous_evidence_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("evidence.id", ondelete="CASCADE")
+    )
+    trigger: Mapped[str] = mapped_column(String(16))
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class AnswerReopening(Base):
+    """One answer put back in front of a reviewer by one drift event. Append-only."""
+
+    __tablename__ = "answer_reopenings"
+    __table_args__ = (
+        UniqueConstraint("drift_event_id", "run_question_id", name="uq_answer_reopenings_once"),
+        Index("ix_answer_reopenings_question", "run_question_id", "reopened_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    drift_event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("drift_events.id", ondelete="CASCADE")
+    )
+    run_question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("run_questions.id", ondelete="CASCADE")
+    )
+    # What the answer rested on until now.
+    was_evidence_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("evidence.id", ondelete="CASCADE")
+    )
+    # [{fact, was, now}]
+    changes: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    # The review state it had, so that "keep" can put it back. None if it was already
+    # waiting when this event arrived.
+    was_review: Mapped[str | None] = mapped_column(String(16))
+    reopened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class WebhookDelivery(Base):
+    """One delivery from an outside system that passed its signature check. Append-only
+    but for `handled_at` and `outcome`. The payload is not kept: only where to look."""
+
+    __tablename__ = "webhook_deliveries"
+    __table_args__ = (
+        # A delivery sent twice (a redelivery, a retry, a replay) is one row.
+        UniqueConstraint("source", "delivery_id", name="uq_webhook_deliveries_delivery"),
+        Index(
+            "ix_webhook_deliveries_waiting",
+            "received_at",
+            postgresql_where=text("handled_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    source: Mapped[str] = mapped_column(String(16))
+    delivery_id: Mapped[str] = mapped_column(String(100))
+    event: Mapped[str] = mapped_column(String(60))
+    action: Mapped[str | None] = mapped_column(String(40))
+    # None when no tenant has connected the organisation the delivery is about.
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE")
+    )
+    # The setting to look at. None when the delivery is ignored.
+    check_name: Mapped[str | None] = mapped_column(String(100))
+    scope: Mapped[str | None] = mapped_column(String(300))
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # looked | ignored:<reason>
+    outcome: Mapped[str | None] = mapped_column(String(60))

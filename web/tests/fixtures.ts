@@ -15,6 +15,7 @@ export function listed(overrides: Partial<RunQuestion> = {}): RunQuestion {
     cost_usd: "0.016900",
     review: "pending",
     version: 1,
+    reopened: false,
     ...overrides,
   };
 }
@@ -49,6 +50,7 @@ export function detailed(overrides: Partial<ReviewQuestion> = {}): ReviewQuestio
     steps: 2,
     cost_usd: "0.016900",
     warnings: [],
+    reopening: null,
     ...overrides,
   };
 }
