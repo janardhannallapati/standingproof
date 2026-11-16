@@ -222,7 +222,13 @@ async def expire_unreviewed(session: AsyncSession, *, keep_days: int) -> int:
             func.coalesce(RunQuestion.reopened_at, RunQuestion.finished_at)
             < NOW - timedelta(days=keep_days),
         )
-        .values(review=REVIEW_EXPIRED, version=RunQuestion.version + 1, reviewed_at=NOW)
+        .values(
+            review=REVIEW_EXPIRED,
+            version=RunQuestion.version + 1,
+            reviewed_at=NOW,
+            # Closed: it waits for nobody, so nothing should count it as reopened.
+            reopened_at=None,
+        )
         .returning(RunQuestion.id)
     )
     expired = len(rows.all())

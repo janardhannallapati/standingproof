@@ -15,6 +15,7 @@ from standingproof.models import (
     REVIEW_EDITED,
     REVIEW_PENDING,
     AnswerEvidence,
+    DriftQueue,
     Evidence,
     RunQuestion,
 )
@@ -92,6 +93,55 @@ async def rest_on(
                 evidence_id=evidence_id,
             )
         )
+    await queue_newer(session, run_question_id)
+
+
+async def queue_newer(session: AsyncSession, run_question_id: uuid.UUID) -> None:
+    """Have this answer compared with any reading newer than the one it rests on.
+
+    A change is examined once, against the answers that are waiting or decided at that
+    moment. An answer that was still being drafted, or redrafted, was passed over. When
+    it comes to rest (a draft is saved, a failed redraft puts the earlier draft back) the
+    newest reading of each of its settings is queued again, in the caller's transaction,
+    so the examiner sees this answer too. Does not commit.
+    """
+    links = await session.execute(
+        select(AnswerEvidence).where(AnswerEvidence.run_question_id == run_question_id)
+    )
+    for link in links.scalars():
+        newest = (
+            await session.execute(
+                select(Evidence.id)
+                .where(
+                    Evidence.tenant_id == link.tenant_id,
+                    Evidence.check_name == link.check_name,
+                    Evidence.scope == link.scope,
+                    Evidence.status == "observed",
+                )
+                .order_by(Evidence.observed_at.desc(), Evidence.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if newest is not None and newest != link.evidence_id:
+            await session.execute(
+                insert(DriftQueue)
+                .values(evidence_id=newest, tenant_id=link.tenant_id, trigger="run")
+                .on_conflict_do_nothing(index_elements=[DriftQueue.evidence_id])
+            )
+
+
+async def is_watched(session: AsyncSession, setting: "Setting") -> bool:
+    """True when some answer rests on this setting."""
+    found = await session.execute(
+        select(AnswerEvidence.run_question_id)
+        .where(
+            AnswerEvidence.tenant_id == setting.tenant_id,
+            AnswerEvidence.check_name == setting.check_name,
+            AnswerEvidence.scope == setting.scope,
+        )
+        .limit(1)
+    )
+    return found.first() is not None
 
 
 async def due(

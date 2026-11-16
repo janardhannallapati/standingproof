@@ -93,8 +93,15 @@ live system settings, and reopens them when those settings drift.
 - An observation and its `drift_queue` row are written in one transaction, and the row is
   deleted in the transaction that examines its setting. Do not examine from inside
   `run_check`, and do not queue outside it.
-- `drift_events`, `answer_reopenings` and `webhook_deliveries` are append-only.
-  `answer_evidence` is a pointer and is the only drift table updated in place.
+- `drift_events` and `answer_reopenings` are append-only. `answer_evidence` is a pointer
+  and is the only drift table updated in place. A webhook delivery is a wake-up, not a
+  record: it is deleted some days after it was dealt with.
+- The watcher looks for a webhook only at a setting some answer rests on, and marks every
+  waiting delivery for a setting when one look has answered them. Keep both: they bound
+  what a holder of the secret can make this deployment do.
+- A change is examined against the answers that are waiting or decided at that moment.
+  Wherever an answer comes to rest later (a draft saved, an earlier draft put back), call
+  `watch.queue_newer` in the same transaction.
 - Any code that offers "ready" questions for approval without opening them must leave out
   reopened ones (`reopened_at IS NULL`). `approve` is refused on a reopened question; `keep`
   restores what the first reopening recorded.

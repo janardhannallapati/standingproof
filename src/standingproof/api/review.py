@@ -206,7 +206,11 @@ async def list_runs(
     """The newest runs first."""
     reopened = (
         select(func.count())
-        .where(RunQuestion.run_id == Run.id, RunQuestion.reopened_at.is_not(None))
+        .where(
+            RunQuestion.tenant_id == tenant_id,
+            RunQuestion.run_id == Run.id,
+            RunQuestion.reopened_at.is_not(None),
+        )
         .scalar_subquery()
     )
     rows = await session.execute(

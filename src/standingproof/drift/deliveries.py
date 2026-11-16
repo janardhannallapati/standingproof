@@ -7,7 +7,7 @@ delivery that arrives while the watcher is down waits here.
 import datetime as dt
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,3 +77,48 @@ async def waiting(
         .with_for_update(skip_locked=True)
     )
     return list(rows.scalars())
+
+
+async def mark_handled(
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    check_name: str,
+    scope: str,
+    upto: dt.datetime,
+    outcome: str,
+    now: dt.datetime,
+) -> None:
+    """Every waiting delivery for one setting received up to `upto` is dealt with.
+
+    All of them, not only the ones this pass claimed: one look answers them all, so a
+    setting that is sent a thousand deliveries cannot keep others waiting behind it.
+    Rows another watcher holds are passed over; it marks those itself. Does not commit.
+    """
+    waiting_for_setting = (
+        select(WebhookDelivery.id)
+        .where(
+            WebhookDelivery.handled_at.is_(None),
+            WebhookDelivery.tenant_id == tenant_id,
+            WebhookDelivery.check_name == check_name,
+            WebhookDelivery.scope == scope,
+            WebhookDelivery.received_at <= upto,
+        )
+        .with_for_update(skip_locked=True)
+    )
+    await session.execute(
+        update(WebhookDelivery)
+        .where(WebhookDelivery.id.in_(waiting_for_setting))
+        .values(handled_at=now, outcome=outcome)
+    )
+
+
+async def prune(session: AsyncSession, *, before: dt.datetime) -> None:
+    """Delete deliveries dealt with before `before`. Commits.
+
+    A delivery is a wake-up, not a record of anything: what was seen is in the evidence
+    log and what it led to is in the drift events. Without this the table would grow by
+    one row for every delivery ever sent, including replays.
+    """
+    await session.execute(delete(WebhookDelivery).where(WebhookDelivery.handled_at < before))
+    await session.commit()

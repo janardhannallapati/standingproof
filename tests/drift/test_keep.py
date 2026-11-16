@@ -132,3 +132,6 @@ def test_a_reopened_answer_is_given_its_time_before_it_expires(wf: Db) -> None:
 
     sql(wf, "UPDATE run_questions SET reopened_at = now() - interval '31 days'")
     assert call(wf, runs.expire_unreviewed, keep_days=30) == 1
+    # Closed for good: it is no longer waiting for anyone, so it is no longer "reopened".
+    row = item_row(wf, item)
+    assert (row.review, row.reopened_at) == ("expired", None)

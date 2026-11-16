@@ -346,7 +346,12 @@ secret, and the events `branch_protection_rule` and `security_and_analysis`. Put
   one look, and a setting is looked at for webhooks at most once in
   `SP_WEBHOOK_MIN_GAP_SECONDS` (30).
 - With no secret configured the route answers 404. The payload is not stored: only the
-  delivery id, the event, its action and the repository name.
+  delivery id, the event, its action and the repository name, and those are deleted
+  `SP_WEBHOOK_KEEP_DAYS` (30) after the delivery was dealt with.
+- A delivery about a setting no answer rests on is recorded and not looked at.
+- **Expose only this one route.** Every other route acts without sign-in in this version,
+  and the stack binds its ports to 127.0.0.1 for that reason. To receive deliveries, put a
+  reverse proxy in front that forwards `POST /webhooks/github` and nothing else.
 
 Limits: an answer is linked to a setting only through the check it cites; an answer whose
 wording depends on a setting it never cited is not noticed. Organisation two-factor and all

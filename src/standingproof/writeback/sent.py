@@ -40,12 +40,14 @@ class SentInfo:
     reopened: int = 0
 
 
-async def list_sent(session: AsyncSession, run_id: uuid.UUID, key: str) -> list[SentInfo]:
+async def list_sent(
+    session: AsyncSession, tenant_id: uuid.UUID, run_id: uuid.UUID, key: str
+) -> list[SentInfo]:
     rows = (
         await session.execute(
             select(SentFile, FilledFile.key)
             .join(FilledFile, FilledFile.id == SentFile.filled_file_id)
-            .where(SentFile.run_id == run_id)
+            .where(SentFile.tenant_id == tenant_id, SentFile.run_id == run_id)
             .order_by(SentFile.sent_at, SentFile.id)
         )
     ).all()
@@ -54,7 +56,9 @@ async def list_sent(session: AsyncSession, run_id: uuid.UUID, key: str) -> list[
         for question_id in (
             await session.execute(
                 select(RunQuestion.question_id).where(
-                    RunQuestion.run_id == run_id, RunQuestion.reopened_at.is_not(None)
+                    RunQuestion.tenant_id == tenant_id,
+                    RunQuestion.run_id == run_id,
+                    RunQuestion.reopened_at.is_not(None),
                 )
             )
         ).scalars()

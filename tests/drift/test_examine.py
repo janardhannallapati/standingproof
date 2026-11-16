@@ -257,3 +257,64 @@ def test_the_event_says_why_the_newest_look_was_made_whichever_row_is_examined_f
     examine_all(wf)
 
     assert [event.trigger for event in events(wf)] == ["webhook"]
+
+
+def test_a_draft_saved_after_its_setting_changed_is_still_caught(wf: Db) -> None:
+    # The agent looked, the setting changed and was examined, and only then was the
+    # draft saved. Nothing rested on the setting yet when the change was examined.
+    owner = tenant(wf)
+    seen = observe(wf, owner, queue=False)
+    observe(wf, owner, OPEN)
+    assert examine_all(wf) == []
+
+    _, [item] = answers(wf, owner, seen)
+    examine_all(wf)
+
+    row = item_row(wf, item)
+    assert (row.review, row.reopened_at is not None) == ("pending", True)
+
+
+def test_a_redraft_that_fails_after_its_setting_changed_is_still_caught(wf: Db) -> None:
+    from standingproof.workflow import results
+    from tests.workflow.test_runs import call, take
+
+    owner, item, _ = approved_answer(wf)
+    wf.run(_reset(wf, item, "pending"))
+    decide(wf, owner, item, "redraft", version=item_row(wf, item).version, comment="Again.")
+    # While the agent is redrafting, the change is seen and examined: the question is
+    # not waiting for anyone, so it is passed over.
+    observe(wf, owner, OPEN)
+    assert examine_all(wf) == []
+
+    assert take(wf, item) is not None
+    call(
+        wf,
+        results.give_back,
+        item_id=item,
+        owner="w1",
+        reason="model_unavailable",
+        retry_in_seconds=0,
+        max_attempts=1,
+    )
+    examine_all(wf)
+
+    row = item_row(wf, item)
+    assert (row.review, row.reason, row.reopened_at is not None) == (
+        "pending",
+        "redraft_failed",
+        True,
+    )
+
+
+async def _reset(db: Db, item: uuid.UUID, review: str) -> None:
+    from sqlalchemy import update
+
+    from standingproof.models import RunQuestion
+
+    async with db.sessions() as session:
+        await session.execute(
+            update(RunQuestion)
+            .where(RunQuestion.id == item)
+            .values(review=review, final_answer=None)
+        )
+        await session.commit()

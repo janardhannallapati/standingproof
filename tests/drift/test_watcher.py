@@ -298,3 +298,59 @@ def test_the_process_announces_a_reopening_on_the_runs_channel_and_stops_on_a_si
 
     assert wf.run(run_until_announced()) == [CHANGED.encode()]
     assert item_row(wf, scene.item).review == "pending"
+
+
+def test_a_delivery_about_a_setting_no_answer_rests_on_is_not_looked_at(wf: Db) -> None:
+    # Anyone who holds the secret can name any repository of a connected organisation.
+    # Each would be a look on the deployment's token and a row of evidence for ever.
+    scene = Scene(wf)
+    before = scene.github.requests
+
+    async def go() -> None:
+        for number in range(5):
+            payload = {"repository": {"full_name": f"acme/unwatched-{number}"}}
+            async with wf.sessions() as session:
+                await deliveries.store(
+                    session,
+                    delivery_id=str(uuid.uuid4()),
+                    event="branch_protection_rule",
+                    reading=read("branch_protection_rule", payload),
+                    now=utc_now(),
+                )
+
+    wf.run(go())
+    scene.tick()
+
+    assert scene.github.requests == before
+    assert len(scene.looks()) == 1
+    assert scene.outcomes() == ["ignored:not_watched"] * 5
+
+
+def test_one_look_answers_every_waiting_delivery_for_its_setting_however_many(wf: Db) -> None:
+    # More than one pass's batch: a replayed delivery must not hold up other settings.
+    scene = Scene(wf, drift_batch=3)
+    scene.deliver(count=10)
+
+    scene.tick()
+
+    assert scene.outcomes() == ["looked"] * 10
+    assert len(scene.looks()) == 2
+
+
+def test_handled_deliveries_are_removed_after_the_keep_time(wf: Db) -> None:
+    from tests.workflow.seed import sql
+
+    scene = Scene(wf, webhook_keep_days=30)
+    scene.deliver(count=2)
+    scene.tick()
+    sql(
+        wf,
+        "UPDATE webhook_deliveries SET handled_at = now() - interval '31 days' "
+        "WHERE id = (SELECT id FROM webhook_deliveries LIMIT 1)",
+    )
+    scene.deliver()
+
+    scene.tick()
+
+    # The old handled one is gone; the recent one and the one just answered remain.
+    assert scene.outcomes() == ["looked", "looked"]

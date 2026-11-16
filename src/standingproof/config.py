@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     webhook_max_bytes: int = 1024 * 1024
     # A setting is looked at for a webhook no more often than this, however many arrive.
     webhook_min_gap_seconds: float = 30.0
+    # A delivery that has been dealt with is deleted after this long.
+    webhook_keep_days: int = 30
     # How long after a delivery before looking, so the change is visible to a read.
     webhook_settle_seconds: float = 2.0
     # Every setting an answer rests on is looked at again this long after it was last seen,

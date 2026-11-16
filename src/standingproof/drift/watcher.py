@@ -20,7 +20,7 @@ from standingproof.checks.service import CheckBackends, run_check, utc_now
 from standingproof.config import Settings
 from standingproof.drift import deliveries
 from standingproof.drift.examine import examine_pending
-from standingproof.drift.watch import Setting, due
+from standingproof.drift.watch import Setting, due, is_watched
 from standingproof.models import Evidence, WebhookDelivery
 
 log = logging.getLogger(__name__)
@@ -86,19 +86,39 @@ class Watcher:
                 setting = Setting(delivery.tenant_id, delivery.check_name, delivery.scope)
                 by_setting.setdefault(setting, []).append(delivery)
             for setting, group in by_setting.items():
-                last = await self._last_look(session, setting)
-                newest = max(delivery.received_at for delivery in group)
-                # A look made after the newest delivery arrived has already answered them.
-                if last is None or last < newest:
-                    if last is not None and last > now - gap:
-                        # Too soon after the last look. They stay waiting, so the last
-                        # delivery of a burst still gets its look when the gap has passed.
-                        continue
-                    await self._look(setting, "webhook")
+                outcome = "looked"
+                if not await is_watched(session, setting):
+                    # No answer rests on it, so there is nothing a look could reopen. A
+                    # sender who names repository after repository gets no look for any.
+                    outcome = "ignored:not_watched"
+                else:
+                    last = await self._last_look(session, setting)
+                    newest = max(delivery.received_at for delivery in group)
+                    # A look made after the newest delivery arrived has already answered them.
+                    if last is None or last < newest:
+                        if last is not None and last > now - gap:
+                            # Too soon after the last look. They stay waiting, so the last
+                            # delivery of a burst still gets its look when the gap has passed.
+                            continue
+                        await self._look(setting, "webhook")
                 for delivery in group:
                     delivery.handled_at = now
-                    delivery.outcome = "looked"
+                    delivery.outcome = outcome
+                await session.flush()
+                # And the ones beyond this pass's batch: the same look answers them.
+                await deliveries.mark_handled(
+                    session,
+                    tenant_id=setting.tenant_id,
+                    check_name=setting.check_name,
+                    scope=setting.scope,
+                    upto=now,
+                    outcome=outcome,
+                    now=now,
+                )
             await session.commit()
+        async with self._deps.sessions() as session:
+            keep = dt.timedelta(days=self._settings.webhook_keep_days)
+            await deliveries.prune(session, before=now - keep)
 
     async def _look_at_due(self, now: dt.datetime) -> None:
         async with self._deps.sessions() as session:
