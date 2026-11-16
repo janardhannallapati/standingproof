@@ -73,3 +73,58 @@ class AgentResult(BaseModel):
     steps: int
     cost_usd: float
     usage: Usage
+    # Set when a second model read the draft. Its cost is already in `cost_usd`.
+    check: "CheckResult | None" = None
+
+
+class Finding(BaseModel):
+    """One thing the checker disputes, as the checker returns it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["unsupported", "contradicted", "not_answered"]
+    # The exact words of the draft the finding is about. Empty for `not_answered`.
+    quote: str
+    # The source the finding rests on. Empty when there is none.
+    source_id: str
+    explanation: str
+
+
+class CheckVerdict(BaseModel):
+    """The structured reply the checker must return."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    verdict: Literal["supported", "not_supported"]
+    findings: list[Finding]
+
+
+class CheckTurn(BaseModel):
+    """One checker response, reduced to what the code that judges it needs."""
+
+    stop_reason: str
+    verdict: CheckVerdict | None
+    usage: Usage
+    model: str
+
+
+class CheckedFinding(BaseModel):
+    """A finding after the code has looked at it. This is what is stored and shown."""
+
+    kind: Literal["unsupported", "contradicted", "not_answered"]
+    quote: str
+    # True when `quote` is in the draft, character for character, so it can be marked there.
+    located: bool
+    source_id: str | None
+    explanation: str
+
+
+class CheckResult(BaseModel):
+    """What a check of one wording came to. Decided by `judge_check`, never by the model."""
+
+    outcome: Literal["agrees", "disagrees", "not_checked"]
+    findings: list[CheckedFinding]
+    # The wording that was read. A check says nothing about any other wording.
+    answer_checked: str
+    model: str | None
+    cost_usd: float
