@@ -55,7 +55,7 @@ class FindingOut(BaseModel):
     explanation: str
 
 
-class CheckOut(BaseModel):
+class DraftCheckOut(BaseModel):
     """What the independent checker made of the agent's draft."""
 
     outcome: Literal["agrees", "disagrees", "not_checked"]
@@ -89,7 +89,7 @@ class ReviewQuestionOut(BaseModel):
     # Strong terms in an edited answer that no cited source uses.
     warnings: list[str] = []
     # None: the draft was not sent to the checker (reused, nothing drafted, or switched off).
-    check: CheckOut | None = None
+    check: DraftCheckOut | None = None
 
 
 class DecisionIn(BaseModel):
@@ -181,7 +181,7 @@ async def _question_out(
         warnings=warnings,
         check=None
         if latest is None
-        else CheckOut(
+        else DraftCheckOut(
             outcome=latest.outcome,  # type: ignore[arg-type]
             findings=[FindingOut(**found) for found in latest.findings],
             model=latest.model,

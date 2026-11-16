@@ -195,7 +195,7 @@
         "properties": {
           "checks": {
             "items": {
-              "$ref": "#/components/schemas/standingproof__api__checks__CheckOut"
+              "$ref": "#/components/schemas/CheckOut"
             },
             "title": "Checks",
             "type": "array"
@@ -205,6 +205,43 @@
           "checks"
         ],
         "title": "CheckList",
+        "type": "object"
+      },
+      "CheckOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scope_kind": {
+            "enum": [
+              "org",
+              "repo",
+              "account"
+            ],
+            "title": "Scope Kind",
+            "type": "string"
+          },
+          "system": {
+            "enum": [
+              "github",
+              "aws"
+            ],
+            "title": "System",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "system",
+          "scope_kind",
+          "description"
+        ],
+        "title": "CheckOut",
         "type": "object"
       },
       "ConnectionIn": {
@@ -314,6 +351,50 @@
           "version"
         ],
         "title": "DecisionIn",
+        "type": "object"
+      },
+      "DraftCheckOut": {
+        "description": "What the independent checker made of the agent's draft.",
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingOut"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "on_current_answer": {
+            "title": "On Current Answer",
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "agrees",
+              "disagrees",
+              "not_checked"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "findings",
+          "model",
+          "on_current_answer"
+        ],
+        "title": "DraftCheckOut",
         "type": "object"
       },
       "EvidenceOut": {
@@ -749,7 +830,7 @@
           "check": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/standingproof__api__review__CheckOut"
+                "$ref": "#/components/schemas/DraftCheckOut"
               },
               {
                 "type": "null"
@@ -1490,87 +1571,6 @@
           "type"
         ],
         "title": "ValidationError",
-        "type": "object"
-      },
-      "standingproof__api__checks__CheckOut": {
-        "properties": {
-          "description": {
-            "title": "Description",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "scope_kind": {
-            "enum": [
-              "org",
-              "repo",
-              "account"
-            ],
-            "title": "Scope Kind",
-            "type": "string"
-          },
-          "system": {
-            "enum": [
-              "github",
-              "aws"
-            ],
-            "title": "System",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "system",
-          "scope_kind",
-          "description"
-        ],
-        "title": "CheckOut",
-        "type": "object"
-      },
-      "standingproof__api__review__CheckOut": {
-        "description": "What the independent checker made of the agent's draft.",
-        "properties": {
-          "findings": {
-            "items": {
-              "$ref": "#/components/schemas/FindingOut"
-            },
-            "title": "Findings",
-            "type": "array"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model"
-          },
-          "on_current_answer": {
-            "title": "On Current Answer",
-            "type": "boolean"
-          },
-          "outcome": {
-            "enum": [
-              "agrees",
-              "disagrees",
-              "not_checked"
-            ],
-            "title": "Outcome",
-            "type": "string"
-          }
-        },
-        "required": [
-          "outcome",
-          "findings",
-          "model",
-          "on_current_answer"
-        ],
-        "title": "CheckOut",
         "type": "object"
       }
     }

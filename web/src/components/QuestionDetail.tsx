@@ -1,9 +1,11 @@
 "use client";
 
 import type { Decision, ReviewQuestion } from "@/lib/api";
-import { chipFor, fineMoney, groupOf, reasonText } from "@/lib/labels";
+import { checkLine, chipFor, fineMoney, groupOf, reasonText } from "@/lib/labels";
 
+import { CheckFindings } from "./CheckFindings";
 import { DecisionBar, type Mode } from "./DecisionBar";
+import { MarkedAnswer } from "./MarkedAnswer";
 import { SourceCard } from "./SourceCard";
 import { StatusChip } from "./StatusChip";
 
@@ -20,23 +22,28 @@ type Props = {
 
 function why(question: ReviewQuestion): { fine: boolean; text: string } {
   const group = groupOf(question);
+  const note = question.note ? ` ${question.note}` : "";
+  const checked = checkLine(question.check);
   if (group === "needs" || group === "unanswered") {
-    const note = question.note ? ` ${question.note}` : "";
-    return { fine: false, text: `${reasonText(question.reason)}.${note}` };
+    const sentByChecker = question.reason === "checker_disagrees" || question.reason === "not_checked";
+    const reason = sentByChecker && checked ? checked : `${reasonText(question.reason)}.`;
+    return { fine: false, text: `${reason}${note}` };
   }
   if (question.path === "reused") {
-    return { fine: true, text: "Reused: the question matches an approved answer exactly." };
+    return {
+      fine: true,
+      text: "Reused: the question matches an approved answer exactly. Not sent to the checker.",
+    };
   }
   const count = question.sources.length;
-  return {
-    fine: true,
-    text: `Drafted from ${count} cited source${count === 1 ? "" : "s"}.${question.note ? ` ${question.note}` : ""}`,
-  };
+  const drafted = `Drafted from ${count} cited source${count === 1 ? "" : "s"}.`;
+  return { fine: true, text: `${drafted}${checked ? ` ${checked}` : ""}${note}` };
 }
 
 function meta(question: ReviewQuestion): string {
   const parts = [question.path ?? "not drafted"];
   if (question.steps > 0) parts.push(`${question.steps} step${question.steps === 1 ? "" : "s"}`);
+  if (question.check && question.check.outcome !== "not_checked") parts.push("checked");
   parts.push(question.steps === 0 && question.path === "reused" ? "no model call" : fineMoney(question.cost_usd));
   if (question.redrafts > 0) parts.push(`redrafted ${question.redrafts}×`);
   return parts.join(" · ");
@@ -47,6 +54,9 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
   const pending = question.review === "pending";
   const working = groupOf(question) === "working";
   const shown = question.final_answer ?? question.answer;
+  const check = question.check ?? null;
+  // Findings point at words of the wording that was checked, and at no other wording.
+  const disputed = check?.outcome === "disagrees" && check.on_current_answer ? check.findings : [];
   return (
     <section aria-label={`Question ${question.position}`} className="grid min-w-0 content-start gap-4 p-4 md:px-6 md:py-5">
       <h1 className="text-[17px] leading-snug font-semibold">{question.question}</h1>
@@ -76,13 +86,19 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
               shown ? "" : "text-muted"
             }`}
           >
-            {shown || "No answer was drafted. Write one, or reject the question back to its owner."}
+            {shown ? (
+              <MarkedAnswer answer={shown} findings={disputed} />
+            ) : (
+              "No answer was drafted. Write one, or reject the question back to its owner."
+            )}
           </p>
           {question.final_answer && question.answer && question.final_answer !== question.answer ? (
             <p className="text-[12.5px] text-muted">The agent&apos;s draft was: {question.answer}</p>
           ) : null}
         </div>
       ) : null}
+
+      {check?.outcome === "disagrees" ? <CheckFindings check={check} sources={question.sources} /> : null}
 
       <div className="grid gap-1.5">
         <h2 className="text-[12.5px] font-semibold text-muted">

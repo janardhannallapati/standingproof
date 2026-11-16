@@ -1,10 +1,5 @@
 import type { Source } from "@/lib/api";
-
-const KINDS: Record<string, string> = {
-  answer: "Approved answer",
-  policy: "Policy",
-  evidence: "Live check",
-};
+import { SOURCE_KINDS as KINDS } from "@/lib/labels";
 
 /**
  * The longest sentence of the answer that the source also contains, as a range in the

@@ -1,6 +1,6 @@
 // Words for what the API reports. A reviewer reads these, so they say what happened
 // and, where it helps, what to do.
-import type { RunQuestion } from "./api";
+import type { Finding, ReviewQuestion, RunQuestion } from "./api";
 
 const REASONS: Record<string, string> = {
   no_approved_source: "No approved source",
@@ -15,6 +15,8 @@ const REASONS: Record<string, string> = {
   unexpected_stop: "The model stopped unexpectedly",
   model_error: "The model could not be called",
   model_unavailable: "The model provider was unavailable",
+  checker_disagrees: "The checker disagrees",
+  not_checked: "Not checked",
   redraft_failed: "The redraft could not be made; the earlier draft is shown",
   run_cost_limit: "The run reached its cost ceiling first",
   cancelled: "The run was cancelled",
@@ -26,6 +28,34 @@ const REASONS: Record<string, string> = {
 export function reasonText(reason: string | null | undefined): string {
   if (!reason) return "";
   return REASONS[reason] ?? reason.replaceAll("_", " ");
+}
+
+export const SOURCE_KINDS: Record<string, string> = {
+  answer: "Approved answer",
+  policy: "Policy",
+  evidence: "Live check",
+};
+
+export const FINDING_KINDS: Record<Finding["kind"], string> = {
+  unsupported: "Not in the source",
+  contradicted: "A source says otherwise",
+  not_answered: "Part of the question is not answered",
+};
+
+/**
+ * What the independent checker concluded, as one sentence. Null when the draft was not
+ * sent to it. "Agrees" is as far as this goes: a second reader agreeing is not proof.
+ */
+export function checkLine(check: ReviewQuestion["check"]): string | null {
+  if (!check) return null;
+  if (check.outcome === "agrees") return "The checker agrees: every claim is in the source.";
+  if (check.outcome === "not_checked") return "Not checked: read this draft against its source.";
+  const count = check.findings.length;
+  if (count === 0) return "The checker disagrees and named no claim. Read this draft against its source.";
+  if (check.findings.every((finding) => finding.kind === "unsupported")) {
+    return `The checker disagrees: ${count} claim${count === 1 ? " is" : "s are"} not in the cited source.`;
+  }
+  return `The checker disagrees: ${count} finding${count === 1 ? "" : "s"}, listed below.`;
 }
 
 export type Group = "needs" | "ready" | "working" | "decided" | "unanswered";

@@ -8,6 +8,8 @@ export type RunListItem = Schemas["RunListItem"];
 export type RunQuestion = Schemas["RunQuestionOut"];
 export type ReviewQuestion = Schemas["ReviewQuestionOut"];
 export type Source = Schemas["SourceOut"];
+export type Check = Schemas["DraftCheckOut"];
+export type Finding = Schemas["FindingOut"];
 export type DecisionBody = Schemas["DecisionIn"];
 export type Decision = DecisionBody["decision"];
 
