@@ -17,6 +17,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.exceptions import RedisError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from standingproof.agent.checker import CheckerClient
 from standingproof.agent.limits import Limits
 from standingproof.agent.loop import ModelCallError, ModelClient
 from standingproof.checks.service import CheckBackends
@@ -58,6 +59,8 @@ class WorkerDeps:
     saver: AsyncPostgresSaver | None = None
     # Tells anyone watching a run that it changed. Absent: nobody is told.
     announce: Callable[[uuid.UUID], Awaitable[None]] | None = None
+    # The second reader of each draft. Absent: drafts are not checked.
+    checker: CheckerClient | None = None
 
 
 class Worker:
@@ -91,6 +94,7 @@ class Worker:
                 max_seconds=settings.run_max_seconds,
             ),
             find_exact=find_exact,
+            checker=deps.checker,
         )
 
     async def _announce(self, run_id: uuid.UUID) -> None:

@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
     draft_model: str = "claude-opus-5-5"
     draft_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    # The independent checker: a second model that reads each draft against its sources.
+    # Off: drafts that pass the rules in code are ready without a second reader.
+    check_enabled: bool = True
+    # Not the drafter's model by default: a different reader shares fewer blind spots.
+    check_model: str = "claude-sonnet-5-5"
+    check_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     run_max_steps: int = 8
     run_max_cost_usd: float = 0.50
     run_max_seconds: float = 120.0
