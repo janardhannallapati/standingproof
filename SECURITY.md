@@ -69,6 +69,18 @@ customer data, kept so that a restart loses nothing.
 - The workflow library can send traces of every step to a hosted service (LangSmith). That is
   off unless switched on, and the image sets `LANGSMITH_TRACING=false` so that it stays off.
 
+## Review decisions
+
+- A decision is recorded under the name in `SP_DEV_REVIEWER`. That is a stand-in, not
+  authentication: anyone who can reach the API can decide. Do not expose this version to a
+  network you do not control. With `SP_ENVIRONMENT=prod` every request is refused.
+- A reviewer's instruction for a redraft reaches the model in the system message. Text from a
+  questionnaire or a tool result never goes there, so a questionnaire cannot pose as the
+  reviewer, and a question cannot close the tags it is wrapped in.
+- A browser page may open the live connection (`WS /runs/<id>/events`) only from an origin
+  listed in `SP_ALLOWED_ORIGINS`. A WebSocket is not protected by CORS; this list is the
+  control. The connection carries the word "changed" and nothing else.
+
 ## What leaves your machine
 
 | Destination | What is sent | When |

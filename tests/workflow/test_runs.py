@@ -9,7 +9,7 @@ import pytest
 
 from standingproof.agent.types import AnswerDraft, Usage
 from standingproof.models import STATUS_NEEDS_MAPPING, Run
-from standingproof.workflow import leases, runs, sweep
+from standingproof.workflow import leases, results, runs, sweep
 from standingproof.workflow.exact import find_exact_answer
 from standingproof.workflow.runs import QuestionnaireNotReadyError
 from standingproof.workflow.state import Outcome
@@ -17,7 +17,6 @@ from tests.conftest import Db
 from tests.workflow.seed import (
     approved_answer,
     expire_lease,
-    finished_days_ago,
     items,
     questionnaire,
     sql,
@@ -168,8 +167,8 @@ def test_an_expired_lease_can_be_taken_over_and_the_late_result_is_discarded(wf:
     expire_lease(wf, item)
 
     taken = take(wf, item, "w2")
-    late = call(wf, leases.save_result, item_id=item, owner="w1", outcome=outcome("needs_review"))
-    saved = call(wf, leases.save_result, item_id=item, owner="w2", outcome=outcome("ready"))
+    late = call(wf, results.save_result, item_id=item, owner="w1", outcome=outcome("needs_review"))
+    saved = call(wf, results.save_result, item_id=item, owner="w2", outcome=outcome("ready"))
 
     assert taken is not None and taken.attempts == 2
     assert late is False
@@ -188,8 +187,8 @@ def test_a_lease_is_renewed_only_by_its_holder(wf: Db) -> None:
     [item, *_] = start(wf, owner, questionnaire(wf, owner, QUESTIONS)).item_ids
     take(wf, item, "w1")
 
-    assert call(wf, leases.renew_lease, item_id=item, owner="w1", seconds=60) is True
-    assert call(wf, leases.renew_lease, item_id=item, owner="w2", seconds=60) is False
+    assert call(wf, results.renew_lease, item_id=item, owner="w1", seconds=60) is True
+    assert call(wf, results.renew_lease, item_id=item, owner="w2", seconds=60) is False
 
 
 def test_the_run_finishes_when_its_last_question_does(wf: Db) -> None:
@@ -199,7 +198,7 @@ def test_the_run_finishes_when_its_last_question_does(wf: Db) -> None:
     for index, item in enumerate(started.item_ids):
         take(wf, item)
         assert run_row(wf, started.run.id).status == "running"
-        call(wf, leases.save_result, item_id=item, owner="w1", outcome=outcome())
+        call(wf, results.save_result, item_id=item, owner="w1", outcome=outcome())
         expected = "finished" if index == 1 else "running"
         assert run_row(wf, started.run.id).status == expected
 
@@ -211,7 +210,7 @@ def test_no_question_starts_once_the_run_has_spent_its_ceiling(wf: Db) -> None:
     started = start(wf, owner, questionnaire(wf, owner, QUESTIONS), max_cost_usd=0.05)
     first, second, third = started.item_ids
     take(wf, first)
-    call(wf, leases.save_result, item_id=first, owner="w1", outcome=outcome(cost=0.05))
+    call(wf, results.save_result, item_id=first, owner="w1", outcome=outcome(cost=0.05))
 
     assert take(wf, second) is None
     assert take(wf, third) is None
@@ -232,7 +231,7 @@ def test_a_question_given_back_is_retried_then_failed_after_the_last_attempt(wf:
         assert lease is not None and lease.attempts == attempt
         call(
             wf,
-            leases.give_back,
+            results.give_back,
             item_id=item,
             owner="w1",
             reason="model_unavailable",
@@ -290,7 +289,7 @@ def test_cancelling_closes_queued_questions_and_lets_running_ones_finish(wf: Db)
 
     assert call(wf, runs.cancel_run, tenant_id=owner, run_id=started.run.id) is True
     assert take(wf, queued) is None
-    assert call(wf, leases.save_result, item_id=running, owner="w1", outcome=outcome()) is True
+    assert call(wf, results.save_result, item_id=running, owner="w1", outcome=outcome()) is True
 
     rows = items(wf, started.run.id)
     assert [row.status for row in rows] == ["ready", "not_started", "not_started"]
@@ -324,7 +323,7 @@ def test_the_summary_counts_by_status_and_adds_the_cost(wf: Db) -> None:
     first, second, _ = started.item_ids
     for item, result in ((first, outcome(cost=0.02)), (second, outcome("needs_review", 0.03, "x"))):
         take(wf, item)
-        call(wf, leases.save_result, item_id=item, owner="w1", outcome=result)
+        call(wf, results.save_result, item_id=item, owner="w1", outcome=result)
 
     found = call(wf, runs.summary, tenant_id=owner, run_id=started.run.id)
 
@@ -332,19 +331,59 @@ def test_the_summary_counts_by_status_and_adds_the_cost(wf: Db) -> None:
     assert found.cost_usd == Decimal("0.05")
 
 
-def test_old_finished_questions_are_listed_for_pruning_once(wf: Db) -> None:
+def _settle(db: Db, item: uuid.UUID, review: str | None, days_ago: int) -> None:
+    sql(
+        db,
+        "UPDATE run_questions SET review = CAST(:review AS varchar), "
+        "reviewed_at = CASE WHEN CAST(:review AS varchar) IS NULL THEN NULL "
+        "ELSE now() - make_interval(days => :days) END, "
+        "finished_at = now() - make_interval(days => :days) WHERE id = :id",
+        id=item,
+        review=review,
+        days=days_ago,
+    )
+
+
+def test_saved_state_is_pruned_after_the_decision_never_while_one_is_awaited(wf: Db) -> None:
     owner = tenant(wf)
-    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS[:2]))
-    old, recent = started.item_ids
-    for item in (old, recent):
+    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS + ["A fourth?", "A fifth?"]))
+    approved_long_ago, approved_recently, still_waiting, being_redrafted, never_reviewable = (
+        started.item_ids
+    )
+    for item in started.item_ids:
         take(wf, item)
-        call(wf, leases.save_result, item_id=item, owner="w1", outcome=outcome())
-    finished_days_ago(wf, old, 8)
+        call(wf, results.save_result, item_id=item, owner="w1", outcome=outcome())
+    _settle(wf, approved_long_ago, "approved", 8)
+    _settle(wf, approved_recently, "approved", 2)
+    _settle(wf, still_waiting, "pending", 20)
+    _settle(wf, being_redrafted, "redrafting", 20)
+    _settle(wf, never_reviewable, None, 8)
 
     listed = call(wf, runs.finished_with_state, keep_days=7, limit=10)
     call(wf, runs.mark_state_deleted, item_ids=listed)
 
-    assert listed == [old]
+    assert set(listed) == {approved_long_ago, never_reviewable}
+    assert call(wf, runs.finished_with_state, keep_days=7, limit=10) == []
+
+
+def test_a_question_nobody_decides_expires_and_only_then_loses_its_state(wf: Db) -> None:
+    owner = tenant(wf)
+    started = start(wf, owner, questionnaire(wf, owner, QUESTIONS[:2]))
+    forgotten, recent = started.item_ids
+    for item in started.item_ids:
+        take(wf, item)
+        call(wf, results.save_result, item_id=item, owner="w1", outcome=outcome())
+    _settle(wf, forgotten, "pending", 31)
+    _settle(wf, recent, "pending", 29)
+
+    expired = call(wf, runs.expire_unreviewed, keep_days=30)
+
+    rows = items(wf, started.run.id)
+    assert expired == 1
+    assert [row.review for row in rows] == ["expired", "pending"]
+    assert rows[0].final_answer is None
+    assert rows[0].version == 2
+    # It expired just now, so its state stays for the usual seven days more.
     assert call(wf, runs.finished_with_state, keep_days=7, limit=10) == []
 
 
@@ -408,7 +447,7 @@ def test_two_last_questions_finishing_at_the_same_moment_still_finish_the_run(wf
 
     async def save(item: uuid.UUID) -> None:
         async with wf.sessions() as session:
-            await leases.save_result(session, item_id=item, owner="w1", outcome=outcome())
+            await results.save_result(session, item_id=item, owner="w1", outcome=outcome())
 
     for round_number in range(10):
         sheet = questionnaire(wf, owner, QUESTIONS[:2])
@@ -453,7 +492,7 @@ def test_a_question_waits_while_those_in_progress_could_use_up_the_budget(wf: Db
     assert rows[1].status == "queued"  # waiting, not closed
     assert call(wf, sweep.due_for_queue, limit=10, requeue_seconds=60) == []
 
-    call(wf, leases.save_result, item_id=first, owner="w1", outcome=outcome(cost=0.02))
+    call(wf, results.save_result, item_id=first, owner="w1", outcome=outcome(cost=0.02))
     assert take(wf, second, "w2", reserve=0.50) is not None
 
 
@@ -488,7 +527,7 @@ def test_money_spent_on_a_question_that_was_given_back_counts_against_the_run(wf
 
     call(
         wf,
-        leases.give_back,
+        results.give_back,
         item_id=first,
         owner="w1",
         reason="model_unavailable",

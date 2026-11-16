@@ -10,6 +10,7 @@ import asyncio
 import logging
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -23,7 +24,7 @@ from standingproof.checks.tools import check_tool
 from standingproof.config import Settings
 from standingproof.library.embedding import Embedder
 from standingproof.library.tools import build_library_registry
-from standingproof.workflow import leases, runs
+from standingproof.workflow import leases, results, runs
 from standingproof.workflow import sweep as sweeping
 from standingproof.workflow.checkpoint import delete_state
 from standingproof.workflow.exact import find_exact_answer
@@ -55,6 +56,8 @@ class WorkerDeps:
     backends: CheckBackends
     # Absent in tests that keep state in memory; then nothing is pruned.
     saver: AsyncPostgresSaver | None = None
+    # Tells anyone watching a run that it changed. Absent: nobody is told.
+    announce: Callable[[uuid.UUID], Awaitable[None]] | None = None
 
 
 class Worker:
@@ -90,12 +93,16 @@ class Worker:
             find_exact=find_exact,
         )
 
+    async def _announce(self, run_id: uuid.UUID) -> None:
+        if self._deps.announce is not None:
+            await self._deps.announce(run_id)
+
     async def _keep_lease(self, lease: leases.Lease) -> None:
         """Renew the lease while the question is being worked on."""
         while True:
             await asyncio.sleep(self._settings.lease_seconds / 3)
             async with self._deps.sessions() as session:
-                held = await leases.renew_lease(
+                held = await results.renew_lease(
                     session,
                     item_id=lease.item_id,
                     owner=self.name,
@@ -113,7 +120,7 @@ class Worker:
         # the money is spent, and the run's ceiling has to see it.
         used = await progress(self._deps.graph, str(lease.item_id))
         async with self._deps.sessions() as session:
-            await leases.give_back(
+            await results.give_back(
                 session,
                 progress=used,
                 item_id=lease.item_id,
@@ -157,6 +164,7 @@ class Worker:
             )
         if lease is None:
             return  # finished, cancelled, or held by another worker
+        await self._announce(lease.run_id)
 
         keeper = asyncio.create_task(self._keep_lease(lease))
         try:
@@ -165,6 +173,7 @@ class Worker:
                 thread_id=str(item_id),
                 question=lease.question,
                 context=self._context(lease),
+                resume=lease.resume,
             )
         except asyncio.CancelledError:
             # Shutting down. What was saved stays saved; the next worker continues from it.
@@ -184,13 +193,14 @@ class Worker:
             )
         else:
             async with self._deps.sessions() as session:
-                saved = await leases.save_result(
+                saved = await results.save_result(
                     session, item_id=item_id, owner=self.name, outcome=outcome
                 )
             if not saved:
                 log.warning("result for question %s discarded: the lease was lost", item_id)
         finally:
             keeper.cancel()
+            await self._announce(lease.run_id)
 
     # --- housekeeping ---
 
@@ -217,6 +227,7 @@ class Worker:
         if self._deps.saver is None:
             return 0
         async with self._deps.sessions() as session:
+            await runs.expire_unreviewed(session, keep_days=self._settings.review_keep_days)
             old = await runs.finished_with_state(
                 session, keep_days=self._settings.state_keep_days, limit=_SWEEP_BATCH
             )
