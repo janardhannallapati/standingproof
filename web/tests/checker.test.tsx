@@ -215,3 +215,50 @@ describe("the two new reasons", () => {
     expect(reasonText("not_checked")).toBe("Not checked");
   });
 });
+
+describe("the drafting agent's note", () => {
+  const NOTE = "I ran two searches. Nothing mentions contractors.";
+
+  it("is not part of the checker's line", () => {
+    open(flagged({ note: NOTE }));
+
+    const line = screen.getByText(/^The checker disagrees/);
+    expect(line.textContent).not.toContain(NOTE);
+    expect(line.textContent).toMatch(/^The checker disagrees: [^.]+\.$/);
+  });
+
+  it("has its own heading after the checker's findings and before the sources", () => {
+    open(flagged({ note: NOTE }));
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual([
+      "Proposed answer",
+      "What the checker found",
+      "The drafting agent's note",
+      "Source",
+    ]);
+    expect(screen.getByText(NOTE)).toBeInTheDocument();
+    expect(screen.getByText("The checker was not shown this note.")).toBeInTheDocument();
+  });
+
+  it("is left out of the green line of a draft the checker agrees with", () => {
+    open(flagged({ status: "ready", reason: null, note: NOTE, check: check({ outcome: "agrees", findings: [] }) }));
+
+    expect(screen.getByText(/^Drafted from 1 cited source\./).textContent).not.toContain(NOTE);
+    expect(screen.getByText(NOTE)).toBeInTheDocument();
+  });
+
+  it("says nothing about the checker when no check ran", () => {
+    open(flagged({ reason: "no_approved_source", answer: null, note: NOTE, check: null }));
+
+    expect(screen.getByText("No approved source.")).toBeInTheDocument();
+    expect(screen.getByText(NOTE)).toBeInTheDocument();
+    expect(screen.queryByText("The checker was not shown this note.")).toBeNull();
+  });
+
+  it("shows no note block when the agent wrote none", () => {
+    open(flagged({ note: "" }));
+
+    expect(screen.queryByText("The drafting agent's note")).toBeNull();
+  });
+});

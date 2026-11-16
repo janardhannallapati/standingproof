@@ -239,6 +239,8 @@ run to see every question with its proposed answer beside the text of its source
 - What needs a person is listed first, with the reason in words.
 - When the checker disputes a draft, the disputed words are marked in the answer and each
   finding is listed under it with its reason.
+- The drafting model's own note about its draft is shown under its own heading, apart from
+  the checker's result. The checker never saw it.
 - One key per decision: `A` approve, `E` edit, `R` reject, `D` ask for a redraft; `J` and `K`
   move between questions. The keys are off while you type.
 - The page updates as the run progresses. If the live connection is lost it says so and asks

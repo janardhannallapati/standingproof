@@ -22,12 +22,11 @@ type Props = {
 
 function why(question: ReviewQuestion): { fine: boolean; text: string } {
   const group = groupOf(question);
-  const note = question.note ? ` ${question.note}` : "";
   const checked = checkLine(question.check);
   if (group === "needs" || group === "unanswered") {
     const sentByChecker = question.reason === "checker_disagrees" || question.reason === "not_checked";
     const reason = sentByChecker && checked ? checked : `${reasonText(question.reason)}.`;
-    return { fine: false, text: `${reason}${note}` };
+    return { fine: false, text: reason };
   }
   if (question.path === "reused") {
     return {
@@ -37,7 +36,7 @@ function why(question: ReviewQuestion): { fine: boolean; text: string } {
   }
   const count = question.sources.length;
   const drafted = `Drafted from ${count} cited source${count === 1 ? "" : "s"}.`;
-  return { fine: true, text: `${drafted}${checked ? ` ${checked}` : ""}${note}` };
+  return { fine: true, text: `${drafted}${checked ? ` ${checked}` : ""}` };
 }
 
 function meta(question: ReviewQuestion): string {
@@ -99,6 +98,18 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
       ) : null}
 
       {check?.outcome === "disagrees" ? <CheckFindings check={check} sources={question.sources} /> : null}
+
+      {question.note ? (
+        <div className="grid gap-1.5">
+          <h2 className="text-[12.5px] font-semibold text-muted">The drafting agent&apos;s note</h2>
+          <p className="rounded-md border border-line bg-surface px-3 py-2.5 whitespace-pre-wrap">
+            {question.note}
+          </p>
+          {check && check.outcome !== "not_checked" ? (
+            <p className="text-[12.5px] text-muted">The checker was not shown this note.</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-1.5">
         <h2 className="text-[12.5px] font-semibold text-muted">
