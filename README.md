@@ -247,6 +247,9 @@ run to see every question with its proposed answer beside the text of its source
   move between questions. The keys are off while you type.
 - The page updates as the run progresses. If the live connection is lost it says so and asks
   every 5 seconds instead.
+- When every question has a decision, **Filled file** in the header opens a page that
+  lists each cell that will be written and each one left empty with the reason, and
+  downloads your spreadsheet with the answers in it.
 - It works with the keyboard alone, in light and dark, and on a phone.
 
 The screen is a Next.js app in [`web/`](web). The browser talks only to it; it forwards to the

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ApiError, type FilePreview as Preview, fileUrl, makeFile } from "@/lib/api";
 import { emptyReason } from "@/lib/labels";
@@ -29,8 +29,12 @@ function toFile(url: string) {
 export function FilePreview({ runId, preview, navigate = toFile }: Props) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // True from the click until the reply. State alone is too late for a double click.
+  const making = useRef(false);
 
   async function download() {
+    if (making.current) return;
+    making.current = true;
     setBusy(true);
     setProblem(null);
     try {
@@ -41,6 +45,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
     } catch (error) {
       setProblem(error instanceof ApiError ? error.message : "The file could not be made. Try again.");
     } finally {
+      making.current = false;
       setBusy(false);
     }
   }
@@ -56,7 +61,10 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
         </p>
         <p className="text-muted">The file is made when every question has one.</p>
         <p>
-          <Link href={`/runs/${runId}`} className="font-medium text-accent underline">
+          <Link
+            href={`/runs/${runId}`}
+            className="inline-flex min-h-11 items-center font-medium text-accent underline"
+          >
             Back to the questions
           </Link>
         </p>
@@ -89,7 +97,8 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button primary onClick={download} disabled={busy}>
+        {/* aria-disabled, not disabled: a disabled button loses the keyboard's focus. */}
+        <Button primary onClick={download} aria-disabled={busy} className={busy ? "opacity-50" : ""}>
           {busy ? "Making the file…" : "Download filled file"}
         </Button>
         <span className="text-[12.5px] text-muted">{preview.filename}</span>
@@ -109,7 +118,13 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
             No answer was approved, so no cell changes.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-line bg-surface">
+          <div
+            // On a narrow screen this box scrolls sideways, so a keyboard must reach it.
+            role="region"
+            aria-labelledby="written"
+            tabIndex={0}
+            className="overflow-x-auto rounded-md border border-line bg-surface"
+          >
             <table aria-label="What is written" className="w-full min-w-130 border-collapse">
               <thead>
                 <tr className="text-left text-[12.5px] text-muted">

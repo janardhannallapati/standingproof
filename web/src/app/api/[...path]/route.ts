@@ -62,7 +62,8 @@ async function forward(request: Request, path: string[], body?: string): Promise
   const headers: Record<string, string> = {
     "content-type": upstream.headers.get("content-type") ?? JSON_TYPE,
   };
-  const name = isDownload(request.method, path) ? safeDisposition(upstream) : null;
+  const name =
+    upstream.ok && isDownload(request.method, path) ? safeDisposition(upstream) : null;
   if (name !== null) {
     // The one response that is a file. The browser is told to save it and not to guess
     // its type. No other header of the API's ever reaches the browser.
@@ -79,8 +80,20 @@ function isDownload(method: string, path: string[]): boolean {
     path.length === 4 &&
     path[0] === "runs" &&
     path[2] === "file" &&
-    path[3] !== "preview"
+    isUuid(path[3] ?? "")
   );
+}
+
+const HEX = "0123456789abcdefABCDEF";
+
+/** 8-4-4-4-12 hex digits. A file's id, and so never "preview" or "..". */
+function isUuid(text: string): boolean {
+  if (text.length !== 36) return false;
+  for (let i = 0; i < text.length; i++) {
+    const dash = i === 8 || i === 13 || i === 18 || i === 23;
+    if (dash ? text[i] !== "-" : !HEX.includes(text[i]!)) return false;
+  }
+  return true;
 }
 
 const SAFE_IN_A_NAME = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._- ";

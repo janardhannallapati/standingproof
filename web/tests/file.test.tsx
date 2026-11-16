@@ -95,6 +95,49 @@ describe("FilePreview", () => {
     expect(go).not.toHaveBeenCalled();
   });
 
+  it("keeps the keyboard's place on the button when the file could not be made", async () => {
+    vi.stubGlobal("fetch", async () => Response.json({ detail: "Not made." }, { status: 422 }));
+    render(<FilePreview runId="r1" preview={preview()} navigate={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "Download filled file" });
+
+    await userEvent.click(button);
+
+    await screen.findByRole("alert");
+    expect(screen.getByRole("button", { name: "Download filled file" })).toHaveFocus();
+  });
+
+  it("does not ask twice while the file is being made", async () => {
+    let finish: (response: Response) => void = () => {};
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", (url: string) => {
+      calls.push(url);
+      return new Promise<Response>((resolve) => (finish = resolve));
+    });
+    render(<FilePreview runId="r1" preview={preview()} navigate={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Download filled file" }));
+    const busy = screen.getByRole("button", { name: "Making the file…" });
+    expect(busy).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(busy);
+
+    expect(calls).toHaveLength(1);
+    finish(Response.json({ id: "f1", sha256: "ab", size_bytes: 1, created_at: "2026-11-16T10:00:00Z", created_by: "a", current: true }, { status: 201 }));
+    await screen.findByRole("button", { name: "Download filled file" });
+  });
+
+  it("lets a keyboard reach the table's box, which scrolls sideways on a phone", () => {
+    render(<FilePreview runId="r1" preview={preview()} />);
+
+    const box = screen.getByRole("region", { name: "What is written (2)" });
+    expect(box).toHaveAttribute("tabindex", "0");
+  });
+
+  it("makes the way back a target big enough for a thumb", () => {
+    render(<FilePreview runId="r1" preview={preview({ ready: false, undecided: 1 })} />);
+
+    expect(screen.getByRole("link", { name: "Back to the questions" })).toHaveClass("min-h-11");
+  });
+
   it("says when an earlier file was made before a decision changed", () => {
     const latest = { id: "f0", sha256: "cd", size_bytes: 5900, created_at: "2026-11-16T09:00:00Z", created_by: "asha", current: false };
     render(<FilePreview runId="r1" preview={preview({ latest })} />);
