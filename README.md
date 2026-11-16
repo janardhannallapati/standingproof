@@ -199,8 +199,10 @@ returned. It is not given the first model's conversation or notes, and it has no
   checker agrees and about $0.0016 with one finding. The instruction and the reply's schema
   (1,155 tokens) are read from the provider's cache; the first check after five idle minutes
   writes that cache and costs $0.003 more. A drafted question costs $0.010 to $0.017 before
-  its check, once the drafter's cache is warm. Questions that start at the same moment each
-  write that cache ($0.010 each, once), so the first few of a run cost about twice the rest.
+  its check, once the drafter's cache is warm. Writing that cache costs $0.010, so when a run
+  starts one question goes first and the others wait for it (up to 15 seconds) and then
+  read the cache. Measured on five questions: $0.067 for the run, against $0.095 when all
+  four drafted questions wrote the cache; the run took 27 seconds, against 14.
 
 ## Review a run
 

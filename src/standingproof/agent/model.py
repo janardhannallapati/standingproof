@@ -15,6 +15,7 @@ from standingproof.agent.types import (
     ToolCall,
     Usage,
 )
+from standingproof.agent.warmup import FirstCallAlone
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +64,8 @@ class AnthropicModel:
         self._model = model
         self._effort = effort
         self._max_tokens = max_tokens
+        # Requests that start together would each write the cache; see agent/warmup.py.
+        self._warm = FirstCallAlone()
 
     async def complete(
         self,
@@ -79,19 +82,24 @@ class AnthropicModel:
         ]
         if system_addendum:
             system_blocks.append({"type": "text", "text": system_addendum})
-        response = await _call(
-            self._client.messages.parse(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                system=system_blocks,  # type: ignore[arg-type]
-                messages=messages,  # type: ignore[arg-type]
-                tools=tools,  # type: ignore[arg-type]
-                # The reply must validate against AnswerDraft. Newer models reject a forced
-                # tool choice, so a schema on the output is how a typed result is obtained.
-                output_format=AnswerDraft,
-                output_config={"effort": self._effort},
+
+        def request() -> Awaitable[Any]:
+            return _call(
+                self._client.messages.parse(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    system=system_blocks,  # type: ignore[arg-type]
+                    messages=messages,  # type: ignore[arg-type]
+                    tools=tools,  # type: ignore[arg-type]
+                    # The reply must validate against AnswerDraft. Newer models reject a
+                    # forced tool choice, so a schema on the output is how a typed result
+                    # is obtained.
+                    output_format=AnswerDraft,
+                    output_config={"effort": self._effort},
+                )
             )
-        )
+
+        response = await self._warm.run(request)
 
         tool_calls = [
             ToolCall(id=block.id, name=block.name, arguments=dict(block.input))
@@ -130,18 +138,24 @@ class AnthropicChecker:
         self._model = model
         self._effort = effort
         self._max_tokens = max_tokens
+        self._warm = FirstCallAlone()
 
     async def check(self, *, system: str, messages: list[dict[str, Any]]) -> CheckTurn:
-        response = await _call(
-            self._client.messages.parse(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=messages,  # type: ignore[arg-type]
-                output_format=CheckVerdict,
-                output_config={"effort": self._effort},
+        def request() -> Awaitable[Any]:
+            return _call(
+                self._client.messages.parse(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    system=[
+                        {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
+                    ],
+                    messages=messages,  # type: ignore[arg-type]
+                    output_format=CheckVerdict,
+                    output_config={"effort": self._effort},
+                )
             )
-        )
+
+        response = await self._warm.run(request)
         return CheckTurn(
             stop_reason=response.stop_reason or "unknown",
             verdict=response.parsed_output if response.stop_reason == "end_turn" else None,

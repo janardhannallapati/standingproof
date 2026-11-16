@@ -39,6 +39,9 @@ live system settings, and reopens them when those settings drift.
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance
   rules go there, in code, with a test. A sentence in the prompt is not a control.
+- Every request to the model provider goes through the client's `FirstCallAlone`
+  (`agent/warmup.py`): when the provider's cache is cold, one request writes it and the
+  rest wait, for a bounded time. Do not call `messages.parse` around it.
 - The checker's request is built only by `check_messages` in `agent/checker.py`, from the
   question, the draft's wording and the sources. Never pass it the drafter's messages, its
   note or a reviewer's instruction, and never give `CheckerClient` a tools parameter.
