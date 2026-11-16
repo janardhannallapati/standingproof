@@ -176,3 +176,139 @@ def test_the_downloads_name_is_built_from_a_cleaned_copy_of_the_uploads() -> Non
     assert filled_name('..\\evil"\r\nSet-Cookie: x.XLSX') == "evilSet-Cookie x-filled.xlsx"
     assert filled_name("") == "questionnaire-filled.xlsx"
     assert filled_name("résumé.xlsx") == "rsum-filled.xlsx"
+
+
+# --- A dropdown with a comments column, and recording a file as sent. ---
+
+
+def dropdown_run(api: TestClient, db: Db) -> str:
+    """Two questions in a sheet whose Answer column is a Yes/No dropdown beside Comments."""
+    from openpyxl import Workbook
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    from tests.test_questionnaires_api import upload
+    from tests.test_runs_api import start
+    from tests.workflow.test_review import drafted
+
+    workbook = Workbook()
+    sheet = workbook.active
+    assert sheet is not None
+    sheet.title = "Security"
+    sheet.append(["ID", "Question", "Answer", "Comments"])
+    sheet.append(["Q1", "Is MFA enforced?", None, None])
+    sheet.append(["Q2", "Is data encrypted at rest?", None, None])
+    choice = DataValidation(type="list", formula1='"Yes,No,N/A"', allow_blank=True)
+    choice.add("C2:C3")
+    sheet.add_data_validation(choice)
+    buffer = BytesIO()
+    workbook.save(buffer)
+    run_id = start(api, upload(api, buffer.getvalue()).json()["id"]).json()["id"]
+    first, second = api.get(f"/runs/{run_id}/questions").json()["items"]
+    drafted(db, uuid.UUID(first["id"]), answer="Yes. For all staff.")
+    drafted(db, uuid.UUID(second["id"]), answer="We encrypt with AES-256.")
+    for item in api.get(f"/runs/{run_id}/questions").json()["items"]:
+        assert decide(api, item, "approve").status_code == 200
+    return run_id
+
+
+def test_a_dropdown_gets_its_value_and_the_comments_cell_the_sentence(
+    api: TestClient, db: Db
+) -> None:
+    run_id = dropdown_run(api, db)
+
+    preview = api.get(f"/runs/{run_id}/file/preview").json()
+    file = api.post(f"/runs/{run_id}/file").json()
+    got = api.get(f"/runs/{run_id}/file/{file['id']}")
+
+    assert [(w["cell"], w["kind"], w["wording"]) for w in preview["written"]] == [
+        ("C2", "choice", "Yes"),
+        ("D2", "comment", "Yes. For all staff."),
+        ("D3", "comment", "We encrypt with AES-256."),
+    ]
+    assert [(e["cell"], e["reason"], e["detail"]) for e in preview["left_empty"]] == [
+        ("C3", "dropdown", "Yes, No, N/A")
+    ]
+    sheet = load_workbook(BytesIO(got.content))["Security"]
+    assert (sheet["C2"].value, sheet["D2"].value) == ("Yes", "Yes. For all staff.")
+    assert (sheet["C3"].value, sheet["D3"].value) == (None, "We encrypt with AES-256.")
+    assert len(sheet.data_validations.dataValidation) == 1
+
+
+def test_a_file_is_recorded_as_sent_once_per_customer(api: TestClient, db: Db) -> None:
+    run_id = decided_run(api, db)
+    file_id = api.post(f"/runs/{run_id}/file").json()["id"]
+    url = f"/runs/{run_id}/file/{file_id}/sent"
+
+    first = api.post(url, json={"customer": "Acme Corp"})
+    again = api.post(url, json={"customer": "  acme corp "})
+    other = api.post(url, json={"customer": "Globex"})
+
+    assert (first.status_code, again.status_code, other.status_code) == (201, 200, 201)
+    assert first.json()["id"] == again.json()["id"]
+    body = first.json()
+    assert (body["customer"], body["sent_by"], body["answers"]) == ("Acme Corp", "dev-reviewer", 2)
+    sent = api.get(f"/runs/{run_id}/file/preview").json()["sent"]
+    assert [(s["customer"], s["answers"], s["current"]) for s in sent] == [
+        ("Acme Corp", 2, True),
+        ("Globex", 2, True),
+    ]
+
+
+def test_the_sent_record_keeps_a_hash_of_each_wording_that_went_out(
+    api: TestClient, db: Db
+) -> None:
+    from standingproof.models import SentFile
+
+    run_id = decided_run(api, db)
+    file_id = api.post(f"/runs/{run_id}/file").json()["id"]
+    api.post(f"/runs/{run_id}/file/{file_id}/sent", json={"customer": "Acme Corp"})
+
+    async def stored() -> SentFile:
+        async with db.sessions() as session:
+            return (await session.execute(select(SentFile))).scalar_one()
+
+    record = db.run(stored())
+
+    assert [a["position"] for a in record.answers] == [1, 2]
+    assert record.answers[0]["wording_sha256"] == hashlib.sha256(b"Yes, for all staff.").hexdigest()
+    assert all(len(a["question_id"]) == 36 for a in record.answers)
+
+
+def test_sent_is_refused_when_it_should_be(
+    api: TestClient, db: Db, make_api: ClientFactory
+) -> None:
+    run_id = decided_run(api, db)
+    file_id = api.post(f"/runs/{run_id}/file").json()["id"]
+    url = f"/runs/{run_id}/file/{file_id}/sent"
+
+    assert api.post(url, json={"customer": "   "}).status_code == 422
+    assert api.post(url, json={"customer": "x" * 201}).status_code == 422
+    assert api.post(url, json={"customer": "Acme", "extra": 1}).status_code == 422
+    assert (
+        api.post(f"/runs/{run_id}/file/{uuid.uuid4()}/sent", json={"customer": "Acme"}).status_code
+        == 404
+    )
+
+
+def test_a_file_made_before_a_decision_changed_cannot_be_recorded_as_sent(
+    api: TestClient, db: Db
+) -> None:
+    run_id = decided_run(api, db)
+    file_id = api.post(f"/runs/{run_id}/file").json()["id"]
+    third = api.get(f"/runs/{run_id}/questions").json()["items"][2]
+
+    async def reopen() -> None:
+        async with db.sessions() as session:
+            await session.execute(
+                update(RunQuestion)
+                .where(RunQuestion.id == uuid.UUID(third["id"]))
+                .values(review="expired")
+            )
+            await session.commit()
+
+    db.run(reopen())
+
+    refused = api.post(f"/runs/{run_id}/file/{file_id}/sent", json={"customer": "Acme"})
+
+    assert refused.status_code == 409
+    assert api.get(f"/runs/{run_id}/file/preview").json()["sent"] == []

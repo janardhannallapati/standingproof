@@ -134,3 +134,99 @@ def test_two_questions_aimed_at_one_cell_write_the_first_only() -> None:
 
     assert [write.position for write in plan.writes] == [1]
     assert [(skip.position, skip.reason) for skip in plan.skips] == [(2, "cell_not_empty")]
+
+
+# --- A dropdown with a comments column beside it. ---
+
+from standingproof.writeback.plan import leading_choice  # noqa: E402
+
+YES_NO = (
+    b'<dataValidations><dataValidation type="list" sqref="C2:C9">'
+    b'<formula1>"Yes,No,N/A"</formula1></dataValidation></dataValidations>'
+)
+SENTENCE = "Yes. Keys are rotated every 12 months."
+
+
+def test_the_dropdowns_value_is_the_answers_first_word_only_when_it_plainly_is() -> None:
+    choices = ["Yes", "No", "N/A"]
+    assert leading_choice("Yes. Keys are rotated.", choices) == "Yes"
+    assert leading_choice("yes, for all staff", choices) == "Yes"
+    assert leading_choice("  No; not yet.", choices) == "No"
+    assert leading_choice("N/A: we hold no card data", choices) == "N/A"
+    assert leading_choice("Yes - with exceptions", choices) == "Yes"
+    assert leading_choice("No", choices) == "No"
+    # Not a value followed by a break: nothing is taken.
+    assert leading_choice("Yesterday we rotated keys.", choices) is None
+    assert leading_choice("Yes for employees", choices) is None
+    assert leading_choice("Not applicable.", choices) is None
+    assert leading_choice("We do. Yes.", choices) is None
+    assert leading_choice("Yes.", []) is None
+
+
+def test_the_longer_of_two_values_that_both_fit_is_taken() -> None:
+    assert (
+        leading_choice("No - partially. See notes.", ["No", "No - partially"]) == "No - partially"
+    )
+
+
+def with_comment(**changes: object) -> Item:
+    return item(**({"comment_cell": "D2", "wording": SENTENCE} | changes))
+
+
+def test_a_sentence_goes_to_the_comments_cell_and_its_first_word_to_the_dropdown() -> None:
+    plan = plan_writeback([with_comment()], {"Security": index(after=YES_NO)})
+
+    assert plan.skips == []
+    assert [(w.cell, w.kind, w.wording) for w in plan.writes] == [
+        ("C2", "choice", "Yes"),
+        ("D2", "comment", SENTENCE),
+    ]
+
+
+def test_without_a_plain_first_word_only_the_comment_is_written() -> None:
+    wording = "We enforce it for staff."
+    plan = plan_writeback([with_comment(wording=wording)], {"Security": index(after=YES_NO)})
+
+    assert [(w.cell, w.kind) for w in plan.writes] == [("D2", "comment")]
+    assert [(s.cell, s.reason, s.detail) for s in plan.skips] == [
+        ("C2", "dropdown", "Yes, No, N/A")
+    ]
+
+
+def test_an_occupied_comments_cell_means_neither_cell_is_written() -> None:
+    sheet = index(b'<row r="2"><c r="D2" t="s"><v>1</v></c></row>', YES_NO)
+
+    plan = plan_writeback([with_comment()], {"Security": sheet})
+
+    assert plan.writes == []
+    assert [(s.cell, s.reason) for s in plan.skips] == [
+        ("C2", "dropdown"),
+        ("D2", "cell_not_empty"),
+    ]
+
+
+def test_an_exact_dropdown_value_is_the_answer_and_the_comment_is_not_touched() -> None:
+    plan = plan_writeback([with_comment(wording="Yes")], {"Security": index(after=YES_NO)})
+
+    assert [(w.cell, w.kind) for w in plan.writes] == [("C2", "answer")]
+
+
+def test_a_comments_cell_is_ignored_when_the_answer_cell_is_not_a_dropdown() -> None:
+    plan = plan_writeback([with_comment()], {"Security": index()})
+
+    assert [(w.cell, w.kind) for w in plan.writes] == [("C2", "answer")]
+
+
+def test_a_dropdown_without_a_comments_cell_is_listed_as_before() -> None:
+    plan = plan_writeback([item(wording=SENTENCE)], {"Security": index(after=YES_NO)})
+
+    assert plan.writes == []
+    assert [(s.cell, s.reason) for s in plan.skips] == [("C2", "dropdown")]
+
+
+def test_a_comment_too_long_for_a_cell_writes_nothing() -> None:
+    long = "Yes. " + "x" * 32_768
+    plan = plan_writeback([with_comment(wording=long)], {"Security": index(after=YES_NO)})
+
+    assert plan.writes == []
+    assert {s.reason for s in plan.skips} == {"dropdown", "too_long"}

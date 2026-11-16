@@ -62,3 +62,29 @@ def test_only_the_first_rows_are_scanned() -> None:
     rows = [[None]] * 30 + [["Question"]]
 
     assert detect_columns(rows, scan_rows=30) is None
+
+
+def test_a_comments_column_is_found_by_its_heading() -> None:
+    import pytest
+
+    for heading in [
+        "Comments",
+        "Notes",
+        "Explanation",
+        "Remarks",
+        "Additional information",
+        "Vendor comments",
+        "Supporting notes",
+    ]:
+        mapping = detect_columns([["ID", "Question", "Answer", heading]])
+        assert mapping is not None and mapping.comment_col == 4, heading
+    for heading in ["Commentary on scope", "Noted by", "Status"]:
+        mapping = detect_columns([["ID", "Question", "Answer", heading]])
+        assert mapping is not None and mapping.comment_col is None, heading
+    assert pytest is not None
+
+
+def test_a_sheet_without_a_comments_heading_has_no_comments_column() -> None:
+    mapping = detect_columns([["ID", "Question", "Answer"]])
+
+    assert mapping is not None and mapping.comment_col is None

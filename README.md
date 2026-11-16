@@ -278,17 +278,34 @@ curl -OJ localhost:8000/runs/<run-id>/file/<file-id>      # download
   the earlier one is kept.
 - **Not made early.** 409 while any question is undecided, or if a question's approved
   wording is not the wording its decision recorded.
+- **A dropdown with a comments column beside it** (headings such as Comments, Notes,
+  Explanation): the approved wording goes into the comments cell. The dropdown gets its
+  value only when the wording begins with exactly one of the dropdown's own values followed
+  by punctuation or the end ("Yes. Keys are rotated." gives Yes); otherwise it is left for
+  you to choose. The preview shows both cells before you download.
 - **Left empty, and listed with the reason:** a rejected, expired or unanswered question; a
-  question with no answer column; a cell that already has content; a dropdown cell, unless
-  the approved wording is exactly one of its values; wording longer than a cell holds
-  (32,767 characters) or with characters a workbook cannot carry.
+  question with no answer column; a cell that already has content; a dropdown cell with no
+  comments column, unless the approved wording is exactly one of its values; wording longer
+  than a cell holds (32,767 characters) or with characters a workbook cannot carry.
 - **A merged answer cell** gets the wording in the range's first cell.
 - Answers are written as text. Wording that begins with `=` stays text and is never a
   formula.
 
+After you have sent the file, record it:
+
+```sh
+curl -X POST localhost:8000/runs/<run-id>/file/<file-id>/sent \
+  -H 'content-type: application/json' -d '{"customer": "Acme Corp"}'
+```
+
+This records that a reviewer said the file was sent, to whom and when, with a hash of each
+answer's wording as it went out. It sends nothing and does not say the file was delivered.
+It is append-only, and recording the same file for the same customer twice is one record.
+
 Limits: `.xlsx` only. The tests read every result back with a spreadsheet library and
-compare it with the upload; no test opens the result in Excel. A second column for comments
-beside a Yes/No dropdown is not supported yet.
+compare it with the upload; no test opens the result in Excel. The sample results were
+opened once by hand in LibreOffice 25.2. A dropdown whose values are in other cells, not
+typed into the rule, cannot be read and is left empty.
 
 ## Try the agent on one question
 

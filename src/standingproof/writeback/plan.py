@@ -29,6 +29,8 @@ class Item:
     cell: str | None
     review: str | None
     wording: str | None
+    # The free-text cell beside the answer cell, when the sheet has a comments column.
+    comment_cell: str | None = None
 
 
 @dataclass(frozen=True)
@@ -37,6 +39,9 @@ class Write:
     sheet: str
     cell: str
     wording: str
+    # answer: the approved wording in the answer cell. comment: the same wording in the
+    # comments cell. choice: a dropdown's value, taken from the wording's first word.
+    kind: str = "answer"
 
 
 @dataclass(frozen=True)
@@ -89,41 +94,90 @@ def _carriable(wording: str) -> bool:
     return plain and not _reads_as_escape(wording)
 
 
+# What may follow a dropdown's value at the start of an answer for it to count as that value.
+_AFTER_A_CHOICE = (".", ",", ";", ":", " -", " \u2013", " \u2014")
+
+
+def leading_choice(wording: str, choices: Sequence[str]) -> str | None:
+    """The dropdown value an approved answer begins with, in the dropdown's own spelling.
+
+    "Yes. Keys are rotated." begins with "Yes". "Yesterday we..." and "Yes for staff" do
+    not: the value must be followed by the end or by punctuation. Nothing is inferred from
+    the meaning of the sentence, and when two values fit, the longer one is taken.
+    """
+    text = wording.strip().casefold()
+    for choice in sorted(choices, key=len, reverse=True):
+        value = choice.casefold()
+        if not value or not text.startswith(value):
+            continue
+        rest = text[len(value) :]
+        if not rest or rest.startswith(_AFTER_A_CHOICE):
+            return choice
+    return None
+
+
+def _target(sheet: SheetIndex, cell: str) -> str:
+    ref = cell.replace("$", "").upper()
+    area = sheet.merged_range(ref)
+    # A merged range shows and stores only its first cell.
+    return _first_of(area) if area else ref
+
+
 def _decide(
     item: Item, sheets: Mapping[str, SheetIndex], taken: set[tuple[str, str]]
-) -> Write | Skip:
+) -> list[Write | Skip]:
     def skip(reason: str, detail: str = "", cell: str | None = item.cell) -> Skip:
         return Skip(item.position, item.sheet, cell, reason, detail)
 
+    def unfit(text: str, cell: str) -> Skip | None:
+        """Why this text cannot go into this cell, or None if it can."""
+        if _occupied(sheet, cell) or (item.sheet, cell) in taken:
+            return skip("cell_not_empty", cell=cell)
+        if len(text) > MAX_CELL_CHARS:
+            return skip("too_long", f"{len(text)} characters", cell=cell)
+        if not _carriable(text):
+            return skip("bad_character", cell=cell)
+        return None
+
     if item.review in _CLOSED_REVIEWS:
-        return skip(str(item.review))
+        return [skip(str(item.review))]
     if item.review not in _WRITTEN_REVIEWS:
-        return skip("undecided")
+        return [skip("undecided")]
     wording = item.wording or ""
     if not wording.strip():
-        return skip("no_answer")
+        return [skip("no_answer")]
     if item.cell is None:
-        return skip("no_answer_cell")
-    sheet = sheets.get(item.sheet)
-    if sheet is None:
-        return skip("sheet_missing")
+        return [skip("no_answer_cell")]
+    found = sheets.get(item.sheet)
+    if found is None:
+        return [skip("sheet_missing")]
+    sheet = found
 
-    ref = item.cell.replace("$", "").upper()
-    area = sheet.merged_range(ref)
-    # A merged range shows and stores only its first cell.
-    target = _first_of(area) if area else ref
-    if _occupied(sheet, target) or (item.sheet, target) in taken:
-        return skip("cell_not_empty", cell=target)
-    if len(wording) > MAX_CELL_CHARS:
-        return skip("too_long", f"{len(wording)} characters", cell=target)
-    if not _carriable(wording):
-        return skip("bad_character", cell=target)
+    target = _target(sheet, item.cell)
     choices = sheet.choices(target)
-    if choices is not None and wording.strip().casefold() not in {
+    fits_dropdown = choices is None or wording.strip().casefold() in {
         choice.casefold() for choice in choices
-    }:
-        return skip("dropdown", ", ".join(choices), cell=target)
-    return Write(item.position, item.sheet, target, wording)
+    }
+    if fits_dropdown:
+        problem = unfit(wording, target)
+        return [problem or Write(item.position, item.sheet, target, wording)]
+
+    # The answer cell is a dropdown and the wording is not one of its values.
+    dropdown = skip("dropdown", ", ".join(choices or []), cell=target)
+    if item.comment_cell is None:
+        return [dropdown]
+    beside = _target(sheet, item.comment_cell)
+    problem = unfit(wording, beside)
+    if problem is None and sheet.choices(beside) is not None:
+        problem = skip("dropdown", cell=beside)
+    if problem is not None:
+        # Half an answer is worse than none: without the explanation, no value either.
+        return [dropdown, problem]
+    comment = Write(item.position, item.sheet, beside, wording, kind="comment")
+    choice = leading_choice(wording, choices or [])
+    if choice is None or unfit(choice, target) is not None:
+        return [comment, dropdown]
+    return [Write(item.position, item.sheet, target, choice, kind="choice"), comment]
 
 
 def plan_writeback(items: Sequence[Item], sheets: Mapping[str, SheetIndex]) -> Plan:
@@ -131,10 +185,10 @@ def plan_writeback(items: Sequence[Item], sheets: Mapping[str, SheetIndex]) -> P
     skips: list[Skip] = []
     taken: set[tuple[str, str]] = set()
     for item in sorted(items, key=lambda each: each.position):
-        decided = _decide(item, sheets, taken)
-        if isinstance(decided, Write):
-            writes.append(decided)
-            taken.add((decided.sheet, decided.cell))
-        else:
-            skips.append(decided)
+        for decided in _decide(item, sheets, taken):
+            if isinstance(decided, Write):
+                writes.append(decided)
+                taken.add((decided.sheet, decided.cell))
+            else:
+                skips.append(decided)
     return Plan(writes=writes, skips=skips)

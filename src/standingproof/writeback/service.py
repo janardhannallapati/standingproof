@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from standingproof.models import FilledFile, Questionnaire, Run
 from standingproof.writeback.load import WRITER_VERSION, Row, file_key, filled_name, load
 from standingproof.writeback.plan import Plan, plan_writeback
+from standingproof.writeback.sent import SentInfo, list_sent
 from standingproof.writeback.writer import read_indexes, verify_unchanged, write_cells
 
 
@@ -59,6 +60,7 @@ class Preview:
     plan: Plan
     protected_sheets: list[str]
     latest: FileInfo | None
+    sent: list[SentInfo]
 
     @property
     def undecided(self) -> int:
@@ -102,8 +104,10 @@ async def preview(session: AsyncSession, tenant_id: uuid.UUID, run_id: uuid.UUID
     if loaded is None:
         return None
     plan, protected = await asyncio.to_thread(_plan, loaded.content, loaded.rows)
-    latest = await _latest(session, run_id, file_key(loaded.upload_sha256, loaded.rows))
-    return Preview(filled_name(loaded.filename), loaded.rows, plan, protected, latest)
+    key = file_key(loaded.upload_sha256, loaded.rows)
+    latest = await _latest(session, run_id, key)
+    recorded = await list_sent(session, run_id, key)
+    return Preview(filled_name(loaded.filename), loaded.rows, plan, protected, latest, recorded)
 
 
 def _build(content: bytes, rows: Sequence[Row]) -> tuple[bytes, Plan]:
@@ -149,7 +153,8 @@ async def make_file(
                 size_bytes=len(filled),
                 sha256=hashlib.sha256(filled).hexdigest(),
                 written=[
-                    {"position": w.position, "sheet": w.sheet, "cell": w.cell} for w in plan.writes
+                    {"position": w.position, "sheet": w.sheet, "cell": w.cell, "kind": w.kind}
+                    for w in plan.writes
                 ],
                 left_empty=[
                     {

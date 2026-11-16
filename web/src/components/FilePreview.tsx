@@ -7,6 +7,7 @@ import { ApiError, type FilePreview as Preview, fileUrl, makeFile } from "@/lib/
 import { emptyReason } from "@/lib/labels";
 
 import { Button } from "./Button";
+import { SentBox } from "./SentBox";
 import { StatusChip } from "./StatusChip";
 
 type Props = {
@@ -17,6 +18,15 @@ type Props = {
 };
 
 const HOW: Record<string, string> = { approved: "approved", edited: "edited by a reviewer" };
+
+/** Where a written cell's text came from, in words. */
+function origin(cell: { how: string; kind: string }): string {
+  if (cell.kind === "choice") {
+    return "the dropdown's value, taken from the first word of the approved answer";
+  }
+  const how = HOW[cell.how] ?? cell.how;
+  return cell.kind === "comment" ? `${how} · the full answer, in the comments column` : how;
+}
 
 function count(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
@@ -29,6 +39,8 @@ function toFile(url: string) {
 export function FilePreview({ runId, preview, navigate = toFile }: Props) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // The file for the decisions as they are: one made earlier, or the one just made.
+  const [fileId, setFileId] = useState(preview.latest?.current ? preview.latest.id : null);
   // True from the click until the reply. State alone is too late for a double click.
   const making = useRef(false);
 
@@ -41,6 +53,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
       // Asking again for the same decisions returns the same file, so a second click or
       // a retry after a lost reply is safe.
       const file = await makeFile(runId);
+      setFileId(file.id);
       navigate(fileUrl(runId, file.id));
     } catch (error) {
       setProblem(error instanceof ApiError ? error.message : "The file could not be made. Try again.");
@@ -74,16 +87,33 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
 
   const written = preview.written.length;
   const empty = preview.left_empty.length;
+  // One answer can fill two cells: a dropdown's value and the sentence beside it.
+  const answers = new Set(preview.written.map((cell) => cell.position)).size;
+  const cells = written === answers ? "" : `, in ${count(written, "cell", "cells")}`;
+  // Questions whose sentence went into the comments column.
+  const commented = new Set(
+    preview.written.filter((cell) => cell.kind === "comment").map((cell) => cell.position),
+  );
   return (
     <div className="grid min-w-0 gap-4">
-      <p className="flex items-start gap-2.5 rounded-md bg-ready-bg px-3 py-2.5 font-medium text-ready">
-        <span aria-hidden="true">✓</span>
-        <span>
-          {count(written, "answer", "answers")} will be written. {count(empty, "cell is", "cells are")} left
-          empty. The result is compared with your upload before you get it: if anything else
-          in the file differs, no file is made.
-        </span>
-      </p>
+      {written === 0 ? (
+        <p className="flex items-start gap-2.5 rounded-md bg-review-bg px-3 py-2.5 font-medium text-review">
+          <span aria-hidden="true">!</span>
+          <span>
+            No answer will be written. {count(empty, "cell is", "cells are")} left empty, for the
+            reasons below. The file you download would be your upload, unchanged.
+          </span>
+        </p>
+      ) : (
+        <p className="flex items-start gap-2.5 rounded-md bg-ready-bg px-3 py-2.5 font-medium text-ready">
+          <span aria-hidden="true">✓</span>
+          <span>
+            {count(answers, "answer", "answers")} will be written{cells}.{" "}
+            {count(empty, "cell is", "cells are")} left empty. The result is compared with your
+            upload before you get it: if anything else in the file differs, no file is made.
+          </span>
+        </p>
+      )}
 
       {preview.protected_sheets.map((sheet) => (
         <p key={sheet} className="text-[12.5px] text-muted">
@@ -108,6 +138,9 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
           {problem}
         </p>
       ) : null}
+
+      {/* Keyed by the file: another file starts with its own records. */}
+      {fileId ? <SentBox key={fileId} runId={runId} fileId={fileId} records={preview.sent} /> : null}
 
       <div className="grid gap-1.5">
         <h2 id="written" className="text-[12.5px] font-semibold text-muted">
@@ -135,7 +168,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
               </thead>
               <tbody>
                 {preview.written.map((cell) => (
-                  <tr key={cell.position} className="border-t border-line align-top">
+                  <tr key={`${cell.sheet}!${cell.cell}`} className="border-t border-line align-top">
                     <th scope="row" className="px-3 py-2.5 text-left font-semibold whitespace-nowrap tabular-nums">
                       {cell.sheet}!{cell.cell}
                     </th>
@@ -143,7 +176,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
                     <td className="px-3 py-2.5">
                       <div className="text-[12.5px] text-muted">{cell.question}</div>
                       <div className="mt-1 whitespace-pre-wrap">{cell.wording}</div>
-                      <div className="mt-1.5 text-[12.5px] text-muted">{HOW[cell.how] ?? cell.how}</div>
+                      <div className="mt-1.5 text-[12.5px] text-muted">{origin(cell)}</div>
                     </td>
                   </tr>
                 ))}
@@ -160,7 +193,10 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
             {preview.left_empty.map((cell) => {
               const reason = emptyReason(cell.reason, cell.detail);
               return (
-                <li key={cell.position} className="grid gap-1.5 rounded-md border border-line bg-surface px-3 py-2.5">
+                <li
+                  key={`${cell.sheet}!${cell.cell ?? cell.position}:${cell.reason}`}
+                  className="grid gap-1.5 rounded-md border border-line bg-surface px-3 py-2.5"
+                >
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                     <span className="font-semibold tabular-nums">
                       {cell.cell ? `${cell.sheet}!${cell.cell}` : cell.sheet}
@@ -170,6 +206,9 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
                   <div>{cell.question}</div>
                   <div className="text-[12.5px] text-muted">
                     {reason.text}
+                    {cell.reason === "dropdown" && commented.has(cell.position)
+                      ? " The full answer is in the comments column beside it. Choose the value in the spreadsheet."
+                      : ""}
                     {cell.comment ? ` The reviewer's note: “${cell.comment}”` : ""}
                   </div>
                 </li>

@@ -47,8 +47,9 @@ class ManualMapping(BaseModel):
     question_column: str = Field(pattern=_COLUMN_LETTERS, description="Column letter, e.g. B.")
     answer_column: str | None = Field(default=None, pattern=_COLUMN_LETTERS)
     id_column: str | None = Field(default=None, pattern=_COLUMN_LETTERS)
+    comment_column: str | None = Field(default=None, pattern=_COLUMN_LETTERS)
 
-    @field_validator("question_column", "answer_column", "id_column")
+    @field_validator("question_column", "answer_column", "id_column", "comment_column")
     @classmethod
     def _within_width(cls, letters: str | None) -> str | None:
         # Rows are read as far right as the furthest chosen column, so that column is
@@ -69,6 +70,7 @@ class ManualMapping(BaseModel):
             question_col=column_index_from_string(self.question_column.upper()),
             answer_col=index(self.answer_column),
             id_col=index(self.id_column),
+            comment_col=index(self.comment_column),
         )
 
 
@@ -78,6 +80,7 @@ class ParsedQuestion:
     cell: str
     text: str
     answer_cell: str | None
+    comment_cell: str | None
     external_id: str | None
     truncated: bool
 
@@ -140,6 +143,7 @@ def _describe(columns: ColumnMapping) -> dict[str, Any]:
         "question_column": get_column_letter(columns.question_col),
         "answer_column": letter(columns.answer_col),
         "id_column": letter(columns.id_col),
+        "comment_column": letter(columns.comment_col),
     }
 
 
@@ -152,6 +156,7 @@ def _questions(
 ) -> Iterator[ParsedQuestion]:
     question_letter = get_column_letter(columns.question_col)
     answer_letter = get_column_letter(columns.answer_col) if columns.answer_col else None
+    comment_letter = get_column_letter(columns.comment_col) if columns.comment_col else None
     for row_number, row in enumerate(rows, start=1):
         if row_number > max_rows:
             # Bounds the work per sheet. Without it, a sheet of millions of rows that hold
@@ -169,6 +174,7 @@ def _questions(
             cell=f"{question_letter}{row_number}",
             text=text[:max_chars],
             answer_cell=f"{answer_letter}{row_number}" if answer_letter else None,
+            comment_cell=f"{comment_letter}{row_number}" if comment_letter else None,
             external_id=_cell_at(row, columns.id_col)[:255] or None,
             truncated=len(text) > max_chars,
         )
@@ -191,7 +197,11 @@ def parse_workbook(
     """
     result = ParsedWorkbook()
     chosen = mapping.as_columns() if mapping else None
-    needed = [chosen.question_col, chosen.answer_col or 0, chosen.id_col or 0] if chosen else []
+    needed = (
+        [chosen.question_col, chosen.answer_col or 0, chosen.id_col or 0, chosen.comment_col or 0]
+        if chosen
+        else []
+    )
     max_col = max([_SCAN_COLUMNS, *needed])
     with warnings.catch_warnings():
         # openpyxl warns about spreadsheet features it does not model (for example some

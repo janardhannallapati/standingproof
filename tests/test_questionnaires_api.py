@@ -353,3 +353,14 @@ def test_reading_a_questionnaire_does_not_parse_the_file_again(
 
     assert api.get(f"/questionnaires/{created['id']}").json()["sheets"] == created["sheets"]
     assert upload(api, content).json()["sheets"] == created["sheets"]
+
+
+def test_a_comments_column_is_stored_with_each_question(api: TestClient) -> None:
+    from tests.xlsx_builder import xlsx
+
+    rows = [["ID", "Question", "Answer", "Comments"], ["Q1", "Is MFA enforced?", None, None]]
+    body = upload(api, xlsx({"Security": rows})).json()
+
+    [question] = api.get(f"/questionnaires/{body['id']}/questions").json()["items"]
+
+    assert (question["answer_cell"], question["comment_cell"]) == ("C2", "D2")

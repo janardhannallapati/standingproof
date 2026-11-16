@@ -15,14 +15,15 @@ function preview(overrides: Partial<Preview> = {}): Preview {
     ready: true,
     undecided: 0,
     written: [
-      { position: 1, sheet: "Security", cell: "C2", question: "Is MFA enforced?", wording: "Yes, for all staff.", how: "approved" },
-      { position: 2, sheet: "Security", cell: "C3", question: "Is data encrypted?", wording: "Yes. AES-256.", how: "edited" },
+      { position: 1, sheet: "Security", cell: "C2", question: "Is MFA enforced?", wording: "Yes, for all staff.", how: "approved", kind: "answer" },
+      { position: 2, sheet: "Security", cell: "C3", question: "Is data encrypted?", wording: "Yes. AES-256.", how: "edited", kind: "answer" },
     ],
     left_empty: [
       { position: 3, sheet: "Security", cell: "C4", question: "Are backups tested?", reason: "rejected", detail: "", comment: "Ask the backup owner." },
     ],
     protected_sheets: [],
     latest: null,
+    sent: [],
     ...overrides,
   };
 }
@@ -156,6 +157,108 @@ describe("FilePreview", () => {
       expect(emptyReason(reason, "Yes, No").text).not.toContain("_");
     }
     expect(emptyReason("dropdown", "Yes, No").text).toContain("Yes, No");
+  });
+});
+
+describe("a dropdown with a comments column", () => {
+  const written = [
+    { position: 1, sheet: "Security", cell: "C2", question: "Is MFA enforced?", wording: "Yes", how: "approved", kind: "choice" },
+    { position: 1, sheet: "Security", cell: "D2", question: "Is MFA enforced?", wording: "Yes. For all staff.", how: "approved", kind: "comment" },
+  ];
+
+  it("counts answers and cells apart, and says where each cell's text came from", () => {
+    render(<FilePreview runId="r1" preview={preview({ written, left_empty: [] })} />);
+
+    expect(screen.getByText(/^1 answer will be written, in 2 cells\. 0 cells are left empty\./)).toBeInTheDocument();
+    const [, choice, comment] = within(screen.getByRole("table", { name: "What is written" })).getAllByRole("row");
+    expect(choice).toHaveTextContent("Security!C2");
+    expect(choice).toHaveTextContent("the dropdown's value, taken from the first word of the approved answer");
+    expect(comment).toHaveTextContent("Security!D2");
+    expect(comment).toHaveTextContent("approved · the full answer, in the comments column");
+  });
+
+  it("says where the answer is when a dropdown is left for the reviewer to choose", () => {
+    const comment = written[1]!;
+    const dropdown = { position: 1, sheet: "Security", cell: "C2", question: "Is MFA enforced?", reason: "dropdown", detail: "Yes, No, N/A", comment: null };
+    render(<FilePreview runId="r1" preview={preview({ written: [comment], left_empty: [dropdown] })} />);
+
+    const item = within(screen.getByRole("list", { name: "Left empty" })).getByRole("listitem");
+    expect(item).toHaveTextContent("The full answer is in the comments column beside it. Choose the value in the spreadsheet.");
+  });
+
+  it("warns, with no tick, when no answer would be written", () => {
+    render(<FilePreview runId="r1" preview={preview({ written: [] })} />);
+
+    const line = screen.getByText(/^No answer will be written\./).closest("p");
+    expect(line).toHaveClass("text-review");
+    expect(line).toHaveTextContent(/^!/);
+  });
+});
+
+describe("recording a file as sent", () => {
+  const latest = { id: "f1", sha256: "ab", size_bytes: 6000, created_at: "2026-11-16T10:00:00Z", created_by: "asha", current: true };
+  const record = { id: "s1", customer: "Acme Corp", sent_by: "asha", sent_at: "2026-11-16T11:00:00Z", answers: 2, current: true };
+
+  it("is not offered before a file exists for these decisions", () => {
+    render(<FilePreview runId="r1" preview={preview()} />);
+
+    expect(screen.queryByLabelText("Sent to")).toBeNull();
+  });
+
+  it("records the customer's name and then shows the record", async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init?.body)) });
+      return Response.json(record, { status: 201 });
+    });
+    render(<FilePreview runId="r1" preview={preview({ latest })} />);
+
+    await userEvent.type(screen.getByLabelText("Sent to"), "Acme Corp");
+    await userEvent.click(screen.getByRole("button", { name: "Record as sent" }));
+
+    expect(calls).toEqual([{ url: "/api/runs/r1/file/f1/sent", body: { customer: "Acme Corp" } }]);
+    const item = await screen.findByText(/to Acme Corp on 16 Nov 2026 by asha · 2 answers/);
+    expect(item.closest("li")).toHaveTextContent("Sent");
+    expect(screen.getByLabelText("Sent to")).toHaveValue("");
+    // Said aloud for someone who cannot see the new line appear.
+    expect(screen.getByRole("status")).toHaveTextContent("Recorded as sent to Acme Corp.");
+  });
+
+  it("does not send an empty name", async () => {
+    const fetched = vi.fn();
+    vi.stubGlobal("fetch", fetched);
+    render(<FilePreview runId="r1" preview={preview({ latest })} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Record as sent" }));
+
+    expect(fetched).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Say who the file was sent to.");
+    // The field is marked as the problem, described by the message, and has the focus.
+    const field = screen.getByLabelText("Sent to");
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(field).toHaveAccessibleDescription("Say who the file was sent to.");
+    expect(field).toHaveFocus();
+  });
+
+  it("lists earlier records, and says when one was for an older file", () => {
+    const old = { ...record, id: "s0", customer: "Globex", current: false };
+    render(<FilePreview runId="r1" preview={preview({ latest, sent: [old, record] })} />);
+
+    const items = within(screen.getByRole("list", { name: "Recorded as sent" })).getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("to Globex");
+    expect(items[0]).toHaveTextContent("before a decision changed");
+    expect(items[1]).not.toHaveTextContent("before a decision changed");
+  });
+
+  it("shows the reason when recording is refused", async () => {
+    vi.stubGlobal("fetch", async () => Response.json({ detail: "a decision changed after this file was made; download the file again" }, { status: 409 }));
+    render(<FilePreview runId="r1" preview={preview({ latest })} />);
+
+    await userEvent.type(screen.getByLabelText("Sent to"), "Acme");
+    await userEvent.click(screen.getByRole("button", { name: "Record as sent" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("download the file again");
   });
 });
 

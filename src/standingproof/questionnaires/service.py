@@ -99,6 +99,7 @@ def _rows(
             cell=q.cell,
             text=q.text,
             answer_cell=q.answer_cell,
+            comment_cell=q.comment_cell,
             external_id=q.external_id,
             truncated=q.truncated,
         )

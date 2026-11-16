@@ -64,6 +64,11 @@ live system settings, and reopens them when those settings drift.
   on every result before it is stored; a result that fails is not stored.
 - A cell that cannot be written safely (occupied, a dropdown that does not offer the wording,
   too long) is listed with a reason. Never overwrite, shorten or reword to make it fit.
+- A dropdown's value is written only by `plan.leading_choice`: the first word of approved
+  wording, equal to one of the dropdown's own values. Never ask a model for it and never
+  infer it from what a sentence means.
+- `sent_files` records that a person said a file was sent. It is append-only. Say "recorded
+  as sent", never "delivered".
 - `filled_files` is append-only and keyed by its input (`load.file_key`). If the writer would
   produce different bytes for the same input, raise `WRITER_VERSION`. File and record are
   written in one transaction.
