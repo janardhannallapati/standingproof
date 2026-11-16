@@ -27,7 +27,13 @@ updates:
     directory: "/web"
     schedule:
       interval: "weekly"
+    # The same week's wait as for Python packages.
+    cooldown:
+      default-days: 7
     groups:
       web:
         patterns: ["*"]
-
+  - package-ecosystem: docker
+    directory: /web
+    schedule:
+      interval: weekly
