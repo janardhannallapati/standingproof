@@ -1,13 +1,23 @@
+import Link from "next/link";
+
 import type { Run } from "@/lib/api";
 import { money } from "@/lib/labels";
 
 import { StatusChip } from "./StatusChip";
 
-type Props = { run: Run; filename: string; live: boolean; needs: number; ready: number };
+type Props = {
+  run: Run;
+  filename: string;
+  live: boolean;
+  needs: number;
+  ready: number;
+  // Where the filled file is, once every question has a decision. Null before that.
+  fileHref?: string | null;
+};
 
 const OPEN = ["queued", "running"];
 
-export function RunHeader({ run, filename, live, needs, ready }: Props) {
+export function RunHeader({ run, filename, live, needs, ready, fileHref = null }: Props) {
   const total = Object.values(run.counts).reduce((sum, count) => sum + count, 0);
   const open = OPEN.reduce((sum, status) => sum + (run.counts[status] ?? 0), 0);
   const answered = total - open;
@@ -42,6 +52,14 @@ export function RunHeader({ run, filename, live, needs, ready }: Props) {
         <span className="text-[12.5px] text-muted">
           {money(run.cost_usd)} of {money(run.max_cost_usd)}
         </span>
+        {fileHref ? (
+          <Link
+            href={fileHref}
+            className="inline-flex min-h-11 items-center rounded-md border border-accent bg-accent px-3.5 font-semibold text-on-accent md:min-h-9"
+          >
+            Filled file
+          </Link>
+        ) : null}
       </div>
     </header>
   );

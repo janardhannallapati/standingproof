@@ -97,3 +97,55 @@ describe("the forwarder", () => {
     expect(await response.json()).toEqual({ detail: "The API could not be reached." });
   });
 });
+
+describe("the forwarder and a downloaded file", () => {
+  const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  function upstreamFile(extra: Record<string, string> = {}) {
+    vi.stubGlobal("fetch", async () =>
+      new Response(new Uint8Array([80, 75, 3, 4]), {
+        status: 200,
+        headers: {
+          "content-type": XLSX,
+          "content-disposition": 'attachment; filename="acme-filled.xlsx"',
+          "set-cookie": "session=from-the-api",
+          ...extra,
+        },
+      }),
+    );
+  }
+
+  const get = (path: string) => new Request(`http://${HOST}/api/${path}`, { headers: { host: HOST } });
+
+  it("passes on the file's name and bytes for the download path", async () => {
+    upstreamFile();
+
+    const response = await GET(get("runs/r1/file/f1"), context("runs", "r1", "file", "f1"));
+
+    expect(response.headers.get("content-type")).toBe(XLSX);
+    expect(response.headers.get("content-disposition")).toBe('attachment; filename="acme-filled.xlsx"');
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([80, 75, 3, 4]));
+  });
+
+  it.each([
+    ["the preview", ["runs", "r1", "file", "preview"]],
+    ["a question", ["run-questions", "q1"]],
+    ["a longer path", ["runs", "r1", "file", "f1", "more"]],
+  ])("passes on no such header for %s", async (_name, path) => {
+    upstreamFile();
+
+    const response = await GET(get(path.join("/")), context(...path));
+
+    expect(response.headers.get("content-disposition")).toBeNull();
+  });
+
+  it("drops a file name that could break out of the header", async () => {
+    upstreamFile({ "content-disposition": 'attachment; filename="a.xlsx"\r\nSet-Cookie: x=1' });
+
+    const response = await GET(get("runs/r1/file/f1"), context("runs", "r1", "file", "f1"));
+
+    expect(response.headers.get("content-disposition")).toBeNull();
+  });
+});
