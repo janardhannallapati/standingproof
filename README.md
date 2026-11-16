@@ -3,7 +3,10 @@
 Answers security questionnaires from approved sources, verifies each answer against live system
 settings where it can, and reopens answers already sent when those settings change.
 
-> **Status:** early development. Not ready for use.
+> **Status:** in development. What works today: upload a questionnaire, draft answers from
+> your approved library, check them against live settings, review them, and get your
+> spreadsheet back with the approved answers in it. Not ready for production: there is no
+> sign-in yet, and a deployment with `SP_ENVIRONMENT=prod` refuses every request.
 
 ## Run it
 
