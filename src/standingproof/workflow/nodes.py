@@ -12,7 +12,7 @@ from langgraph.types import interrupt
 
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.pricing import cost_usd
-from standingproof.agent.prompts import SYSTEM_PROMPT, reviewer_instruction
+from standingproof.agent.prompts import REDRAFT_REQUEST, SYSTEM_PROMPT, reviewer_section
 from standingproof.agent.steps import (
     add_usage,
     decide,
@@ -76,7 +76,12 @@ async def call_model(state: QuestionState, runtime: Runtime[QuestionContext]) ->
     started = ctx.clock()
     try:
         turn = await ctx.model.complete(
-            system=SYSTEM_PROMPT, messages=state["messages"], tools=ctx.registry.definitions()
+            system=SYSTEM_PROMPT,
+            messages=state["messages"],
+            tools=ctx.registry.definitions(),
+            system_addendum=(
+                reviewer_section(state["instruction"]) if state["instruction"] else None
+            ),
         )
     except ModelCallError as error:
         if error.retryable:
@@ -139,26 +144,22 @@ async def run_tools(state: QuestionState, runtime: Runtime[QuestionContext]) -> 
 REDRAFT = "redraft"
 
 
-def _with_instruction(state: QuestionState, instruction: str) -> list[dict[str, Any]]:
-    """The conversation, continued with the reviewer's words as the next user message."""
-    text = reviewer_instruction(instruction)
+def _for_redraft(state: QuestionState) -> list[dict[str, Any]]:
+    """The conversation, ready for the model to speak again.
+
+    The reviewer's words are not put here: they go in the system message. This only makes
+    sure the last message is ours, with fixed wording, so the model has a turn to take.
+    """
     messages = list(state["messages"])
     if state["last_turn"]:
         return [
             *messages,
             {"role": "assistant", "content": state["last_turn"]},
-            {"role": "user", "content": text},
+            {"role": "user", "content": REDRAFT_REQUEST},
         ]
-    # No finished model turn to answer (an exact match, or a limit hit after tools ran).
-    # The last message is ours, so the instruction joins it: two user turns in a row are
-    # not a conversation.
-    last = messages[-1]
-    content = last["content"]
-    if isinstance(content, str):
-        joined: Any = f"{content}\n\n{text}"
-    else:
-        joined = [*content, {"type": "text", "text": text}]
-    return [*messages[:-1], {"role": "user", "content": joined}]
+    # No finished model turn to answer (an exact match, or a limit hit after tools ran):
+    # the last message is already ours.
+    return messages
 
 
 async def review(state: QuestionState, runtime: Runtime[QuestionContext]) -> Update:
@@ -174,7 +175,8 @@ async def review(state: QuestionState, runtime: Runtime[QuestionContext]) -> Upd
         # the graph has nothing more to do.
         return {}
     return {
-        "messages": _with_instruction(state, str(decision.get("instruction", ""))),
+        "messages": _for_redraft(state),
+        "instruction": str(decision.get("instruction", "")),
         "outcome": None,
         "last_turn": None,
         "pending_calls": [],

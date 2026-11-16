@@ -39,8 +39,16 @@ class ModelClient(Protocol):
     """The one thing the loop needs from a model provider."""
 
     async def complete(
-        self, *, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
-    ) -> ModelTurn: ...
+        self,
+        *,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_addendum: str | None = None,
+    ) -> ModelTurn:
+        """One model turn. `system_addendum` is trusted text for this call only, sent after
+        `system` so that the cached prefix (tools and `system`) stays the same."""
+        ...
 
 
 async def run_agent(
