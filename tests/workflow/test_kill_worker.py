@@ -81,9 +81,17 @@ def test_a_killed_worker_loses_nothing_and_no_question_is_answered_twice(
     def lines() -> list[str]:
         return calls.read_text().splitlines()
 
-    first = spawn(env, calls)
+    # The first worker answers three model calls and then hangs in every further one, so
+    # when it is killed it is certainly holding questions part way through.
+    first = spawn({**env, "FAKE_WORKER_HANG_AFTER": "3"}, calls)
     try:
         wait_for(lambda: len(lines()) >= 3, 60, "the first worker to make three model calls")
+        wait_for(
+            lambda: sum(row.status == "running" for row in items(wf, started.run.id)) == 2,
+            30,
+            "the first worker to be holding two questions",
+        )
+        time.sleep(1)  # both are now inside a model call that will never return
         first.send_signal(signal.SIGKILL)
         first.wait(timeout=10)
         before_kill = len(lines())

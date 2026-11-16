@@ -8,9 +8,12 @@ const API = process.env.E2E_API_URL ?? "http://127.0.0.1:8000";
 const SHEET = fileURLToPath(new URL("./fixtures/three-questions.xlsx", import.meta.url));
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-const MFA = "Is multi-factor authentication required for employees?";
-const ENCRYPTION = "Is customer data encrypted at rest?";
-const INSURANCE = "Do you carry cyber liability insurance?";
+// Questions nothing else in the stack uses. If another approved answer to the same
+// question existed with different wording, the two would disagree and neither would be
+// reused, which is the product working as intended and not what this test is about.
+const MFA = "Browser test: is multi-factor authentication required for employees?";
+const ENCRYPTION = "Browser test: is customer data encrypted at rest?";
+const INSURANCE = "Browser test: do you carry cyber liability insurance?";
 
 type Listed = { id: string; question: string; status: string; review: string | null };
 
@@ -77,7 +80,7 @@ test("on a phone the list and the question are two screens", async ({ page }) =>
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto(`/runs/${runId}`);
 
-  const row = page.getByRole("button", { name: new RegExp(MFA.slice(0, 30)) });
+  const row = page.getByRole("button", { name: new RegExp(MFA.slice(14, 44)) });
   await expect(row).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toBeHidden();
 
@@ -101,7 +104,7 @@ test("a reviewer approves one, edits one and rejects one; each is recorded", asy
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
 
   // Approve the first ready answer with the keyboard.
-  await page.getByRole("button", { name: new RegExp(MFA.slice(0, 30)) }).click();
+  await page.getByRole("button", { name: new RegExp(MFA.slice(14, 44)) }).click();
   await expect(page.getByRole("heading", { level: 1, name: MFA })).toBeVisible();
   await expect(page.getByText("Reused: the question matches an approved answer exactly.")).toBeVisible();
   await expect(page.locator("mark")).toHaveText(/Multi-factor authentication is required/);
@@ -119,7 +122,7 @@ test("a reviewer approves one, edits one and rejects one; each is recorded", asy
   );
 
   // Reject the one that has no answer.
-  await page.getByRole("button", { name: new RegExp(INSURANCE.slice(0, 30)) }).click();
+  await page.getByRole("button", { name: new RegExp(INSURANCE.slice(14, 44)) }).click();
   await expect(page.getByRole("heading", { level: 1, name: INSURANCE })).toBeVisible();
   await page.keyboard.press("r");
   await page.getByLabel(/Why is this rejected/).fill("Finance answers insurance questions.");
