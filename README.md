@@ -201,6 +201,21 @@ curl -X POST localhost:8000/run-questions/<id>/decision -H "content-type: applic
   changes. It carries no data; ask the API for the new state.
 - A question nobody decides within `SP_REVIEW_KEEP_DAYS` (default 30) is closed as `expired`.
 
+### In the browser
+
+`docker compose up --build` also starts the reviewer's screen at http://localhost:3000. Open a
+run to see every question with its proposed answer beside the text of its sources.
+
+- What needs a person is listed first, with the reason in words.
+- One key per decision: `A` approve, `E` edit, `R` reject, `D` ask for a redraft; `J` and `K`
+  move between questions. The keys are off while you type.
+- The page updates as the run progresses. If the live connection is lost it says so and asks
+  every 5 seconds instead.
+- It works with the keyboard alone, in light and dark, and on a phone.
+
+The screen is a Next.js app in [`web/`](web). The browser talks only to it; it forwards to the
+API, whose address the browser never sees. Develop it with `cd web && pnpm install && pnpm dev`.
+
 Until sign-in exists, every decision is recorded under the name in `SP_DEV_REVIEWER`, and a
 deployment with `SP_ENVIRONMENT=prod` refuses every request.
 

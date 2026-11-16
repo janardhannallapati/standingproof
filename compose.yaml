@@ -17,6 +17,9 @@ x-app-env: &app_env
   SP_AWS_REGION: ${SP_AWS_REGION:-us-east-1}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  # Web pages from these origins may open the live connection (a WebSocket is not covered
+  # by CORS, so the API checks this list itself).
+  SP_ALLOWED_ORIGINS: ${SP_ALLOWED_ORIGINS:-http://localhost:${SP_WEB_PORT:-3000},http://127.0.0.1:${SP_WEB_PORT:-3000}}
   # This stack does not run on EC2, so the AWS SDK should not wait for an instance role.
   AWS_EC2_METADATA_DISABLED: "true"
 
@@ -87,6 +90,18 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
+
+  # The reviewer's screen. It calls the API server to server; the browser only ever talks
+  # to this service, except for the live connection, which goes straight to the API.
+  web:
+    build: ./web
+    environment:
+      API_URL: http://api:8000
+      PUBLIC_API_WS_URL: ${SP_PUBLIC_API_WS_URL:-ws://localhost:${SP_API_PORT:-8000}}
+    <<: *app_hardening
+    ports: ["127.0.0.1:${SP_WEB_PORT:-3000}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
 
 volumes:
   pgdata:
