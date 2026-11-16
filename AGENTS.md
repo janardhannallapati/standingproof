@@ -142,3 +142,6 @@ live system settings, and reopens them when those settings drift.
   allow its install scripts. pnpm refuses a release less than a day old; do not override that.
 - `NEXT_TELEMETRY_DISABLED=1` is set in the web scripts, the image and CI. Keep it.
 
+- The web app's forwarder (`web/src/app/api/[...path]/route.ts`) refuses a POST that the
+  browser says came from another site (`Sec-Fetch-Site`, `Origin`) or that is not JSON. Any
+  new method that changes something goes through the same check.
