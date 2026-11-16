@@ -4,7 +4,7 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, true
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -128,7 +128,7 @@ async def due(
     )
     rows = await session.execute(
         select(watched, last.c.status, last.c.observed_at)
-        .join(last, func.true())
+        .join(last, true())
         .order_by(last.c.observed_at)
     )
     found = []
