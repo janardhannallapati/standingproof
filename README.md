@@ -195,6 +195,12 @@ returned. It is not given the first model's conversation or notes, and it has no
 - `SP_CHECK_MODEL` (default `claude-sonnet-5-5`) and `SP_CHECK_EFFORT` choose the model;
   `SP_CHECK_ENABLED=false` turns the checker off. Its cost counts against the question and
   the run's ceiling.
+- **What it costs** (measured 2026-11-16, default models): a check is $0.0006 when the
+  checker agrees and about $0.0016 with one finding. The instruction and the reply's schema
+  (1,155 tokens) are read from the provider's cache; the first check after five idle minutes
+  writes that cache and costs $0.003 more. A drafted question costs $0.010 to $0.017 before
+  its check, once the drafter's cache is warm. Questions that start at the same moment each
+  write that cache ($0.010 each, once), so the first few of a run cost about twice the rest.
 
 ## Review a run
 
