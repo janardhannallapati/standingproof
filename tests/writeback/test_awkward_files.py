@@ -86,3 +86,21 @@ def test_a_dropdown_cell_refuses_prose_and_takes_one_of_its_values() -> None:
 def test_a_protected_sheet_is_reported() -> None:
     assert read_indexes(AWKWARD["a protected sheet"](), ["Security"])["Security"].protected
     assert not read_indexes(AWKWARD["merged answer cells"](), ["Security"])["Security"].protected
+
+
+def test_a_dropdown_with_a_comments_column_gets_both_cells_and_keeps_its_dropdown() -> None:
+    upload = AWKWARD["a dropdown beside the answers"]()
+    items = [
+        Item(1, "Security", "D2", "approved", "Yes. For all staff.", "C2"),
+        Item(2, "Security", "D3", "approved", "We encrypt with AES-256.", "C3"),
+    ]
+
+    plan = plan_writeback(items, read_indexes(upload, ["Security"]))
+    filled = write_cells(upload, plan.writes)
+    verify_unchanged(upload, filled, plan.writes)
+
+    sheet = load_workbook(BytesIO(filled))["Security"]
+    assert (sheet["D2"].value, sheet["C2"].value) == ("Yes", "Yes. For all staff.")
+    assert (sheet["D3"].value, sheet["C3"].value) == (None, "We encrypt with AES-256.")
+    assert [(s.cell, s.reason) for s in plan.skips] == [("D3", "dropdown")]
+    assert len(sheet.data_validations.dataValidation) == 1

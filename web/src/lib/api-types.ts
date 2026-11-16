@@ -474,6 +474,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/{run_id}/file/{file_id}/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Sent
+         * @description Record that a person sent this file to a customer. Append-only, and safe to repeat.
+         *
+         *     It records what a reviewer said. It does not send anything and does not say the file
+         *     was delivered.
+         */
+        post: operations["record_sent_runs__run_id__file__file_id__sent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}/questions": {
         parameters: {
             query?: never;
@@ -732,6 +755,8 @@ export interface components {
             protected_sheets: string[];
             /** Ready */
             ready: boolean;
+            /** Sent */
+            sent: components["schemas"]["SentOut"][];
             /** Undecided */
             undecided: number;
             /** Written */
@@ -795,6 +820,8 @@ export interface components {
         ManualMapping: {
             /** Answer Column */
             answer_column?: string | null;
+            /** Comment Column */
+            comment_column?: string | null;
             /**
              * Header Row
              * @description Row holding the headings; 1 is the top.
@@ -828,6 +855,8 @@ export interface components {
             answer_cell: string | null;
             /** Cell */
             cell: string;
+            /** Comment Cell */
+            comment_cell: string | null;
             /** External Id */
             external_id: string | null;
             /**
@@ -1078,6 +1107,32 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** SentIn */
+        SentIn: {
+            /** Customer */
+            customer: string;
+        };
+        /** SentOut */
+        SentOut: {
+            /** Answers */
+            answers: number;
+            /** Current */
+            current: boolean;
+            /** Customer */
+            customer: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Sent By */
+            sent_by: string;
+        };
         /** SheetPreviewOut */
         SheetPreviewOut: {
             /** Name */
@@ -1123,6 +1178,8 @@ export interface components {
             cell: string;
             /** How */
             how: string;
+            /** Kind */
+            kind: string;
             /** Position */
             position: number;
             /** Question */
@@ -2111,6 +2168,63 @@ export interface operations {
             };
             /** @description No such file. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_sent_runs__run_id__file__file_id__sent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SentIn"];
+            };
+        };
+        responses: {
+            /** @description This file was already recorded as sent to this customer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SentOut"];
+                };
+            };
+            /** @description No such file. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description A decision changed after this file was made. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

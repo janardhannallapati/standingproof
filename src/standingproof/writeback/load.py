@@ -30,7 +30,7 @@ from standingproof.writeback.plan import Item
 
 # Goes into the key. Raise it when the writer would produce different bytes for the same
 # input, so that files made by an older writer are not mistaken for current ones.
-WRITER_VERSION = 1
+WRITER_VERSION = 2
 _WRITTEN = (REVIEW_APPROVED, REVIEW_EDITED)
 _SAFE_IN_A_NAME = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._- "
 
@@ -50,6 +50,8 @@ class Row:
     comment: str | None
     # False when the decision record does not carry this wording.
     as_decided: bool
+    # The free-text cell beside the answer cell, when the sheet has a comments column.
+    comment_cell: str | None = None
 
     @property
     def undecided(self) -> bool:
@@ -59,7 +61,7 @@ class Row:
         # A question that failed or never started has no decision and no answer: it is
         # closed, and its cell is left empty.
         review = self.review if self.review is not None else "unanswered"
-        return Item(self.position, self.sheet, self.cell, review, self.wording)
+        return Item(self.position, self.sheet, self.cell, review, self.wording, self.comment_cell)
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,9 @@ def file_key(upload_sha256: str, rows: Sequence[Row]) -> str:
             str(row.question_id),
             row.status,
             row.review or "",
+            # Where it would be written: a different mapping is a different file.
+            row.cell or "",
+            row.comment_cell or "",
             hashlib.sha256((row.wording or "").encode()).hexdigest(),
         ]
         for row in sorted(rows, key=lambda each: each.position)
@@ -154,6 +159,7 @@ async def load(session: AsyncSession, tenant_id: uuid.UUID, run_id: uuid.UUID) -
                 wording=item.final_answer if written else None,
                 comment=decision.comment if decision is not None else None,
                 as_decided=as_decided,
+                comment_cell=question.comment_cell,
             )
         )
     return Loaded(run, filename, upload_sha256, content, rows)

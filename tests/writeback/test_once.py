@@ -104,11 +104,11 @@ def test_the_stored_record_lists_what_was_written_and_what_was_left(
     record = db.run(stored())
 
     assert record.written == [
-        {"position": 1, "sheet": "Security", "cell": "C2"},
-        {"position": 2, "sheet": "Security", "cell": "C3"},
+        {"position": 1, "sheet": "Security", "cell": "C2", "kind": "answer"},
+        {"position": 2, "sheet": "Security", "cell": "C3", "kind": "answer"},
     ]
     assert [(e["position"], e["reason"]) for e in record.left_empty] == [(3, "rejected")]
-    assert (record.writer_version, record.created_by) == (1, "dev-reviewer")
+    assert (record.writer_version, record.created_by) == (2, "dev-reviewer")
 
 
 def row(**changes: Any) -> Row:
@@ -130,7 +130,7 @@ def row(**changes: Any) -> Row:
 def test_the_key_is_the_same_in_every_process_for_the_same_input() -> None:
     # A fixed input and its fixed key. If this changes, files already made would no longer
     # be found: raise WRITER_VERSION on purpose instead.
-    expected = "785d0c2fae4af54a8c06e8ab80ebc6e96b33a5b58633066dc652b3a807acb8c8"
+    expected = "4d1bdd21e07c778839abd4d56bb970c5a506eeb53a707fc27a65b5bf1d104c33"
     assert file_key("ab" * 32, [row()]) == expected
 
 
@@ -140,6 +140,8 @@ def test_the_key_changes_with_anything_that_changes_the_file() -> None:
     assert file_key("cd" * 32, [row()]) != base
     assert file_key("ab" * 32, [row(wording="Yes, yearly.")]) != base
     assert file_key("ab" * 32, [row(review="edited")]) != base
+    assert file_key("ab" * 32, [row(comment_cell="D2")]) != base
+    assert file_key("ab" * 32, [row(cell="C3")]) != base
     assert file_key("ab" * 32, [row(), row(position=2, question_id=uuid.UUID(int=2))]) != base
     # What does not change the file does not change the key.
     assert file_key("ab" * 32, [row(comment="a note", question="Reworded?")]) == base
