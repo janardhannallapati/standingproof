@@ -1,6 +1,6 @@
 // Words for what the API reports. A reviewer reads these, so they say what happened
 // and, where it helps, what to do.
-import type { Finding, ReviewQuestion, RunQuestion } from "./api";
+import type { Finding, Reopening, ReviewQuestion, RunQuestion } from "./api";
 
 const REASONS: Record<string, string> = {
   no_approved_source: "No approved source",
@@ -71,23 +71,41 @@ export const GROUP_TITLES: Record<Group, string> = {
 // The order the groups appear in: what needs a person first.
 export const GROUP_ORDER: Group[] = ["needs", "ready", "working", "decided", "unanswered"];
 
-export function groupOf(question: Pick<RunQuestion, "status" | "review">): Group {
+// What every list and chip needs to know about a question. `reopened` comes with a row of
+// the list; `reopening` with the question itself.
+type Marked = { reopened?: boolean; reopening?: Reopening | null };
+type Placed = Pick<RunQuestion, "status" | "review"> & Marked;
+
+/** True while a question waits again because a live setting it rests on has changed. */
+export function isReopened(question: Marked): boolean {
+  return Boolean(question.reopened || question.reopening);
+}
+
+/** A setting, as every screen names it: the check, and what it was run on. */
+export function settingName(checkName: string, scope: string): string {
+  return `${checkName} on ${scope}`;
+}
+
+export function groupOf(question: Placed): Group {
   if (question.status === "queued" || question.status === "running") return "working";
   if (question.status === "failed" || question.status === "not_started") return "unanswered";
-  if (question.review === "pending") return question.status === "ready" ? "ready" : "needs";
+  if (question.review === "pending") {
+    // A reopened question must be opened and read, whatever the agent made of its draft.
+    return question.status === "ready" && !isReopened(question) ? "ready" : "needs";
+  }
   return "decided";
 }
 
 export type Tone = "ready" | "review" | "fail" | "quiet";
 
-export function chipFor(question: Pick<RunQuestion, "status" | "review">): {
+export function chipFor(question: Placed): {
   tone: Tone;
   mark: string;
   label: string;
 } {
   switch (groupOf(question)) {
     case "needs":
-      return { tone: "review", mark: "!", label: "Needs review" };
+      return { tone: "review", mark: "!", label: isReopened(question) ? "Reopened" : "Needs review" };
     case "ready":
       return { tone: "ready", mark: "✓", label: "Ready" };
     case "working":
@@ -141,4 +159,64 @@ export function emptyReason(reason: string, detail: string): { tone: Tone; mark:
     return { tone: "review", mark: "!", label: "Dropdown", text: `The cell is a dropdown and the answer is not one of its values.${values}` };
   }
   return EMPTY_REASONS[reason] ?? { tone: "review", mark: "!", label: "Left empty", text: reason.replaceAll("_", " ") };
+}
+
+const FACTS: Record<string, string> = {
+  protected: "Branch is protected",
+  required_approving_reviews: "Approving reviews needed",
+  applies_to_administrators: "Applies to administrators",
+  default_branch: "Default branch",
+  two_factor_required: "Two-factor sign-in required",
+  secret_scanning_enabled: "Secret scanning switched on",
+  root_mfa_enabled: "Root user has multi-factor sign-in",
+  policy_set: "Password policy set",
+  minimum_length: "Minimum password length",
+  max_age_days: "Password expires after (days)",
+  requires_symbols: "Passwords need a symbol",
+  all_public_access_blocked: "All public access to S3 blocked",
+  ebs_encrypted_by_default: "New disks encrypted by default",
+  region: "Region",
+};
+
+/** A check's named fact, as a reviewer would say it. An unknown name is shown as it is. */
+export function factLabel(fact: string): string {
+  const words = fact.replaceAll("_", " ");
+  // hasOwn: a fact named "constructor" must not find the object's own constructor.
+  return Object.hasOwn(FACTS, fact) ? FACTS[fact]! : words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+export function factValue(value: boolean | number | string | null | undefined): string {
+  if (value === true) return "yes";
+  if (value === false) return "no";
+  if (value === null || value === undefined) return "not reported";
+  return String(value);
+}
+
+/** The same text on the server, in the browser and in tests, whatever the time zone. */
+export function utcDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+/** "to Acme Corp on 3 Nov 2026 and to Globex on 5 Nov 2026" */
+export function sentList(sent: { customer: string; sent_at: string }[]): string {
+  const each = sent.map((one) => `to ${one.customer} on ${utcDay(one.sent_at)}`);
+  if (each.length <= 2) return each.join(" and ");
+  return `${each.slice(0, -1).join(", ")} and ${each[each.length - 1]}`;
+}
+
+const FOUND: Record<string, string> = {
+  webhook: "GitHub reported a change. Standingproof then read the setting itself; what GitHub sent is not used as a fact.",
+  schedule: "Found by the daily look at this setting.",
+  run: "Found when the agent looked at this setting while drafting.",
+  manual: "Found by a look someone asked for.",
+};
+
+export function foundBy(trigger: string): string {
+  return Object.hasOwn(FOUND, trigger) ? FOUND[trigger]! : "Found by a look at this setting.";
+}
+
+/** A moment, in UTC and saying so: the same text on the server and in any browser. */
+export function utcMoment(iso: string): string {
+  const time = new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return `${utcDay(iso)}, ${time} UTC`;
 }

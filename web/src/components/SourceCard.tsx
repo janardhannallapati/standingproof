@@ -1,5 +1,5 @@
 import type { Source } from "@/lib/api";
-import { SOURCE_KINDS as KINDS } from "@/lib/labels";
+import { SOURCE_KINDS as KINDS, utcDay as day } from "@/lib/labels";
 
 /**
  * The longest sentence of the answer that the source also contains, as a range in the
@@ -21,11 +21,14 @@ export function citedRange(sourceText: string, answer: string | null): [number, 
   return null;
 }
 
-function day(value: string): string {
-  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
+type Props = {
+  source: Source;
+  answer: string | null;
+  // True when this is a live check whose setting has been seen to read differently since.
+  changedSince?: boolean;
+};
 
-export function SourceCard({ source, answer }: { source: Source; answer: string | null }) {
+export function SourceCard({ source, answer, changedSince = false }: Props) {
   if (!source.available || source.text == null) {
     return (
       <div className="rounded-md border border-line bg-surface px-3 py-2.5 text-muted">
@@ -41,7 +44,12 @@ export function SourceCard({ source, answer }: { source: Source; answer: string 
         <b className="font-semibold text-fg">{KINDS[source.kind ?? ""] ?? "Source"}</b>
         {source.owner ? <span>owner: {source.owner}</span> : null}
         {source.valid_until ? <span>valid until {day(source.valid_until)}</span> : null}
-        {source.observed_at ? <span>observed {day(source.observed_at)}</span> : null}
+        {source.observed_at ? (
+          <span>
+            observed {day(source.observed_at)}
+            {changedSince ? " · the setting has changed since" : ""}
+          </span>
+        ) : null}
       </header>
       {source.label ? <p className="px-3 pt-2.5 text-muted">{source.label}</p> : null}
       <p className="px-3 py-2.5">

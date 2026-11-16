@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ApiError,
@@ -31,9 +31,20 @@ type Props = {
   // Where the browser opens the live connection. A public address, never a secret.
   eventsUrl: string | null;
   maxRedrafts?: number;
+  // The question to open first, when a link named one. Otherwise the first in the list.
+  initialQuestionId?: string | null;
 };
 
 const POLL_MS = 5000;
+
+// What is read out after a decision. The list moves on by itself, which is silent.
+const SAID: Record<Decision, string> = {
+  approve: "Approved.",
+  edit: "Edited and approved.",
+  reject: "Rejected.",
+  redraft: "Sent back for a redraft.",
+  keep: "Kept.",
+};
 
 /** The questions in the order the list shows them, so "next" means the next one down. */
 function inListOrder(questions: RunQuestion[]): RunQuestion[] {
@@ -45,7 +56,14 @@ function typing(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-export function Inbox({ run: firstRun, questions: firstQuestions, filename, eventsUrl, maxRedrafts = 2 }: Props) {
+export function Inbox({
+  run: firstRun,
+  questions: firstQuestions,
+  filename,
+  eventsUrl,
+  maxRedrafts = 2,
+  initialQuestionId = null,
+}: Props) {
   const client = useQueryClient();
   const runId = firstRun.id;
   const refresh = useCallback(() => {
@@ -69,12 +87,18 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
   }).data;
 
   const ordered = useMemo(() => inListOrder(questions), [questions]);
-  const [selectedId, setSelectedId] = useState<string | null>(ordered[0]?.id ?? null);
+  const linked = ordered.find((q) => q.id === initialQuestionId)?.id ?? null;
+  const [selectedId, setSelectedId] = useState<string | null>(linked ?? ordered[0]?.id ?? null);
   // On a phone the list and the question are two screens; this says which is showing.
-  const [showDetail, setShowDetail] = useState(false);
+  // A link to one question opens that question.
+  const [showDetail, setShowDetail] = useState(linked !== null);
   const [mode, setMode] = useState<Mode>("view");
   const [notice, setNotice] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [said, setSaid] = useState("");
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Set by a decision; the next question to be shown takes the keyboard.
+  const focusNext = useRef(false);
 
   const detail = useQuery({
     queryKey: ["run", runId, "question", selectedId],
@@ -106,7 +130,9 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
         answer: input.answer ?? null,
         comment: input.comment ?? null,
       }),
-    onSuccess: (updated) => {
+    onSuccess: (updated, input) => {
+      setSaid(SAID[input.decision]);
+      focusNext.current = true;
       client.setQueryData(["run", runId, "question", updated.id], updated);
       refresh();
       setMode("view");
@@ -149,6 +175,14 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
   });
 
   const current = detail.data;
+  // After a decision the bar that held the focus is gone. Put the keyboard on the heading
+  // of whatever is shown now, so the next Tab starts from the question and not the page.
+  useEffect(() => {
+    if (focusNext.current && heading.current) {
+      focusNext.current = false;
+      heading.current.focus();
+    }
+  }, [current?.id, current?.version]);
   const onDecide = useCallback(
     (kind: Decision, extra?: { answer?: string; comment?: string }) => {
       if (current) decision.mutate({ item: current, decision: kind, ...extra });
@@ -165,8 +199,11 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
       if (key === "k") return step(-1);
       if (!current || current.review !== "pending" || mode !== "view" || decision.isPending) return;
       const hasDraft = Boolean(current.answer?.trim());
-      if (key === "a" && hasDraft) onDecide("approve");
-      else if (key === "e") setMode("edit");
+      if (key === "a") {
+        // Not on a reopened question: there the choice is to keep, and that takes a click.
+        if (!hasDraft || current.reopening) return;
+        onDecide("approve");
+      } else if (key === "e") setMode("edit");
       else if (key === "r") setMode("reject");
       else if (key === "d" && current.redrafts < maxRedrafts) setMode("redraft");
       else return;
@@ -202,6 +239,9 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
         ready={readyCount}
         fileHref={allDecided(questions) ? `/runs/${run.id}/file` : null}
       />
+      <p role="status" aria-label="Last decision" className="sr-only">
+        {said}
+      </p>
       <main className="grid flex-1 md:grid-cols-[400px_1fr]">
         <div className={`border-line md:block md:border-r ${showDetail ? "hidden" : ""}`}>
           <QuestionList
@@ -226,6 +266,7 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
               busy={decision.isPending}
               notice={notice}
               maxRedrafts={maxRedrafts}
+              headingRef={heading}
             />
           ) : (
             <p className="p-6 text-muted" role="status">

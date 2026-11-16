@@ -15,6 +15,8 @@ export type Decision = DecisionBody["decision"];
 export type FilePreview = Schemas["FilePreviewOut"];
 export type FilledFile = Schemas["FilledFileOut"];
 export type SentRecord = Schemas["SentOut"];
+export type Reopening = Schemas["ReopeningOut"];
+export type Change = Schemas["ChangeOut"];
 
 export class ApiError extends Error {
   constructor(
@@ -58,6 +60,11 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function listRuns(): Promise<{ items: RunListItem[] }> {
   return call("/runs");
+}
+
+/** Changes seen to live settings, newest first, with the answers each reopened. */
+export function listChanges(): Promise<{ items: Change[] }> {
+  return call("/changes");
 }
 
 export function getRun(runId: string): Promise<Run> {

@@ -17,7 +17,16 @@ type Props = {
   maxRedrafts: number;
 };
 
-const PROMPTS: Record<Exclude<Mode, "view">, { label: string; submit: string; hint: string }> = {
+type Prompt = { label: string; submit: string; hint: string };
+
+// Rejecting an answer that customers already have is withdrawing it.
+const WITHDRAW: Prompt = {
+  label: "Why is this withdrawn? (optional)",
+  submit: "Withdraw",
+  hint: "No answer will be given for this question: its cell is left empty in the next file.",
+};
+
+const PROMPTS: Record<Exclude<Mode, "view">, Prompt> = {
   edit: {
     label: "Answer to approve",
     submit: "Save and approve",
@@ -40,15 +49,21 @@ export function DecisionBar({ question, mode, onMode, onDecide, busy, maxRedraft
   const [text, setText] = useState("");
   const fieldId = useId();
   const hasDraft = Boolean(question.answer?.trim());
+  // Waiting again because a live setting changed. What is on the table is then the wording
+  // a person approved, where there is one, and not the agent's draft.
+  const reopened = Boolean(question.reopening);
+  const standing = (reopened ? question.final_answer : null) ?? question.answer ?? "";
+  // "Withdraw" only for an answer a person had approved. A draft nobody decided is rejected.
+  const withdrawing = Boolean(question.reopening?.was_review);
   const redraftsLeft = maxRedrafts - question.redrafts;
 
   const open = (next: Exclude<Mode, "view">) => {
-    setText(next === "edit" ? (question.answer ?? "") : "");
+    setText(next === "edit" ? standing : "");
     onMode(next);
   };
 
   if (mode !== "view") {
-    const prompt = PROMPTS[mode];
+    const prompt = withdrawing && mode === "reject" ? WITHDRAW : PROMPTS[mode];
     const required = mode !== "reject";
     const submit = () => {
       if (mode === "edit") onDecide("edit", { answer: text });
@@ -87,6 +102,41 @@ export function DecisionBar({ question, mode, onMode, onDecide, busy, maxRedraft
           </Button>
         </div>
       </form>
+    );
+  }
+
+  if (reopened) {
+    return (
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
+        <Button primary shortcut="E" onClick={() => open("edit")} disabled={busy}>
+          Edit
+        </Button>
+        {standing.trim() ? (
+          // No key for this one: keeping an answer that a changed setting may contradict
+          // takes a deliberate click.
+          // aria-disabled, not disabled: a disabled button drops the keyboard's focus.
+          <Button
+            onClick={() => {
+              if (!busy) onDecide("keep");
+            }}
+            aria-disabled={busy}
+            className={busy ? "opacity-50" : ""}
+          >
+            Keep this answer
+          </Button>
+        ) : null}
+        <Button shortcut="R" onClick={() => open("reject")} disabled={busy}>
+          {withdrawing ? "Withdraw" : "Reject"}
+        </Button>
+        <Button
+          shortcut="D"
+          onClick={() => open("redraft")}
+          disabled={busy || redraftsLeft <= 0}
+          title={redraftsLeft <= 0 ? `Already redrafted ${maxRedrafts} times` : undefined}
+        >
+          Ask for a redraft
+        </Button>
+      </div>
     );
   }
 

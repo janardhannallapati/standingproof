@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { ApiError, type FilePreview as Preview, fileUrl, makeFile } from "@/lib/api";
-import { emptyReason } from "@/lib/labels";
+import { emptyReason, utcDay } from "@/lib/labels";
 
 import { Button } from "./Button";
 import { SentBox } from "./SentBox";
@@ -64,6 +64,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
   }
 
   if (!preview.ready) {
+    const reopened = preview.sent.some((record) => record.reopened > 0);
     return (
       <div className="grid gap-3">
         <p className="flex items-start gap-2.5 rounded-md bg-review-bg px-3 py-2.5 font-medium text-review">
@@ -72,7 +73,10 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
             {count(preview.undecided, "question still needs", "questions still need")} a decision.
           </span>
         </p>
-        <p className="text-muted">The file is made when every question has one.</p>
+        <p className="text-muted">
+          The file is made when every question has one.
+          {reopened ? " An answer was reopened because a live setting changed." : ""}
+        </p>
         <p>
           <Link
             href={`/runs/${runId}`}
@@ -81,6 +85,35 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
             Back to the questions
           </Link>
         </p>
+        {preview.sent.length > 0 ? (
+          // Who has a file made from the decisions as they were. The records themselves
+          // are never changed; "out of date" is worked out from them.
+          <div className="grid gap-2 rounded-md border border-line bg-surface p-3">
+            <h2 id="sent-before" className="text-[12.5px] font-semibold text-muted">
+              Sent before this change
+            </h2>
+            <ul aria-labelledby="sent-before" className="grid gap-1.5">
+              {preview.sent.map((record) => (
+                <li key={record.id} className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  {record.current && record.reopened === 0 ? (
+                    <StatusChip tone="ready" mark="✓" label="Sent" />
+                  ) : (
+                    <StatusChip tone="review" mark="!" label="Out of date" />
+                  )}
+                  <span>
+                    to {record.customer} on {utcDay(record.sent_at)} by {record.sent_by} ·{" "}
+                    {count(record.answers, "answer", "answers")}
+                    {record.reopened > 0 ? `, ${record.reopened} reopened since` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[12.5px] text-muted">
+              These customers have the earlier wording. When every question is decided,
+              download the file again, send it, and record it here.
+            </p>
+          </div>
+        ) : null}
       </div>
     );
   }

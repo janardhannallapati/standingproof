@@ -1,0 +1,56 @@
+# For the browser tests only. Used on top of compose.yaml:
+#
+#   docker compose -f compose.yaml -f compose.e2e.yaml up --build --detach --wait
+#
+# It adds stand-ins for the model provider and for GitHub (web/e2e/fakes/server.py) and
+# points the stack at them, so a browser test can take the whole path, from a drafted
+# answer that cites a live check to that answer being reopened, with no key and no network.
+# Every value here is a made-up test value. Never use this file for a real deployment.
+x-e2e-checks: &e2e_checks
+  SP_GITHUB_API_URL: http://fakes:9000/github
+  SP_GITHUB_TOKEN: e2e-not-a-token
+  SP_GITHUB_ORGS: e2e-org
+
+services:
+  fakes:
+    build: .
+    command: ["python", "/fakes/server.py"]
+    volumes: ["./web/e2e/fakes:/fakes:ro"]
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    # The test flips the fake branch protection through this port.
+    ports: ["127.0.0.1:${SP_FAKES_PORT:-9100}:9000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  api:
+    environment:
+      <<: *e2e_checks
+      SP_GITHUB_WEBHOOK_SECRET: e2e-webhook-secret
+
+  worker:
+    environment:
+      <<: *e2e_checks
+      ANTHROPIC_API_KEY: e2e-not-a-key
+      ANTHROPIC_BASE_URL: http://fakes:9000/anthropic
+      # The scripted model drafts; no second model is scripted to check it.
+      SP_CHECK_ENABLED: "false"
+      # Every draft looks at the setting afresh, so a second run of the tests does not
+      # draft from what the first run left behind.
+      SP_EVIDENCE_MAX_AGE_SECONDS: "0"
+    depends_on:
+      fakes: { condition: service_healthy }
+
+  watcher:
+    environment:
+      <<: *e2e_checks
+      # A test should not wait out production's settle time, gap and poll.
+      SP_WEBHOOK_SETTLE_SECONDS: "0"
+      SP_WEBHOOK_MIN_GAP_SECONDS: "0"
+      SP_DRIFT_POLL_SECONDS: "1"
+    depends_on:
+      fakes: { condition: service_healthy }

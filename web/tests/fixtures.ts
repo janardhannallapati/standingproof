@@ -1,4 +1,4 @@
-import type { ReviewQuestion, Run, RunQuestion } from "@/lib/api";
+import type { Change, Reopening, ReviewQuestion, Run, RunQuestion } from "@/lib/api";
 
 export function listed(overrides: Partial<RunQuestion> = {}): RunQuestion {
   return {
@@ -65,6 +65,67 @@ export function run(overrides: Partial<Run> = {}): Run {
     max_cost_usd: "5.0000",
     created_at: "2026-11-16T01:00:00Z",
     finished_at: "2026-11-16T01:01:00Z",
+    ...overrides,
+  };
+}
+
+/** Branch protection was switched off after the answer was approved and sent. */
+export function reopening(overrides: Partial<Reopening> = {}): Reopening {
+  return {
+    reopened_at: "2026-11-16T11:40:05Z",
+    was_review: "approved",
+    settings: [
+      {
+        check_name: "github.branch_protection",
+        scope: "acme/app",
+        was: {
+          statement: "Branch main of acme/app is protected: a change needs 2 approving reviews.",
+          observed_at: "2026-11-03T09:12:00Z",
+        },
+        now: { statement: "Branch main of acme/app is not protected.", observed_at: "2026-11-16T11:40:00Z" },
+        changes: [
+          { fact: "protected", was: true, now: false },
+          { fact: "required_approving_reviews", was: 2, now: 0 },
+        ],
+        trigger: "webhook",
+      },
+    ],
+    sent_to: [
+      { customer: "Acme Corp", sent_at: "2026-11-03T10:02:00Z" },
+      { customer: "Globex", sent_at: "2026-11-05T14:30:00Z" },
+    ],
+    ...overrides,
+  };
+}
+
+/** An approved answer that is waiting again. */
+export function reopened(overrides: Partial<ReviewQuestion> = {}): ReviewQuestion {
+  return detailed({
+    review: "pending",
+    final_answer: "Yes. Two approving reviews are required.",
+    answer: "Yes, two reviews.",
+    version: 3,
+    reopening: reopening(),
+    ...overrides,
+  });
+}
+
+export function change(overrides: Partial<Change> = {}): Change {
+  return {
+    ...reopening().settings[0]!,
+    id: "change-1",
+    detected_at: "2026-11-16T11:40:05Z",
+    answers: [
+      {
+        run_question_id: "q-1",
+        run_id: "run-1",
+        filename: "acme-vendor.xlsx",
+        position: 1,
+        question: "Do code changes need review?",
+        waiting: true,
+        sent_to: reopening().sent_to,
+      },
+    ],
     ...overrides,
   };
 }

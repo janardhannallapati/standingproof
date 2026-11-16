@@ -1,5 +1,5 @@
 import type { RunQuestion } from "@/lib/api";
-import { GROUP_ORDER, GROUP_TITLES, type Group, chipFor, fineMoney, groupOf, reasonText } from "@/lib/labels";
+import { GROUP_ORDER, GROUP_TITLES, type Group, chipFor, fineMoney, groupOf, isReopened, reasonText } from "@/lib/labels";
 
 import { StatusChip } from "./StatusChip";
 
@@ -13,6 +13,8 @@ type Props = {
 
 function subline(question: RunQuestion): string {
   const group = groupOf(question);
+  // Why it is back, not why the agent's draft once needed review.
+  if (group === "needs" && isReopened(question)) return "a live setting changed";
   if (group === "needs" || group === "unanswered") return reasonText(question.reason);
   if (question.path === "reused") return "reused";
   if (question.path === "drafted") return `drafted · ${fineMoney(question.cost_usd)}`;
