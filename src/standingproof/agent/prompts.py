@@ -28,18 +28,17 @@ words. Use `note` for anything a human reviewer should know, such as a partial m
 """
 
 
-# The tags that carry text from outside. None of that text may close one of them.
-_CLOSING_TAG = re.compile(r"</\s*(question|draft|source)", re.IGNORECASE)
+# The tags that carry text from outside. None of that text may open or close one of them:
+# a forged closing tag would let it continue as if it were ours, and a forged opening tag
+# would let it pose as another part (a source marked as cited, say).
+_OUR_TAG = re.compile(r"<(?=\s*(?:/\s*)?(?:question|draft|source)\b)", re.IGNORECASE)
 
 REDRAFT_REQUEST = "Redraft the answer as the reviewer instruction in the system message asks."
 
 
 def wrap(tag: str, text: str, attributes: str = "") -> str:
-    """Put text from outside inside a tag it cannot close.
-
-    Without this, text could end its own wrapper and carry on as if it were ours.
-    """
-    return f"<{tag}{attributes}>\n{_CLOSING_TAG.sub(r'&lt;/\1', text)}\n</{tag}>"
+    """Put text from outside inside a tag it can neither close nor imitate."""
+    return f"<{tag}{attributes}>\n{_OUR_TAG.sub('&lt;', text)}\n</{tag}>"
 
 
 def question_message(question: str) -> str:

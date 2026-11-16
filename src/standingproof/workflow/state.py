@@ -10,11 +10,12 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
 
+from standingproof.agent.checker import CheckerClient
 from standingproof.agent.limits import Limits
 from standingproof.agent.loop import ModelClient
 from standingproof.agent.prompts import question_message
 from standingproof.agent.tools import ToolRegistry
-from standingproof.agent.types import AnswerDraft, Usage
+from standingproof.agent.types import AnswerDraft, CheckResult, Usage
 
 NO_APPROVED_SOURCE = "no_approved_source"
 
@@ -81,6 +82,8 @@ class QuestionContext:
     limits: Limits
     find_exact: Callable[[str], Awaitable[ExactMatch | None]]
     clock: Callable[[], float] = time.monotonic
+    # The second reader of each draft. None: drafts are not checked.
+    checker: CheckerClient | None = None
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,8 @@ class Outcome:
     steps: int
     cost_usd: float
     usage: Usage
+    # What the second reader made of the draft. None when the draft was not sent to one.
+    check: CheckResult | None = None
 
 
 @dataclass(frozen=True)
