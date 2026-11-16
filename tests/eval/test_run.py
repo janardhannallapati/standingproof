@@ -1,0 +1,241 @@
+"""The paid command, with a scripted model: what it asks, what it spends, what it leaves."""
+
+import json
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from evals.cases import load_checker, load_drafter
+from evals.fingerprint import Config, of_drafter_case
+from evals.plan import Plan, approved, estimate, load_manifest, plan_for
+from evals.run import Clients, run_plan
+from evals.transcript import CheckerRun, DrafterRun, read_all
+from standingproof.agent.loop import ModelCallError
+from standingproof.agent.types import AnswerDraft, CheckTurn, ModelTurn, ToolCall, Usage
+from tests.agent.fakes import checker_says, disputes, finishes, wants_tools
+from tests.conftest import Db
+from tests.fakes import FakeEmbedder
+
+DRAFTER = load_drafter()
+CHECKER = load_checker()
+CONFIG = Config.current()
+# About $0.012 a turn on the drafter's model: a round number to count with.
+TURN = Usage(input_tokens=2000, output_tokens=200)
+
+
+class LooksThenAnswers:
+    """A drafter that looks at branch protection once and repeats what the look said."""
+
+    def __init__(self, fail: bool = False) -> None:
+        self.calls = 0
+        self.fail = fail
+
+    async def complete(self, *, messages: list[dict[str, Any]], **_: Any) -> ModelTurn:
+        self.calls += 1
+        if self.fail:
+            raise ModelCallError("provider down", retryable=True)
+        last = messages[-1]["content"]
+        if isinstance(last, str):
+            call = ToolCall(
+                id="t1",
+                name="check_live_setting",
+                arguments={"check": "github.branch_protection", "scope": "harborlight/app"},
+            )
+            return wants_tools(call, tokens=TURN)
+        seen = json.loads(last[0]["content"])
+        draft = AnswerDraft(
+            status="answered", answer=seen["statement"], citations=[seen["id"]], note=""
+        )
+        return finishes(draft, tokens=TURN)
+
+
+class Agrees:
+    def __init__(self, reply: CheckTurn | Exception | None = None) -> None:
+        self.calls = 0
+        self.reply = reply or checker_says("supported")
+
+    async def check(self, **_: Any) -> CheckTurn:
+        self.calls += 1
+        if isinstance(self.reply, Exception):
+            raise self.reply
+        return self.reply
+
+
+SMALL = Plan(
+    drafter=[("b-reviews-two-vs-one", 1), ("a-reviews-two", 1)],
+    docs_only=[],
+    checker=[("sound-backups", 1), ("wider-contractors", 1)],
+    cheaper=["sound-backups"],
+)
+
+
+def clients(model: Any = None, checker: Any = None, cheaper: Any = None) -> Clients:
+    return Clients(
+        model=model or LooksThenAnswers(),
+        checker=checker or Agrees(),
+        cheaper_checker=cheaper or Agrees(checker_says("not_supported", disputes("daily"))),
+    )
+
+
+def go(db: Db, root: Path, plan: Plan = SMALL, ceiling: float = 4.0, **kinds: Any):  # type: ignore[no-untyped-def]
+    used = clients(**kinds)
+    manifest = db.run(
+        run_plan(
+            plan,
+            sessions=db.sessions,
+            embedder=FakeEmbedder(),
+            clients=used,
+            config=CONFIG,
+            ceiling=ceiling,
+            root=root,
+            say=lambda _line: None,
+        )
+    )
+    return manifest, used
+
+
+def test_the_full_plan_and_its_estimate() -> None:
+    plan = plan_for(DRAFTER, CHECKER, smoke=False)
+
+    cost = estimate(plan)
+
+    assert (len(plan.drafter), len(plan.docs_only), len(plan.checker), len(plan.cheaper)) == (
+        96,
+        18,
+        144,
+        48,
+    )
+    assert 2.3 < cost.total < 2.8
+    assert [line.calls for line in cost.lines] == [96, 18, 144, 48]
+
+
+def test_the_smoke_plan_is_one_case_of_each_family_and_six_drafts() -> None:
+    plan = plan_for(DRAFTER, CHECKER, smoke=True)
+
+    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("ABCDEF")
+    assert (len(plan.checker), plan.docs_only, plan.cheaper) == (6, [], [])
+    assert estimate(plan).total < 0.25
+
+
+@pytest.mark.parametrize(
+    ("terminal", "typed", "flag", "allowed"),
+    [
+        (True, "yes", None, True),
+        (True, "y", None, False),
+        (True, "", None, False),
+        (False, "yes", None, False),  # nobody is there to have typed it
+        (False, "", 4.0, True),
+        (False, "", 3.0, False),  # approved for a different ceiling
+        (True, "no", 4.0, True),  # the stated approval is enough; nothing is asked
+    ],
+)
+def test_nothing_runs_without_a_yes(
+    terminal: bool, typed: str, flag: float | None, allowed: bool
+) -> None:
+    asked: list[str] = []
+
+    def ask(prompt: str) -> str:
+        asked.append(prompt)
+        return typed
+
+    assert approved(ceiling=4.0, stated=flag, terminal=terminal, ask=ask) is allowed
+    assert bool(asked) == (terminal and flag is None)
+
+
+def test_a_run_leaves_one_recording_per_case_and_a_manifest(db: Db, tmp_path: Path) -> None:
+    manifest, used = go(db, tmp_path)
+
+    runs = read_all(tmp_path)
+    drafts = [run for run in runs if isinstance(run, DrafterRun)]
+    checks = [run for run in runs if isinstance(run, CheckerRun)]
+    assert {(d.case, d.variant) for d in drafts} == {
+        ("b-reviews-two-vs-one", "full"),
+        ("a-reviews-two", "full"),
+    }
+    assert {(c.case, c.variant) for c in checks} == {
+        ("sound-backups", "main"),
+        ("wider-contractors", "main"),
+        ("sound-backups", "cheaper"),
+    }
+    first = next(d for d in drafts if d.case == "b-reviews-two-vs-one")
+    assert first.final_draft is not None and "1 approving review " in first.final_draft.answer
+    assert [use.name for use in first.tool_uses] == ["check_live_setting"]
+    assert first.tool_uses[0].source_ids == first.final_draft.citations
+    assert list(first.seen_sources) == first.final_draft.citations
+    assert first.check_turn is not None and first.steps == 2
+    assert first.fingerprint == of_drafter_case(
+        DRAFTER, DRAFTER.by_name[first.case], "full", CONFIG
+    )
+    assert manifest.complete and manifest == load_manifest(tmp_path)
+    assert manifest.spent_usd == pytest.approx(sum(run.cost_usd for run in runs))
+    assert manifest.spent_usd > 0
+    assert (used.model.calls, used.checker.calls, used.cheaper_checker.calls) == (4, 4, 1)
+
+
+def test_the_cheaper_reading_is_recorded_with_its_own_model(db: Db, tmp_path: Path) -> None:
+    go(db, tmp_path)
+
+    [cheaper] = [
+        r for r in read_all(tmp_path) if isinstance(r, CheckerRun) and r.variant == "cheaper"
+    ]
+    assert cheaper.fingerprint["checker.model"] == CONFIG.cheaper_check_model
+    assert cheaper.turn is not None and cheaper.turn.verdict is not None
+
+
+def test_a_run_stops_starting_cases_at_the_ceiling(db: Db, tmp_path: Path) -> None:
+    # Room for one drafter case at its worst (the per-question limit), not for two.
+    manifest, used = go(db, tmp_path, ceiling=CONFIG.max_cost_usd + 0.01)
+
+    assert not manifest.complete and "ceiling" in manifest.stopped
+    assert used.model.calls == 2
+    assert manifest.spent_usd < CONFIG.max_cost_usd + 0.01
+    assert len(read_all(tmp_path)) == 1
+
+
+def test_what_is_already_recorded_is_not_paid_for_again(db: Db, tmp_path: Path) -> None:
+    go(db, tmp_path)
+
+    manifest, used = go(db, tmp_path)
+
+    assert (used.model.calls, used.checker.calls, used.cheaper_checker.calls) == (0, 0, 0)
+    assert manifest.complete and manifest.spent_usd == 0
+
+
+def test_a_recording_made_from_other_inputs_is_made_again(db: Db, tmp_path: Path) -> None:
+    go(db, tmp_path)
+    stale = tmp_path / "checker-main" / "sound-backups.1.json"
+    data = json.loads(stale.read_text())
+    data["fingerprint"]["checker.prompt"] = "0000"
+    stale.write_text(json.dumps(data))
+
+    _, used = go(db, tmp_path)
+
+    assert (used.model.calls, used.checker.calls) == (0, 1)
+
+
+def test_a_provider_failure_is_not_recorded_as_a_result(db: Db, tmp_path: Path) -> None:
+    manifest, used = go(db, tmp_path, model=LooksThenAnswers(fail=True))
+
+    assert not manifest.complete and "provider" in manifest.stopped
+    assert used.model.calls == 2  # tried, tried once more, then stopped the whole run
+    assert [run for run in read_all(tmp_path) if isinstance(run, DrafterRun)] == []
+
+
+def test_a_check_that_could_not_be_made_is_not_recorded_either(db: Db, tmp_path: Path) -> None:
+    down = Agrees(ModelCallError("provider down", retryable=True))
+
+    manifest, _ = go(db, tmp_path, checker=down)
+
+    assert not manifest.complete
+    assert read_all(tmp_path) == []
+
+
+def test_money_spent_on_an_attempt_that_failed_still_counts(db: Db, tmp_path: Path) -> None:
+    down = Agrees(ModelCallError("provider down", retryable=True))
+
+    manifest, used = go(db, tmp_path, checker=down)
+
+    # Two attempts, two drafter turns each, were paid for before the check failed.
+    assert used.model.calls == 4
+    assert manifest.spent_usd == pytest.approx(4 * 0.012)
