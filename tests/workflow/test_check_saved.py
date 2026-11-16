@@ -74,6 +74,7 @@ def test_a_disputed_draft_is_saved_for_a_person_with_one_check_row(wf: Db, redis
 
     rig.work_through_the_queue()
 
+    assert rig.given_back == []  # prints the real error if the worker swallowed one
     [row] = items(wf, setup.started.run.id)
     assert (row.status, row.reason, row.path) == ("needs_review", "checker_disagrees", "drafted")
     assert (row.answer, row.review) == (WORDING, "pending")
@@ -111,6 +112,7 @@ def test_a_draft_the_checker_agrees_with_is_ready_and_the_check_is_kept(
 
     rig.work_through_the_queue()
 
+    assert rig.given_back == []  # prints the real error if the worker swallowed one
     [row] = items(wf, setup.started.run.id)
     assert (row.status, row.reason) == ("ready", None)
     [check] = checks(wf, row.id)
@@ -128,6 +130,7 @@ def test_a_reused_answer_has_no_check_row(wf: Db, redis_url: str) -> None:
 
     rig.work_through_the_queue()
 
+    assert rig.given_back == []  # prints the real error if the worker swallowed one
     [row] = items(wf, started.run.id)
     assert (row.status, row.path) == ("ready", "reused")
     assert checks(wf, row.id) == []
@@ -166,6 +169,7 @@ def test_a_redraft_adds_a_second_row_and_leaves_the_first_alone(wf: Db, redis_ur
     rig.add([row.id])
     rig.work_through_the_queue()
 
+    assert rig.given_back == []
     [after] = items(wf, setup.started.run.id)
     assert (after.status, after.answer) == ("ready", second)
     first_check, second_check = checks(wf, row.id)
@@ -227,3 +231,22 @@ def test_a_check_model_with_no_price_is_refused_at_start() -> None:
 
 def test_the_checker_is_not_the_drafters_model_by_default() -> None:
     assert settings().check_model != settings().draft_model
+
+
+def test_a_question_the_worker_gave_back_leaves_its_cause_for_the_test(
+    wf: Db, redis_url: str
+) -> None:
+    class Broken:
+        async def complete(self, **_: Any) -> Any:
+            raise RuntimeError("the cause a test needs to see")
+
+    setup = Setup(wf)
+    rig = Rig(wf, redis_url, Broken())
+    rig.add(setup.started.item_ids)
+
+    rig.work_through_the_queue()
+
+    [(reason, trace)] = rig.given_back
+    assert reason == "internal_error"
+    assert "RuntimeError: the cause a test needs to see" in trace
+    rig.close()

@@ -2,6 +2,8 @@
 
 import asyncio
 import dataclasses
+import sys
+import traceback
 import uuid
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -102,6 +104,19 @@ class Rig:
             ),
         )
         db.run(self.queue.ensure_group())
+        # The worker never raises from a job: a question that fails is given back to the
+        # queue and only the error's type is logged. A test that did not expect that then
+        # fails on some later assertion with no cause in sight, so the cause is kept here.
+        self.given_back: list[tuple[str, str]] = []
+        give_back = self.worker._give_back
+
+        async def recording(lease: Any, reason: str, **how: Any) -> None:
+            active = sys.exc_info()
+            trace = "".join(traceback.format_exception(*active)) if active[0] else ""
+            self.given_back.append((reason, trace))
+            await give_back(lease, reason, **how)
+
+        self.worker._give_back = recording  # type: ignore[method-assign]
 
     def add(self, item_ids: list[uuid.UUID]) -> None:
         self.db.run(self.queue.add([str(item_id) for item_id in item_ids]))
