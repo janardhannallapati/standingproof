@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ApiError,
@@ -36,6 +36,15 @@ type Props = {
 };
 
 const POLL_MS = 5000;
+
+// What is read out after a decision. The list moves on by itself, which is silent.
+const SAID: Record<Decision, string> = {
+  approve: "Approved.",
+  edit: "Edited and approved.",
+  reject: "Rejected.",
+  redraft: "Sent back for a redraft.",
+  keep: "Kept.",
+};
 
 /** The questions in the order the list shows them, so "next" means the next one down. */
 function inListOrder(questions: RunQuestion[]): RunQuestion[] {
@@ -86,6 +95,10 @@ export function Inbox({
   const [mode, setMode] = useState<Mode>("view");
   const [notice, setNotice] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [said, setSaid] = useState("");
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Set by a decision; the next question to be shown takes the keyboard.
+  const focusNext = useRef(false);
 
   const detail = useQuery({
     queryKey: ["run", runId, "question", selectedId],
@@ -117,7 +130,9 @@ export function Inbox({
         answer: input.answer ?? null,
         comment: input.comment ?? null,
       }),
-    onSuccess: (updated) => {
+    onSuccess: (updated, input) => {
+      setSaid(SAID[input.decision]);
+      focusNext.current = true;
       client.setQueryData(["run", runId, "question", updated.id], updated);
       refresh();
       setMode("view");
@@ -160,6 +175,14 @@ export function Inbox({
   });
 
   const current = detail.data;
+  // After a decision the bar that held the focus is gone. Put the keyboard on the heading
+  // of whatever is shown now, so the next Tab starts from the question and not the page.
+  useEffect(() => {
+    if (focusNext.current && heading.current) {
+      focusNext.current = false;
+      heading.current.focus();
+    }
+  }, [current?.id, current?.version]);
   const onDecide = useCallback(
     (kind: Decision, extra?: { answer?: string; comment?: string }) => {
       if (current) decision.mutate({ item: current, decision: kind, ...extra });
@@ -216,6 +239,9 @@ export function Inbox({
         ready={readyCount}
         fileHref={allDecided(questions) ? `/runs/${run.id}/file` : null}
       />
+      <p role="status" aria-label="Last decision" className="sr-only">
+        {said}
+      </p>
       <main className="grid flex-1 md:grid-cols-[400px_1fr]">
         <div className={`border-line md:block md:border-r ${showDetail ? "hidden" : ""}`}>
           <QuestionList
@@ -240,6 +266,7 @@ export function Inbox({
               busy={decision.isPending}
               notice={notice}
               maxRedrafts={maxRedrafts}
+              headingRef={heading}
             />
           ) : (
             <p className="p-6 text-muted" role="status">

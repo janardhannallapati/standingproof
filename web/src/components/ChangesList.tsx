@@ -1,14 +1,9 @@
 import Link from "next/link";
 
 import type { Change } from "@/lib/api";
-import { factLabel, factValue, sentList, utcDay } from "@/lib/labels";
+import { factLabel, factValue, sentList, settingName, utcMoment } from "@/lib/labels";
 
 import { StatusChip } from "./StatusChip";
-
-function seen(iso: string): string {
-  const time = new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-  return `seen ${utcDay(iso)}, ${time} UTC`;
-}
 
 function chip(change: Change) {
   const count = change.answers.length;
@@ -41,11 +36,15 @@ export function ChangesList({ changes }: { changes: Change[] }) {
       {changes.map((change) => (
         <li key={change.id} className="grid gap-2 rounded-md border border-line bg-surface px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            {chip(change)}
-            <h2 className="min-w-0 font-semibold break-words">
-              {change.check_name} on {change.scope}
+            {/* First in the page's order, so a screen reader hears which setting before
+                how many answers; shown after the chip. */}
+            <h2 className="order-2 min-w-0 font-semibold break-words">
+              {settingName(change.check_name, change.scope)}
             </h2>
-            <span className="text-[12.5px] text-muted tabular-nums md:ml-auto">{seen(change.now.observed_at)}</span>
+            <span className="order-1">{chip(change)}</span>
+            <span className="order-3 text-[12.5px] text-muted tabular-nums md:ml-auto">
+              seen {utcMoment(change.now.observed_at)}
+            </span>
           </div>
           <p>{change.now.statement}</p>
           {change.changes.length > 0 ? (
@@ -62,7 +61,7 @@ export function ChangesList({ changes }: { changes: Change[] }) {
           {change.answers.map((answer) => (
             <div key={answer.run_question_id} className="grid gap-0.5 border-t border-line pt-2">
               <Link
-                href={`/runs/${answer.run_id}?question=${answer.run_question_id}`}
+                href={`/runs/${encodeURIComponent(answer.run_id)}?question=${encodeURIComponent(answer.run_question_id)}`}
                 className="inline-flex min-h-11 items-center font-medium text-accent underline md:min-h-9"
               >
                 {answer.filename} · question {answer.position}: {answer.question}

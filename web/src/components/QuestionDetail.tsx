@@ -1,7 +1,9 @@
 "use client";
 
+import type { Ref } from "react";
+
 import type { Decision, ReviewQuestion } from "@/lib/api";
-import { checkLine, chipFor, fineMoney, groupOf, reasonText, sentList } from "@/lib/labels";
+import { checkLine, chipFor, fineMoney, groupOf, reasonText, sentList, settingName } from "@/lib/labels";
 
 import { CheckFindings } from "./CheckFindings";
 import { DecisionBar, type Mode } from "./DecisionBar";
@@ -19,6 +21,8 @@ type Props = {
   // Something the reviewer must know about their last action (a refusal, a warning).
   notice: string | null;
   maxRedrafts: number;
+  // The question's heading, so the inbox can put the keyboard on it after a decision.
+  headingRef?: Ref<HTMLHeadingElement>;
 };
 
 function why(question: ReviewQuestion): { fine: boolean; text: string } {
@@ -59,7 +63,7 @@ function meta(question: ReviewQuestion): string {
   return parts.join(" · ");
 }
 
-export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice, maxRedrafts }: Props) {
+export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice, maxRedrafts, headingRef }: Props) {
   const reason = why(question);
   const pending = question.review === "pending";
   const working = groupOf(question) === "working";
@@ -68,7 +72,7 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
   const reopening = question.reopening ?? null;
   const sent = reopening?.sent_to ?? [];
   // The settings that changed, as the sources name them ("check on scope").
-  const changed = new Set((reopening?.settings ?? []).map((s) => `${s.check_name} on ${s.scope}`));
+  const changed = new Set((reopening?.settings ?? []).map((s) => settingName(s.check_name, s.scope)));
   const answerTitle = !question.final_answer
     ? "Proposed answer"
     : !reopening
@@ -80,7 +84,9 @@ export function QuestionDetail({ question, mode, onMode, onDecide, busy, notice,
   const disputed = check?.outcome === "disagrees" && check.on_current_answer ? check.findings : [];
   return (
     <section aria-label={`Question ${question.position}`} className="grid min-w-0 content-start gap-4 p-4 md:px-6 md:py-5">
-      <h1 className="text-[17px] leading-snug font-semibold">{question.question}</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-[17px] leading-snug font-semibold">
+        {question.question}
+      </h1>
 
       <p
         className={`flex items-start gap-2.5 rounded-md px-3 py-2.5 font-medium ${

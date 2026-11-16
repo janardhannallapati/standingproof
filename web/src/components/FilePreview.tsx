@@ -64,7 +64,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
   }
 
   if (!preview.ready) {
-    const reopened = preview.sent.reduce((most, record) => Math.max(most, record.reopened), 0);
+    const reopened = preview.sent.some((record) => record.reopened > 0);
     return (
       <div className="grid gap-3">
         <p className="flex items-start gap-2.5 rounded-md bg-review-bg px-3 py-2.5 font-medium text-review">
@@ -75,8 +75,7 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
         </p>
         <p className="text-muted">
           The file is made when every question has one.
-          {reopened === 1 ? " One answer was reopened because a live setting changed." : ""}
-          {reopened > 1 ? ` ${reopened} answers were reopened because a live setting changed.` : ""}
+          {reopened ? " An answer was reopened because a live setting changed." : ""}
         </p>
         <p>
           <Link
@@ -96,7 +95,11 @@ export function FilePreview({ runId, preview, navigate = toFile }: Props) {
             <ul aria-labelledby="sent-before" className="grid gap-1.5">
               {preview.sent.map((record) => (
                 <li key={record.id} className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                  <StatusChip tone="review" mark="!" label="Out of date" />
+                  {record.current && record.reopened === 0 ? (
+                    <StatusChip tone="ready" mark="✓" label="Sent" />
+                  ) : (
+                    <StatusChip tone="review" mark="!" label="Out of date" />
+                  )}
                   <span>
                     to {record.customer} on {utcDay(record.sent_at)} by {record.sent_by} ·{" "}
                     {count(record.answers, "answer", "answers")}

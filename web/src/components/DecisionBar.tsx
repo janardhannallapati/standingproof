@@ -53,6 +53,8 @@ export function DecisionBar({ question, mode, onMode, onDecide, busy, maxRedraft
   // a person approved, where there is one, and not the agent's draft.
   const reopened = Boolean(question.reopening);
   const standing = (reopened ? question.final_answer : null) ?? question.answer ?? "";
+  // "Withdraw" only for an answer a person had approved. A draft nobody decided is rejected.
+  const withdrawing = Boolean(question.reopening?.was_review);
   const redraftsLeft = maxRedrafts - question.redrafts;
 
   const open = (next: Exclude<Mode, "view">) => {
@@ -61,7 +63,7 @@ export function DecisionBar({ question, mode, onMode, onDecide, busy, maxRedraft
   };
 
   if (mode !== "view") {
-    const prompt = reopened && mode === "reject" ? WITHDRAW : PROMPTS[mode];
+    const prompt = withdrawing && mode === "reject" ? WITHDRAW : PROMPTS[mode];
     const required = mode !== "reject";
     const submit = () => {
       if (mode === "edit") onDecide("edit", { answer: text });
@@ -112,12 +114,19 @@ export function DecisionBar({ question, mode, onMode, onDecide, busy, maxRedraft
         {standing.trim() ? (
           // No key for this one: keeping an answer that a changed setting may contradict
           // takes a deliberate click.
-          <Button onClick={() => onDecide("keep")} disabled={busy}>
+          // aria-disabled, not disabled: a disabled button drops the keyboard's focus.
+          <Button
+            onClick={() => {
+              if (!busy) onDecide("keep");
+            }}
+            aria-disabled={busy}
+            className={busy ? "opacity-50" : ""}
+          >
             Keep this answer
           </Button>
         ) : null}
         <Button shortcut="R" onClick={() => open("reject")} disabled={busy}>
-          Withdraw
+          {withdrawing ? "Withdraw" : "Reject"}
         </Button>
         <Button
           shortcut="D"

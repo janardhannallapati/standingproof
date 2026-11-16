@@ -14,6 +14,7 @@ export default async function ChangesPage() {
     return (
       <main className="mx-auto grid max-w-3xl gap-4 p-4 md:p-6">
         <Sections current="/changes" />
+        <h1 className="sr-only">Changes</h1>
         <p role="alert" className="rounded-md bg-review-bg px-3 py-2.5 text-review">
           {message}
         </p>

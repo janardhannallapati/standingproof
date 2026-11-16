@@ -1,5 +1,5 @@
 import type { Source } from "@/lib/api";
-import { SOURCE_KINDS as KINDS } from "@/lib/labels";
+import { SOURCE_KINDS as KINDS, utcDay as day } from "@/lib/labels";
 
 /**
  * The longest sentence of the answer that the source also contains, as a range in the
@@ -19,10 +19,6 @@ export function citedRange(sourceText: string, answer: string | null): [number, 
     if (at >= 0) return [at, at + sentence.length];
   }
   return null;
-}
-
-function day(value: string): string {
-  return new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 type Props = {

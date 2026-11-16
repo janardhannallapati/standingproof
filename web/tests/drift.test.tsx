@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -11,9 +11,10 @@ import { Inbox } from "@/components/Inbox";
 import { QuestionDetail } from "@/components/QuestionDetail";
 import { QuestionList } from "@/components/QuestionList";
 import { RunsList } from "@/components/RunsList";
+import { Sections } from "@/components/Sections";
 import { WhatChanged } from "@/components/WhatChanged";
 import type { ReviewQuestion } from "@/lib/api";
-import { chipFor, factLabel, factValue, groupOf } from "@/lib/labels";
+import { chipFor, factLabel, factValue, foundBy, groupOf, settingName } from "@/lib/labels";
 
 import { change, detailed, listed, reopened, reopening, run } from "./fixtures";
 
@@ -31,6 +32,10 @@ describe("a reopened question, in words", () => {
   it("names a check's facts the way a reviewer would", () => {
     expect(factLabel("required_approving_reviews")).toBe("Approving reviews needed");
     expect(factLabel("something_new")).toBe("Something new");
+    // A name that is also a property of every object is still only a name.
+    expect(factLabel("constructor")).toBe("Constructor");
+    expect(foundBy("toString")).toBe("Found by a look at this setting.");
+    expect(settingName("github.org_two_factor", "acme")).toBe("github.org_two_factor on acme");
     expect([factValue(true), factValue(false), factValue(2), factValue(null), factValue("main")]).toEqual([
       "yes",
       "no",
@@ -69,6 +74,17 @@ describe("WhatChanged", () => {
     expect(within(row).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["2", "! changed: 0"]);
     expect(screen.getByText("Branch main of acme/app is not protected.")).toBeInTheDocument();
     expect(screen.getByText(/GitHub reported a change.*read the setting itself/)).toBeInTheDocument();
+  });
+
+  it("lets a long value wrap and the table scroll, so nothing is cut off on a phone", () => {
+    const long = reopening();
+    long.settings[0]!.changes = [{ fact: "default_branch", was: "main", now: "release/2026-11-quarterly-hardening-branch" }];
+    render(<WhatChanged reopening={long} />);
+
+    const box = screen.getByRole("region", { name: "github.branch_protection on acme/app, what changed" });
+    expect(box).toHaveAttribute("tabindex", "0");
+    expect(box.className).toContain("overflow-x-auto");
+    expect(within(box).getByText("release/2026-11-quarterly-hardening-branch").closest("span")?.className).not.toContain("whitespace-nowrap");
   });
 
   it("says when approved or when drafted, and how the look came about", () => {
@@ -158,6 +174,13 @@ describe("DecisionBar, reopened", () => {
     expect(screen.getByLabelText("Answer to approve")).toHaveValue("Yes. Two approving reviews are required.");
   });
 
+  it("rejects, not withdraws, a draft that nobody had approved", () => {
+    bar(reopened({ final_answer: null, reopening: reopening({ was_review: null, sent_to: [] }) }), "reject");
+
+    expect(screen.getByLabelText("Why is this rejected? (optional)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+  });
+
   it("calls a rejection a withdrawal", () => {
     bar(reopened(), "reject");
 
@@ -174,12 +197,15 @@ describe("the inbox with a reopened question", () => {
     vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
       const url = String(input);
       if (init?.method === "POST") posts.push(url);
+      const decided = url.match(/\/run-questions\/([^/?]+)\/decision$/);
       const one = url.match(/\/run-questions\/([^/?]+)$/);
-      const body = one
-        ? rows.find((q) => q.id === one[1])
-        : url.includes("/questions")
-          ? { items: rows.map((q) => listed({ id: q.id, position: q.position, question: q.question, reopened: Boolean(q.reopening) })), next_after: null }
-          : run();
+      const body = decided
+        ? { ...rows.find((q) => q.id === decided[1]), review: "approved", reopening: null, version: 9, warnings: [] }
+        : one
+          ? rows.find((q) => q.id === one[1])
+          : url.includes("/questions")
+            ? { items: rows.map((q) => listed({ id: q.id, position: q.position, question: q.question, reopened: Boolean(q.reopening) })), next_after: null }
+            : run();
       return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
     });
     render(
@@ -205,6 +231,17 @@ describe("the inbox with a reopened question", () => {
     expect(posts).toEqual([]);
     expect(screen.getByRole("button", { name: "Approve all 1" })).toBeInTheDocument();
   });
+
+  it("says that an answer was kept, and puts the keyboard on the question shown next", async () => {
+    const posts = open([reopened({ id: "back", question: "Do changes need review?" }), detailed({ id: "new", position: 2 })]);
+    const keep = await screen.findByRole("button", { name: "Keep this answer" });
+
+    await userEvent.click(keep);
+
+    await waitFor(() => expect(screen.getByRole("status", { name: "Last decision" })).toHaveTextContent("Kept."));
+    expect(posts).toEqual(["/api/run-questions/back/decision"]);
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toHaveFocus());
+  });
 });
 
 describe("FilePreview while a question waits again", () => {
@@ -221,10 +258,27 @@ describe("FilePreview while a question waits again", () => {
 
     const list = screen.getByRole("list", { name: "Sent before this change" });
     expect(within(list).getByText("Out of date")).toBeInTheDocument();
+    expect(screen.getByText(/An answer was reopened because a live setting changed/)).toBeInTheDocument();
     expect(within(list).getByRole("listitem")).toHaveTextContent(
       "to Acme Corp on 3 Nov 2026 by asha · 3 answers, 1 reopened since",
     );
-    expect(screen.getByText(/One answer was reopened because a live setting changed/)).toBeInTheDocument();
+  });
+
+  it("marks a record out of date only when the API says its file is not the current one", () => {
+    const sent = [
+      { id: "s1", customer: "Acme Corp", sent_by: "asha", sent_at: "2026-11-03T10:02:00Z", answers: 3, current: true, reopened: 0 },
+    ];
+    render(
+      <FilePreview
+        runId="r1"
+        preview={{ filename: "a-filled.xlsx", ready: false, undecided: 1, written: [], left_empty: [], protected_sheets: [], latest: null, sent }}
+      />,
+    );
+
+    const item = within(screen.getByRole("list", { name: "Sent before this change" })).getByRole("listitem");
+    expect(item).not.toHaveTextContent("Out of date");
+    expect(item).toHaveTextContent("Sent");
+    expect(screen.queryByText(/was reopened because/)).toBeNull();
   });
 
   it("shows no such list when nothing was sent", () => {
@@ -239,6 +293,17 @@ describe("FilePreview while a question waits again", () => {
   });
 });
 
+describe("Sections", () => {
+  it("marks the page you are on with more than a colour", () => {
+    render(<Sections current="/changes" />);
+
+    const here = screen.getByRole("link", { name: "Changes" });
+    expect(here).toHaveAttribute("aria-current", "page");
+    expect(here.className).toContain("border-accent");
+    expect(screen.getByRole("link", { name: "Runs" }).className).not.toContain("border-accent");
+  });
+});
+
 describe("RunsList", () => {
   const item = { id: "run-1", questionnaire_id: "s", filename: "acme.xlsx", status: "finished", created_at: "2026-11-03T09:10:00Z", finished_at: null } as const;
 
@@ -248,6 +313,8 @@ describe("RunsList", () => {
     const [first, second] = screen.getAllByRole("listitem");
     expect(first).toHaveTextContent("2 answers reopened");
     expect(second).not.toHaveTextContent("reopened");
+    // One time zone on every page, and it says which.
+    expect(first).toHaveTextContent("3 Nov 2026, 09:10 UTC");
   });
 });
 
@@ -264,6 +331,8 @@ describe("ChangesList", () => {
       "href",
       "/runs/run-1?question=q-1",
     );
+    // The setting's name is the entry's heading, and comes first for a screen reader.
+    expect(first.firstElementChild?.firstElementChild?.tagName).toBe("H2");
     expect(second).toHaveTextContent("No answer rests on it");
   });
 

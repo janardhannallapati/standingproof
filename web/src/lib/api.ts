@@ -16,8 +16,6 @@ export type FilePreview = Schemas["FilePreviewOut"];
 export type FilledFile = Schemas["FilledFileOut"];
 export type SentRecord = Schemas["SentOut"];
 export type Reopening = Schemas["ReopeningOut"];
-export type SettingChange = Schemas["SettingChangeOut"];
-export type SentTo = Schemas["SentToOut"];
 export type Change = Schemas["ChangeOut"];
 
 export class ApiError extends Error {

@@ -16,8 +16,9 @@ export function Sections({ current }: { current: (typeof SECTIONS)[number]["href
             key={section.href}
             href={section.href}
             aria-current={here ? "page" : undefined}
-            className={`inline-flex min-h-11 items-center rounded-md px-3 text-xl font-semibold md:min-h-9 ${
-              here ? "text-fg" : "text-muted underline"
+            // The page you are on: a bar under it and no underline, as well as the colour.
+            className={`inline-flex min-h-11 items-center border-b-2 px-3 text-xl font-semibold md:min-h-9 ${
+              here ? "border-accent text-fg" : "border-transparent text-muted underline"
             }`}
           >
             {section.label}

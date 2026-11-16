@@ -1,5 +1,5 @@
 import type { Reopening } from "@/lib/api";
-import { factLabel, factValue, foundBy, utcDay } from "@/lib/labels";
+import { factLabel, factValue, foundBy, settingName, utcDay } from "@/lib/labels";
 
 /**
  * The live settings a reopened answer rests on: what each read when the answer was
@@ -12,7 +12,7 @@ export function WhatChanged({ reopening }: { reopening: Reopening }) {
     <div className="grid gap-1.5">
       <h2 className="text-[12.5px] font-semibold text-muted">What changed</h2>
       {reopening.settings.map((setting) => {
-        const name = `${setting.check_name} on ${setting.scope}`;
+        const name = settingName(setting.check_name, setting.scope);
         return (
           <div key={name} className="overflow-hidden rounded-md border border-line bg-surface">
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-3 py-2 text-[12.5px] text-muted">
@@ -25,6 +25,9 @@ export function WhatChanged({ reopening }: { reopening: Reopening }) {
                 was {reopening.was_review ? "approved" : "drafted"}.
               </p>
             ) : (
+              // A long value wraps; if the table is still wider than a phone it scrolls
+              // inside this box, which a keyboard can reach. Nothing is cut off.
+              <div role="region" aria-label={`${name}, what changed`} tabIndex={0} className="overflow-x-auto">
               <table aria-label={name} className="w-full border-collapse">
                 <thead>
                   <tr className="text-left align-bottom text-[12.5px] text-muted">
@@ -43,9 +46,9 @@ export function WhatChanged({ reopening }: { reopening: Reopening }) {
                   {setting.changes.map((changed) => (
                     <tr key={changed.fact} className="border-t border-line align-top">
                       <th scope="row" className="px-3 py-2 text-left font-normal">{factLabel(changed.fact)}</th>
-                      <td className="px-3 py-2 text-muted tabular-nums">{factValue(changed.was)}</td>
+                      <td className="px-3 py-2 break-words text-muted tabular-nums">{factValue(changed.was)}</td>
                       <td className="px-3 py-2 tabular-nums">
-                        <span className="rounded bg-review-bg px-1.5 py-0.5 font-semibold whitespace-nowrap text-review">
+                        <span className="rounded bg-review-bg box-decoration-clone px-1.5 py-0.5 font-semibold break-words text-review">
                           <span aria-hidden="true">! </span>
                           <span className="sr-only">changed: </span>
                           {factValue(changed.now)}
@@ -55,6 +58,7 @@ export function WhatChanged({ reopening }: { reopening: Reopening }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
             <p className="border-t border-line px-3 pt-2.5">{setting.now.statement}</p>
             <p className="px-3 pt-1.5 pb-2.5 text-[12.5px] text-muted">{foundBy(setting.trigger)}</p>

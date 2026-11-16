@@ -1,6 +1,6 @@
 // Words for what the API reports. A reviewer reads these, so they say what happened
 // and, where it helps, what to do.
-import type { Finding, ReviewQuestion, RunQuestion } from "./api";
+import type { Finding, Reopening, ReviewQuestion, RunQuestion } from "./api";
 
 const REASONS: Record<string, string> = {
   no_approved_source: "No approved source",
@@ -73,11 +73,17 @@ export const GROUP_ORDER: Group[] = ["needs", "ready", "working", "decided", "un
 
 // What every list and chip needs to know about a question. `reopened` comes with a row of
 // the list; `reopening` with the question itself.
-type Placed = Pick<RunQuestion, "status" | "review"> & { reopened?: boolean; reopening?: object | null };
+type Marked = { reopened?: boolean; reopening?: Reopening | null };
+type Placed = Pick<RunQuestion, "status" | "review"> & Marked;
 
 /** True while a question waits again because a live setting it rests on has changed. */
-export function isReopened(question: { reopened?: boolean; reopening?: object | null }): boolean {
-  return Boolean(question.reopened) || Boolean(question.reopening);
+export function isReopened(question: Marked): boolean {
+  return Boolean(question.reopened || question.reopening);
+}
+
+/** A setting, as every screen names it: the check, and what it was run on. */
+export function settingName(checkName: string, scope: string): string {
+  return `${checkName} on ${scope}`;
 }
 
 export function groupOf(question: Placed): Group {
@@ -175,7 +181,8 @@ const FACTS: Record<string, string> = {
 /** A check's named fact, as a reviewer would say it. An unknown name is shown as it is. */
 export function factLabel(fact: string): string {
   const words = fact.replaceAll("_", " ");
-  return FACTS[fact] ?? words.charAt(0).toUpperCase() + words.slice(1);
+  // hasOwn: a fact named "constructor" must not find the object's own constructor.
+  return Object.hasOwn(FACTS, fact) ? FACTS[fact]! : words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 export function factValue(value: boolean | number | string | null | undefined): string {
@@ -205,5 +212,11 @@ const FOUND: Record<string, string> = {
 };
 
 export function foundBy(trigger: string): string {
-  return FOUND[trigger] ?? "Found by a look at this setting.";
+  return Object.hasOwn(FOUND, trigger) ? FOUND[trigger]! : "Found by a look at this setting.";
+}
+
+/** A moment, in UTC and saying so: the same text on the server and in any browser. */
+export function utcMoment(iso: string): string {
+  const time = new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return `${utcDay(iso)}, ${time} UTC`;
 }

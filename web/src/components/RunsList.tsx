@@ -1,12 +1,9 @@
 import Link from "next/link";
 
 import type { RunListItem } from "@/lib/api";
+import { utcMoment } from "@/lib/labels";
 
 import { StatusChip } from "./StatusChip";
-
-function when(value: string): string {
-  return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
-}
 
 export function RunsList({ runs }: { runs: RunListItem[] }) {
   return (
@@ -24,7 +21,7 @@ export function RunsList({ runs }: { runs: RunListItem[] }) {
                 label={`${run.reopened} ${run.reopened === 1 ? "answer" : "answers"} reopened`}
               />
             ) : null}
-            <span className="text-[12.5px] text-muted tabular-nums md:ml-auto">{when(run.created_at)}</span>
+            <span className="text-[12.5px] text-muted tabular-nums md:ml-auto">{utcMoment(run.created_at)}</span>
           </Link>
         </li>
       ))}

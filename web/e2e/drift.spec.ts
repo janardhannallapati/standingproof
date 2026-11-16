@@ -70,7 +70,9 @@ test.beforeAll(async () => {
     .poll(async () => (await (await api.get(`/runs/${runId}`)).json()).status, { timeout: 45_000 })
     .toBe("finished");
   const listed = (await (await api.get(`/runs/${runId}/questions`)).json()).items;
-  questionId = listed.find((q: { question: string }) => q.question === MFA).id;
+  questionId = listed.find((q: { question: string }) => q.question === MFA)?.id;
+  // Both ids go into SQL below. They come from our own API; check their shape all the same.
+  expect(questionId).toMatch(/^[0-9a-f-]{36}$/);
 
   // What a model run would have left: the answer cites a look at the live setting.
   sql(`WITH seen AS (${observed('{"two_factor_required": true}', REQUIRED, "now() - interval '14 days'")}),
@@ -81,6 +83,7 @@ test.beforeAll(async () => {
 
   expect((await api.post(`/runs/${runId}/approve-ready`, { data: { count: 2 } })).status()).toBe(200);
   const third = listed.find((q: { status: string }) => q.status === "needs_review");
+  expect(third, "the question with no approved answer").toBeTruthy();
   const rejected = await api.post(`/run-questions/${third.id}/decision`, {
     data: { decision: "reject", version: third.version, comment: "Finance answers this." },
   });
