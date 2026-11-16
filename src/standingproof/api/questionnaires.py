@@ -44,6 +44,7 @@ class QuestionOut(BaseModel):
     cell: str
     text: str
     answer_cell: str | None
+    comment_cell: str | None
     external_id: str | None
     truncated: bool
 

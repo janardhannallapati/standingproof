@@ -41,6 +41,22 @@ _ID_HEADINGS = frozenset(
 )
 _ANSWER_HEADINGS = frozenset({"answer", "answers", "response", "responses", "reply"})
 _ANSWER_SUFFIXES = (" answer", " response")
+# The free-text column beside a Yes/No dropdown. A heading must equal one of these or end
+# with one of the suffixes; a sentence that merely contains "note" is not a heading.
+_COMMENT_HEADINGS = frozenset(
+    {
+        "comment",
+        "comments",
+        "note",
+        "notes",
+        "remark",
+        "remarks",
+        "explanation",
+        "details",
+        "additional information",
+    }
+)
+_COMMENT_SUFFIXES = (" comments", " notes", " explanation")
 
 _NOT_WORD = re.compile(r"[^a-z0-9#]+")
 
@@ -53,6 +69,8 @@ class ColumnMapping:
     question_col: int
     answer_col: int | None
     id_col: int | None
+    # Where the explanation goes when the answer cell is a dropdown. Often absent.
+    comment_col: int | None = None
 
 
 def _normalise(value: object) -> str:
@@ -63,6 +81,10 @@ def _normalise(value: object) -> str:
 
 def _is_answer(heading: str) -> bool:
     return heading in _ANSWER_HEADINGS or heading.endswith(_ANSWER_SUFFIXES)
+
+
+def _is_comment(heading: str) -> bool:
+    return heading in _COMMENT_HEADINGS or heading.endswith(_COMMENT_SUFFIXES)
 
 
 def _first(headings: list[str], matches: Callable[[str], bool]) -> int | None:
@@ -90,5 +112,6 @@ def detect_columns(
             question_col=question_col,
             answer_col=_first(headings, _is_answer),
             id_col=_first(headings, _ID_HEADINGS.__contains__),
+            comment_col=_first(headings, _is_comment),
         )
     return None

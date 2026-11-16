@@ -204,3 +204,26 @@ def test_a_manual_mapping_cannot_name_a_column_past_the_widest_allowed(field: st
         ManualMapping(sheet="S", header_row=1, **columns)
 
     ManualMapping(sheet="S", header_row=1, **{**columns, field: "IV"})  # column 256 is allowed
+
+
+def test_each_question_gets_its_comments_cell_when_the_sheet_has_that_column() -> None:
+    content = xlsx(
+        {"S": [["ID", "Question", "Answer", "Comments"], ["Q1", "Is MFA enforced?", None, None]]}
+    )
+
+    parsed = parse_workbook(content, **LIMITS)
+
+    assert [(q.answer_cell, q.comment_cell) for q in parsed.questions] == [("C2", "D2")]
+
+
+def test_a_manual_mapping_can_name_the_comments_column() -> None:
+    content = xlsx(
+        {"S": [["Topic", "Details", "Reply", "Why"], ["Access", "Is MFA enforced?", None, None]]}
+    )
+    mapping = ManualMapping(
+        sheet="S", header_row=1, question_column="B", answer_column="C", comment_column="D"
+    )
+
+    parsed = parse_workbook(content, mapping=mapping, **LIMITS)
+
+    assert [(q.answer_cell, q.comment_cell) for q in parsed.questions] == [("C2", "D2")]

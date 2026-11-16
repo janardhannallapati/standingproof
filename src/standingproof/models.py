@@ -123,6 +123,8 @@ class Question(Base):
     cell: Mapped[str] = mapped_column(String(16))
     text: Mapped[str] = mapped_column(Text)
     answer_cell: Mapped[str | None] = mapped_column(String(16))
+    # The free-text cell beside the answer, when the sheet has a comments column.
+    comment_cell: Mapped[str | None] = mapped_column(String(16))
     external_id: Mapped[str | None] = mapped_column(String(255))
     truncated: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
 
@@ -417,3 +419,32 @@ class FilledFile(Base):
     writer_version: Mapped[int] = mapped_column(Integer)
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class SentFile(Base):
+    """A reviewer's record that a filled file was sent to a customer. Append-only.
+
+    It says a person recorded it as sent; it does not say it was delivered. `answers` holds,
+    per written question, the hash of the wording that went out, so a later change to a
+    setting can be traced to what each customer was told.
+    """
+
+    __tablename__ = "sent_files"
+    __table_args__ = (
+        # Recording the same file for the same customer twice is one record.
+        Index(
+            "uq_sent_files_file_customer", "filled_file_id", text("lower(customer)"), unique=True
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+    filled_file_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("filled_files.id", ondelete="CASCADE")
+    )
+    customer: Mapped[str] = mapped_column(String(200))
+    # [{question_id, position, wording_sha256}]
+    answers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    sent_by: Mapped[str] = mapped_column(String(200))
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
