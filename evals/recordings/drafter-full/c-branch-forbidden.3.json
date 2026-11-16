@@ -1,0 +1,77 @@
+{
+ "kind": "drafter",
+ "case": "c-branch-forbidden",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "3c5af5f0107b0907"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved source for this, so I left the answer blank. Two searches of the approved answers and policy text (one on branch protection and the default branch, one on pull request approval before merging) found nothing on branch protection or code review. The only result was an unrelated vulnerability-scanning answer (answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b), so I didn't use it. I also tried a live github.branch_protection check on harborlight/app, but the credential wasn't allowed to read that setting (forbidden), so nothing was observed. We can't say either way whether the default branch is protected. To answer this, a reviewer needs either an approved answer from the control owner or read access for the live check on harborlight/app."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "branch protection default branch code review"
+   },
+   "is_error": false,
+   "source_ids": []
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": []
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "pull request approval before merge"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 1049,
+  "output_tokens": 473,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.014870399999999999,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

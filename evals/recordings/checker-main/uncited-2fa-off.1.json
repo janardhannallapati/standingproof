@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "uncited-2fa-off",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "e9fb42aae0f87814"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "requires two-factor sign-in for all of its members",
+     "source_id": "EV-2FA-OFF",
+     "explanation": "An observed record from 2026-11-10 shows the harborlight organisation does not require two-factor sign-in for its members, which outweighs the policy statement in LIB-2FA."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 206,
+   "output_tokens": 130,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0018275,
+ "check_model": "claude-sonnet-5-5"
+}

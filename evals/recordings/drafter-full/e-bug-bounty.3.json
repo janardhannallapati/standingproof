@@ -1,0 +1,93 @@
+{
+ "kind": "drafter",
+ "case": "e-bug-bounty",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "d39b81fd2548563e"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text that covers a bug bounty programme or a vulnerability disclosure policy, so I left the answer blank. I searched twice. The closest matches were the approved answers on vulnerability scanning and fixes (answer:b99b5ff0-d1a1-47fb-adf1-42a0a32b4776) and on yearly independent penetration testing (answer:fb361814-f27b-47d2-9626-2ee154f4b0f4). Neither says whether a public bug bounty or disclosure programme exists, so I didn't use them to answer yes or no. The answer owner (security@harborlight.example) should confirm whether a programme exists and add an approved answer."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "bug bounty programme"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:b99b5ff0-d1a1-47fb-adf1-42a0a32b4776",
+    "answer:fb361814-f27b-47d2-9626-2ee154f4b0f4",
+    "answer:5b9a6d6f-76f0-4a7d-bd50-606c24036fca"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "vulnerability disclosure policy security researchers report vulnerabilities"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:b99b5ff0-d1a1-47fb-adf1-42a0a32b4776",
+    "answer:fb361814-f27b-47d2-9626-2ee154f4b0f4",
+    "answer:ce0ebde8-e283-4722-bd7e-96ee36d215f3",
+    "answer:c62cae49-70c5-4b86-a646-c6e8a1e230f1",
+    "policy:2d43f58a-1245-4013-9ed6-51c1f67458a4"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:b99b5ff0-d1a1-47fb-adf1-42a0a32b4776": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days.",
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:fb361814-f27b-47d2-9626-2ee154f4b0f4": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA.",
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:5b9a6d6f-76f0-4a7d-bd50-606c24036fca": [
+   "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
+  ],
+  "answer:ce0ebde8-e283-4722-bd7e-96ee36d215f3": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:c62cae49-70c5-4b86-a646-c6e8a1e230f1": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "policy:2d43f58a-1245-4013-9ed6-51c1f67458a4": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 2068,
+  "output_tokens": 387,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0172264,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

@@ -35,6 +35,12 @@ jobs:
         run: uv run mypy
       - name: Test
         run: uv run pytest -v
+      # No key and no network. The model's replies were recorded once (evals/recordings);
+      # this grades them again with today's rules and fails if a result is worse than
+      # evals/baseline.json, or if a prompt, tool, schema, model or case has changed since
+      # they were recorded and the eval has not been run again.
+      - name: The eval is no worse than its baseline, and was run on this code
+        run: uv run python -m evals score
 
   # The tests marked `slow`: retrieval scores with the real embedding model, and a run
   # that survives a worker process being killed.

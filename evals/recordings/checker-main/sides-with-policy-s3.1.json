@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sides-with-policy-s3",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "bebaceffb56b8a05"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "Our AWS account blocks all public access to S3 buckets account-wide.",
+     "source_id": "EV-S3-OFF",
+     "explanation": "The observed evidence from 2026-11-10 says account 111122223333 does not block all public access to S3 buckets account-wide, which conflicts with the draft and outweighs the policy statement."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 195,
+   "output_tokens": 142,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0019255,
+ "check_model": "claude-sonnet-5-5"
+}

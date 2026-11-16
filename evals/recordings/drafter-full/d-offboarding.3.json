@@ -1,0 +1,92 @@
+{
+ "kind": "drafter",
+ "case": "d-offboarding",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "05c4985296c639b3"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider.",
+  "citations": [
+   "answer:57c68120-bb19-485a-94f7-ff1a39f67550",
+   "policy:5e455463-bfcd-420d-a702-8e09f41e43a0"
+  ],
+  "note": "This uses the approved answer for control CC6.2 word for word. That answer is owned by security@harborlight.example and is valid until 2027-11-16. Section 4.3 of the Access Control Policy agrees: access is removed within 24 hours of a person's last working day. No live check covers leaver deprovisioning, so this answer rests on the approved answer and policy only and wasn't checked against the live identity provider."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "leavers account deactivation offboarding"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:5e455463-bfcd-420d-a702-8e09f41e43a0",
+    "policy:db1f61d5-59a8-4b9e-ad95-7c8133a84c5e",
+    "answer:57c68120-bb19-485a-94f7-ff1a39f67550",
+    "answer:9f13dda9-94fb-423b-a62f-b98169c5423e",
+    "answer:38016c1c-6275-4de1-bd22-33c035af8980"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:5e455463-bfcd-420d-a702-8e09f41e43a0": [
+   "Access is removed within 24 hours of a person's last working day."
+  ],
+  "policy:db1f61d5-59a8-4b9e-ad95-7c8133a84c5e": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:57c68120-bb19-485a-94f7-ff1a39f67550": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
+  ],
+  "answer:9f13dda9-94fb-423b-a62f-b98169c5423e": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:38016c1c-6275-4de1-bd22-33c035af8980": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 446,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1329,
+  "output_tokens": 325,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 5203
+ },
+ "cost_usd": 0.0116691,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

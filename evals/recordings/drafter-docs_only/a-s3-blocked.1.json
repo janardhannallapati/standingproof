@@ -1,0 +1,91 @@
+{
+ "kind": "drafter",
+ "case": "a-s3-blocked",
+ "run": 1,
+ "variant": "docs_only",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "9c8c5ded633941c6",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "83ad858a48b8184f"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide.",
+  "citations": [
+   "answer:9680fee2-2751-402c-aeb7-5a2a43158b33"
+  ],
+  "note": "This answer uses the approved answer's wording without changes (control CC6.6, owner security@harborlight.example, valid until 2027-11-16). The approved answer names one AWS account (111122223333). It says nothing about other AWS accounts or other cloud providers, so please check that this one account covers all of the company's object storage. Also decide whether the AWS account ID should appear in a reply to a customer."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "object storage bucket public access blocked account level"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:9680fee2-2751-402c-aeb7-5a2a43158b33",
+    "policy:b4d2f6fa-5cc5-412e-b1a8-7a8992126151",
+    "answer:8b0ebfbf-b0e7-40c3-bfd3-7cb4ec5c5fdd",
+    "answer:7e0ff725-a430-4205-9112-fb1bdd196ddf",
+    "answer:821b83a1-4d2d-4c73-aef3-924ae5917985"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:9680fee2-2751-402c-aeb7-5a2a43158b33": [
+   "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
+  ],
+  "policy:b4d2f6fa-5cc5-412e-b1a8-7a8992126151": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:8b0ebfbf-b0e7-40c3-bfd3-7cb4ec5c5fdd": [
+   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  ],
+  "answer:7e0ff725-a430-4205-9112-fb1bdd196ddf": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:821b83a1-4d2d-4c73-aef3-924ae5917985": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 473,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1417,
+  "output_tokens": 347,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 3937
+ },
+ "cost_usd": 0.012153899999999999,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

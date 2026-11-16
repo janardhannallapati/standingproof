@@ -1,0 +1,9 @@
+{
+ "runs": 3,
+ "drafter_wrong_cases": [],
+ "drafter_right_cases": 21,
+ "checker_missed_cases": [],
+ "checker_false_alarm_cases": 1,
+ "accepted_on": "2026-11-16",
+ "note": "First full run, as it came out. Nothing was tuned."
+}

@@ -1,0 +1,90 @@
+{
+ "kind": "drafter",
+ "case": "b-org-2fa-off",
+ "run": 2,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "ec5047f6ac85d2cb"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I left this unanswered because the approved answer conflicts with the live GitHub setting. Approved answer answer:ec3fef2e-42ac-4841-ba23-27c46192e124 (owner security@harborlight.example, valid until 2027-11-16) says: \"Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members.\" But the live check evidence:d74bd638-1cce-4a63-acee-85afa7d08f10, run at 2026-11-16T17:04:16Z, found that the harborlight GitHub organisation does not require two-factor sign-in for its members (two_factor_required: false). So the approved 'Yes' can't be used, and there's no approved wording for a 'No'. The Access Control Policy (policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6) and the employee MFA answer (answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33) say workforce members must use a second factor through the identity provider. Neither says GitHub enforces this at the organisation level, so they don't answer the question. Next steps: security@harborlight.example should either turn on required two-factor sign-in for the harborlight GitHub organisation and run the check again, or approve wording that reflects the current setting. The approved answer should also be reviewed and corrected."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "two-factor authentication source code platform GitHub organisation members"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:ec3fef2e-42ac-4841-ba23-27c46192e124",
+    "answer:e7e094dd-95cc-4220-9808-5731eb1513a7",
+    "policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6",
+    "answer:b35fb0e6-5f5f-4bb9-b027-590ffd8981b7",
+    "answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.org_two_factor",
+    "scope": "harborlight"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:d74bd638-1cce-4a63-acee-85afa7d08f10"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:ec3fef2e-42ac-4841-ba23-27c46192e124": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:e7e094dd-95cc-4220-9808-5731eb1513a7": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:b35fb0e6-5f5f-4bb9-b027-590ffd8981b7": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  ],
+  "answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "evidence:d74bd638-1cce-4a63-acee-85afa7d08f10": [
+   "The GitHub organisation harborlight does not require two-factor sign-in for its members. Observed 2026-11-16 17:04 UTC."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 2052,
+  "output_tokens": 867,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0267624,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

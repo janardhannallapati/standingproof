@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "added-restore-tests",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "bd3e155d58e72ebb"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "restores are tested monthly",
+     "source_id": "LIB-BAK",
+     "explanation": "The cited source says nothing about restore testing or how often it happens."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 123,
+   "output_tokens": 83,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0011915,
+ "check_model": "claude-sonnet-5-5"
+}

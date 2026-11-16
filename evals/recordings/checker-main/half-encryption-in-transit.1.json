@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "half-encryption-in-transit",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "855f9894c35b7fb4"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question also asks whether customer data is encrypted in transit, and the draft says nothing about transit encryption (its opening 'Yes' is not backed for transit by any source)."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 123,
+   "output_tokens": 103,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0013915,
+ "check_model": "claude-sonnet-5-5"
+}

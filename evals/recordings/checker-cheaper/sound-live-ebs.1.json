@@ -1,0 +1,44 @@
+{
+ "kind": "checker",
+ "case": "sound-live-ebs",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "3586aa6b92e7ab34"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "Yes.",
+     "source_id": "EV-EBS-ON",
+     "explanation": "The source only shows that new EBS disks in one AWS account (111122223333) in us-east-1 are encrypted by default, so the broad answer \"Yes\" to all new cloud disks goes beyond it."
+    },
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question asks about cloud disks generally, but the draft gives no answer and no statement that it cannot answer for other cloud providers, accounts or regions."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 163,
+   "output_tokens": 519,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 0.00028735,
+ "check_model": "claude-haiku-5-5"
+}

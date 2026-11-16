@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "half-access-reviews",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "a884fe2200cbb7d5"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question also asks how often user access is reviewed, and the draft neither gives a review frequency nor says it cannot answer."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 131,
+   "output_tokens": 86,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0012375,
+ "check_model": "claude-sonnet-5-5"
+}

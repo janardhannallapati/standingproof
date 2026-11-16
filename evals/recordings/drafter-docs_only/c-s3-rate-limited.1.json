@@ -1,0 +1,97 @@
+{
+ "kind": "drafter",
+ "case": "c-s3-rate-limited",
+ "run": 1,
+ "variant": "docs_only",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "9c8c5ded633941c6",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "638a9965b7a1609f"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy section that says whether S3 Block Public Access is turned on account-wide, for AWS account 111122223333 or for AWS accounts in general. I ran two searches, one for 'S3 block public access account-wide' and one for 'cloud storage bucket public access configuration'. They only returned unrelated material: access control policy sections on named accounts, second-factor login and removing access for leavers, plus approved answers on encryption at rest, encryption in transit and leaver deprovisioning. The encryption-at-rest answer mentions the cloud provider's key management service, but it says nothing about blocking public access to buckets. The question also asks about one specific account ID, which would need checking against the live AWS configuration. A cloud or infrastructure owner (for example security@harborlight.example) should confirm the setting and add an approved answer before we respond."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "S3 block public access account-wide"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:265fd16b-be55-42f3-9b9c-141ad19cbb56",
+    "policy:cd67ae82-fca2-44c2-b2ea-87707c8ad316",
+    "policy:e63314ef-8191-48ad-8c37-5a79ee26e9a9",
+    "answer:89375268-c852-48af-9ea4-c8de4662bb84",
+    "answer:e682f698-933e-454b-b028-3db425fab5cb"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "cloud storage bucket public access configuration"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:265fd16b-be55-42f3-9b9c-141ad19cbb56",
+    "answer:edb0a0d0-04f0-4e19-88f0-3ef9e71d7240",
+    "policy:cd67ae82-fca2-44c2-b2ea-87707c8ad316",
+    "answer:89375268-c852-48af-9ea4-c8de4662bb84",
+    "policy:e63314ef-8191-48ad-8c37-5a79ee26e9a9"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:265fd16b-be55-42f3-9b9c-141ad19cbb56": [
+   "Every workforce member has a named account. Shared accounts are not permitted.",
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "policy:cd67ae82-fca2-44c2-b2ea-87707c8ad316": [
+   "Access is removed within 24 hours of a person's last working day.",
+   "Access is removed within 24 hours of a person's last working day."
+  ],
+  "policy:e63314ef-8191-48ad-8c37-5a79ee26e9a9": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:89375268-c852-48af-9ea4-c8de4662bb84": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider.",
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
+  ],
+  "answer:e682f698-933e-454b-b028-3db425fab5cb": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:edb0a0d0-04f0-4e19-88f0-3ef9e71d7240": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 2269,
+  "output_tokens": 433,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 4173
+ },
+ "cost_usd": 0.0185706,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

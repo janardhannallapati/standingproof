@@ -1,0 +1,112 @@
+{
+ "kind": "drafter",
+ "case": "b-reviews-two-vs-one",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "6e20b55245bf80c9"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Changes to the default branch (main) of our application repository (harborlight/app on GitHub) need one approving review before they can be merged. The rule also applies to administrators.",
+  "citations": [
+   "evidence:f1f9ec1e-8a4b-4060-981c-ecf0aae3a22c"
+  ],
+  "note": "The approved answer and the live setting disagree on the number of reviews. The approved answer (answer:91a1b7a4-8bf5-466c-afff-d5d1c96c648f, owner security@harborlight.example, valid until 2027-11-16) says two approving reviews are required. The live check on harborlight/app at 2026-11-16T17:09:51Z found branch main protected with only 1 required approving review, also applied to administrators. I wrote the draft from the live setting so it doesn't claim more than is enforced, and left out the approved answer's 'two reviews' wording. Before this goes out, the control owner should decide between two fixes: raise the branch protection back to two reviews, or update the approved answer to say one. The live check covers only harborlight/app, not other repositories."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "code review approvals before merge to main branch"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:91a1b7a4-8bf5-466c-afff-d5d1c96c648f",
+    "answer:fabf3aa4-c175-4da9-86b1-f306a72bad45",
+    "answer:2d7cfe2b-921f-4013-853c-2cf271469ba5",
+    "answer:8d9cd857-f344-4a17-b694-116593f47ae8",
+    "answer:bea7065a-c8d3-47c0-a873-e7d2d618c5a4"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:f1f9ec1e-8a4b-4060-981c-ecf0aae3a22c"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:91a1b7a4-8bf5-466c-afff-d5d1c96c648f": [
+   "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
+  ],
+  "answer:fabf3aa4-c175-4da9-86b1-f306a72bad45": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  ],
+  "answer:2d7cfe2b-921f-4013-853c-2cf271469ba5": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:8d9cd857-f344-4a17-b694-116593f47ae8": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:bea7065a-c8d3-47c0-a873-e7d2d618c5a4": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "evidence:f1f9ec1e-8a4b-4060-981c-ecf0aae3a22c": [
+   "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-16 17:09 UTC."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "need one approving review before they can be merged",
+     "source_id": "answer:91a1b7a4-8bf5-466c-afff-d5d1c96c648f",
+     "explanation": "This source says two approving reviews are required, which conflicts with the draft's one review, though the cited observed setting (1 review) is the more authoritative record and the sources disagree."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 640,
+   "output_tokens": 144,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 2841,
+  "output_tokens": 764,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7227
+ },
+ "cost_usd": 0.0252539,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

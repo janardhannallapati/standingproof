@@ -1,0 +1,76 @@
+{
+ "kind": "drafter",
+ "case": "e-cyber-insurance",
+ "run": 2,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "6526c92a60285349"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find any approved answer or policy text about cyber liability insurance or its coverage limit. A search for 'cyber liability insurance coverage limit' found nothing. A broader search for 'insurance policy' only returned unrelated Access Control Policy sections (leavers, authentication, accounts). This needs a human answer, probably from Finance, Legal or whoever manages the company's insurance. They should confirm whether the company has cyber liability cover and, if it does, the approved wording for the coverage limit. Once that's approved, it could be added to the answer library."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "cyber liability insurance coverage limit"
+   },
+   "is_error": false,
+   "source_ids": []
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "insurance policy"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:ef4f6b67-091d-4bf1-be4a-632900dfc378",
+    "policy:2103740d-f028-47aa-9def-ffbc1f13a8e3",
+    "policy:977185a1-7c91-4e14-a11e-1da72dededd0"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:ef4f6b67-091d-4bf1-be4a-632900dfc378": [
+   "Access is removed within 24 hours of a person's last working day."
+  ],
+  "policy:2103740d-f028-47aa-9def-ffbc1f13a8e3": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "policy:977185a1-7c91-4e14-a11e-1da72dededd0": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 878,
+  "output_tokens": 329,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.011306400000000001,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

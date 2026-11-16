@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "stronger-immediately",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "2bc6bfcf4e1d0cc8"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "disabled immediately",
+     "source_id": "LIB-OFF",
+     "explanation": "The source says accounts are disabled within 24 hours of the last day, not immediately."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 119,
+   "output_tokens": 87,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0012235,
+ "check_model": "claude-sonnet-5-5"
+}

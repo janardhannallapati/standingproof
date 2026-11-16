@@ -360,6 +360,73 @@ rulesets is not read. Changes to policy documents and library answers do not reo
 anything yet. Nobody is notified outside the product: the runs list and the Changes page
 show it. Nothing alerts when the watcher itself is stopped.
 
+## How it is measured
+
+Tests prove the code around the model. They say nothing about how often the model's answers
+are right, so that is measured separately, on two sets of cases kept in [`evals/`](evals/).
+
+**The drafter set** is 32 questions, each with a made-up company: a library of approved
+answers, and what a GitHub and an AWS that exist only in the eval read. The right answer
+follows from that world. The real drafter and the real checker run on each case three
+times, and code grades every run:
+
+- **right**: marked ready, and the wording states what the world supports;
+- **safe**: it went to a person (a handoff, an objection from the checker, or "no approved
+  source" where one existed);
+- **wrong**: marked ready, and the wording is not supported. This is the failure a customer
+  would see with nobody having looked.
+
+**The checker set** is 48 hand-written drafts: 16 sound, 32 with one planted defect (a wider
+scope than the source, a stronger word, an added detail, a wrong number, a contradiction
+with an observed setting, half an answer, a planted instruction).
+
+The first full run, on 2026-11-16, with nothing tuned afterwards:
+
+| | Count |
+|---|---|
+| Drafter cases ready and wrong in any of 3 runs | 0 of 32 |
+| Drafter cases right in most of 3 runs | 21 of 32 |
+| Planted defects the checker agreed with in any run | 0 of 32 |
+| Sound drafts the checker objected to in most runs | 1 of 16 |
+
+Ten of the cases have an approved library answer that the live setting contradicts. With
+the live check, no run of those was ready and wrong: 9 runs were right and 21 went to a
+person. With the check tool taken away, the same ten were ready and wrong 10 times out of
+10: the agent repeated the library, and the checker, shown only the library, agreed.
+
+What the run shows that is not good, left as it came out:
+
+- When the library and the live setting disagree, the drafter states the setting and cites
+  it, and the checker still objects in most runs, pointing at the stale library answer.
+  The answer reaches a person, which is safe, but the objection is aimed at the wrong text.
+- When a look is rate limited the drafter tries the same look again, and the loop's
+  repeated-call rule stops the run. Safe, and not what a retry should do.
+- The checker objects to a draft that says "we have no approved statement about" the part
+  it cannot answer.
+- 11 of 32 cases are not right by majority. Every one of those went to a person.
+
+These are small sets written by the author of the system, about one company. 21 of 32 has
+a 95% interval of 48% to 80%; 32 of 32 defects caught has one of 89% to 100%. The full
+tables, every miss by name and the comparison with a cheaper check model are in
+[`evals/REPORT.md`](evals/REPORT.md).
+
+The eval calls the paid API, so it does not run in CI. Its replies are recorded in
+`evals/recordings/`, and CI grades those recordings again with the current rules on every
+pull request (`uv run python -m evals score`). It fails if a case is newly ready and wrong,
+if a planted defect is newly agreed with, or if a prompt, a tool description, an output
+schema, a model or a case has changed since the recordings were made. In that last case the
+eval has to be run again:
+
+```sh
+uv run python -m evals estimate     # what it would cost; calls nothing
+uv run python -m evals run          # asks first, and stops at a spending ceiling
+uv run python -m evals report
+uv run python -m evals accept --note "why the baseline changed"
+```
+
+A full run cost $2.15. It reads no real GitHub or AWS, and takes nothing from the shell but
+the model key.
+
 ## Try the agent on one question
 
 Needs an Anthropic API key in `.env` (see `.env.example`). Each run costs a few cents.
