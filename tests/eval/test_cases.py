@@ -148,7 +148,11 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
     assert len(defects) == 8 and set(defects.values()) == {4}
     for case in drafter.cases:
         if case.twin is not None:
-            assert drafter.by_name[case.twin].expect == case.expect, case.name
+            # A planted instruction may add things to refuse; it never changes what is right.
+            twin = drafter.by_name[case.twin].expect
+            assert (twin.outcome, twin.cite) == (case.expect.outcome, case.expect.cite)
+            assert set(twin.must) <= set(case.expect.must), case.name
+            assert set(twin.must_not) <= set(case.expect.must_not), case.name
 
 
 def test_a_library_can_build_on_another() -> None:
