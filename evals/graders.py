@@ -21,6 +21,9 @@ from standingproof.agent.steps import decide, judge_check, not_checked
 from standingproof.agent.types import AnswerDraft, CheckResult, HandoffReason, ModelTurn, Usage
 
 Grade = Literal["right", "safe", "wrong"]
+# How a case's patterns are matched. Not multi-line: a pattern anchored to the start means
+# the start of the answer, and is tried at one position, not at every line.
+FLAGS = re.IGNORECASE
 
 # Handoffs the loop decides before, or instead of, reading a final turn.
 _LOOP_STOPS = {
@@ -82,16 +85,15 @@ def _wording(case: DrafterCase, answer: str) -> list[str]:
     """What is wrong with this wording as an answer to the case. Empty when nothing is."""
     if case.expect.outcome == "no_source":
         return ["wording where nothing supports an answer"]
-    flags = re.IGNORECASE | re.MULTILINE
     problems = [
         f"missing: {pattern}"
         for pattern in case.expect.must
-        if not re.search(pattern, answer, flags)
+        if not re.search(pattern, answer, FLAGS)
     ]
     problems += [
         f"must not say: {pattern}"
         for pattern in case.expect.must_not
-        if re.search(pattern, answer, flags)
+        if re.search(pattern, answer, FLAGS)
     ]
     return problems
 

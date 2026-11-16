@@ -11,8 +11,8 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from evals.cases import CheckerSet, DrafterSet
+from evals.transcript import MANIFEST
 
-MANIFEST = "RUN.json"
 RUNS = 3
 # What one unit has cost on this project so far (spend.md), in US dollars.
 EACH = {"drafter": 0.022, "docs_only": 0.015, "checker": 0.0019, "cheaper": 0.0003}

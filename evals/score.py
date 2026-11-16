@@ -59,6 +59,14 @@ def _by_case[G: (GradedDraft, GradedCheck)](graded: Sequence[G]) -> dict[str, li
     return grouped
 
 
+def _missing[G: (GradedDraft, GradedCheck)](
+    names: Sequence[str], grouped: dict[str, list[G]], runs: int
+) -> list[str]:
+    """Cases that do not have exactly runs 1 to `runs`, each once."""
+    wanted = list(range(1, runs + 1))
+    return [name for name in names if sorted(g.run for g in grouped.get(name, [])) != wanted]
+
+
 @dataclass(frozen=True)
 class DrafterScore:
     cases: int
@@ -108,7 +116,7 @@ def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int
         by_family=by_family,
         looked=(sum(bool(g.looked) for g in asked), len(asked)),
         judge=judge,
-        missing=[case.name for case in cases.cases if len(grouped.get(case.name, [])) < runs],
+        missing=_missing([case.name for case in cases.cases], grouped, runs),
     )
 
 
@@ -192,7 +200,7 @@ def score_checker(cases: CheckerSet, graded: Sequence[GradedCheck], *, runs: int
             "always agree": _simple(cases, [False] * len(cases.cases)),
             "the code rule alone": _simple(cases, [_rule_objects(c) for c in cases.cases]),
         },
-        missing=[case.name for case in cases.cases if len(grouped.get(case.name, [])) < runs],
+        missing=_missing([case.name for case in cases.cases], grouped, runs),
     )
 
 
@@ -207,6 +215,8 @@ class Baseline(BaseModel):
     drafter_right_cases: int
     checker_missed_cases: list[str]
     checker_false_alarm_cases: int
+    # Checks that did not finish. Such a draft goes to a person, but nothing read it.
+    checker_not_checked_runs: int = 0
     accepted_on: str
     note: str
 
@@ -222,6 +232,7 @@ def as_baseline(drafter: DrafterScore, checker: CheckerScore, *, on: str, note: 
         drafter_right_cases=drafter.right_cases,
         checker_missed_cases=checker.missed_cases,
         checker_false_alarm_cases=len(checker.false_alarm_cases),
+        checker_not_checked_runs=checker.not_checked_runs,
         accepted_on=on,
         note=note,
     )
@@ -232,7 +243,7 @@ def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> li
     problems: list[str] = []
     missing = [*drafter.missing, *checker.missing]
     if missing:
-        problems.append(f"no recording, or too few, for: {', '.join(missing)}")
+        problems.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
     if (drafter.runs, checker.runs) != (baseline.runs, baseline.runs):
         problems.append(f"the baseline was accepted with {baseline.runs} runs per case")
     newly_wrong = sorted(set(drafter.wrong_cases) - set(baseline.drafter_wrong_cases))
@@ -241,6 +252,11 @@ def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> li
     newly_missed = sorted(set(checker.missed_cases) - set(baseline.checker_missed_cases))
     if newly_missed:
         problems.append(f"the checker agreed with a planted defect: {', '.join(newly_missed)}")
+    if checker.not_checked_runs > baseline.checker_not_checked_runs:
+        problems.append(
+            f"{checker.not_checked_runs} checks did not finish, against "
+            f"{baseline.checker_not_checked_runs} in the baseline: an unread draft is not a catch"
+        )
     if drafter.right_cases < baseline.drafter_right_cases - SOFT_SLACK:
         problems.append(
             f"{drafter.right_cases} cases right, against {baseline.drafter_right_cases} "

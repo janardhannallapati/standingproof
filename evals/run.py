@@ -34,8 +34,8 @@ from evals.fingerprint import (
     of_checker_case,
     of_drafter_case,
 )
-from evals.plan import MANIFEST, Manifest, Plan
-from evals.transcript import CheckerRun, DrafterRun, Run, ToolUse, path_of, write
+from evals.plan import Manifest, Plan
+from evals.transcript import MANIFEST, CheckerRun, DrafterRun, Run, ToolUse, path_of, write
 from evals.world import build_world
 from standingproof.agent.checker import CheckerClient, run_check
 from standingproof.agent.limits import Limits

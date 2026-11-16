@@ -15,6 +15,11 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 from standingproof.agent.types import AnswerDraft, CheckTurn, Usage
 
 RECORDINGS = Path(__file__).parent / "recordings"
+MANIFEST = "RUN.json"
+
+
+class MisplacedError(Exception):
+    """A file among the recordings that is not a recording in its own place."""
 
 
 class _Record(BaseModel):
@@ -75,21 +80,45 @@ def path_of(run: Run, root: Path = RECORDINGS) -> Path:
 
 def write(run: Run, root: Path = RECORDINGS) -> Path:
     path = path_of(run, root)
+    text = json.dumps(run.model_dump(mode="json"), indent=1) + "\n"
+    if looks_secret(text):
+        # These files are committed to a public repository.
+        raise ValueError(f"{path.name} holds text shaped like a credential; not written")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(run.model_dump(mode="json"), indent=1) + "\n")
+    path.write_text(text)
     return path
 
 
 def read_all(root: Path = RECORDINGS) -> list[Run]:
-    """Every recording under `root`, in a stable order."""
-    return [_RUN.validate_json(path.read_bytes()) for path in sorted(root.glob("*/*.json"))]
+    """Every recording under `root`, in a stable order.
+
+    A JSON file that is not where its own contents say it belongs is refused: a copy under
+    another name would otherwise count as another run, and a file one level off would be
+    skipped without a word.
+    """
+    runs: list[Run] = []
+    for path in sorted(root.rglob("*.json")):
+        if path == root / MANIFEST:
+            continue
+        try:
+            run = _RUN.validate_json(path.read_bytes())
+        except ValueError:
+            raise MisplacedError(f"{path.relative_to(root)} is not a recording") from None
+        if path_of(run, root) != path:
+            raise MisplacedError(f"{path.relative_to(root)} is not where its contents belong")
+        runs.append(run)
+    return runs
 
 
-# Shapes of the credentials this project touches. A recording that matches one is refused
-# by a test, whatever the reason it is there.
+# Shapes some credentials have: provider keys, GitHub tokens, AWS key ids, a password in
+# a URL, a private key. Not every secret has a shape (an AWS secret key does not), so this
+# is a net under the real control, which is that a recording is built only from the case,
+# the fake systems and the model's reply. `write` refuses a match and a test scans what is
+# committed.
 _SECRET = re.compile(
     r"sk-ant-[A-Za-z0-9_-]{8,}|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{30,}"
-    r"|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    r"|A[KS]IA[0-9A-Z]{16}|\bpa-[A-Za-z0-9_-]{20,}|://[^/\s:@]{1,64}:[^/\s:@]{1,128}@"
+    r"|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 )
 
 

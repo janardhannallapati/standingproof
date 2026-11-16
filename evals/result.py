@@ -108,5 +108,14 @@ def not_whole(result: Result) -> list[str]:
         found.append("the last run did not finish, so its numbers are not a result")
     missing = [*result.drafter.missing, *result.checker.missing]
     if missing:
-        found.append(f"no recording, or too few, for: {', '.join(missing)}")
+        found.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
+    alone = {g.case for g in result.graded_docs_only}
+    cheaper = {g.case for g in result.graded_cheaper}
+    absent = [
+        f"{case.name} (library only)"
+        for case in result.drafter_set.cases
+        if case.family in "ABC" and case.name not in alone
+    ] + [f"{c.name} (cheaper model)" for c in result.checker_set.cases if c.name not in cheaper]
+    if absent:
+        found.append(f"the comparison runs are not all recorded: {', '.join(absent)}")
     return found

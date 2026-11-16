@@ -330,7 +330,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b",
+     "\\A\\W{0,10}yes\\b",
      "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)"
     ],
     "cite": {
@@ -367,7 +367,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "github.branch_protection",
@@ -400,7 +400,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "github.org_two_factor",
@@ -433,7 +433,7 @@
      "\\b(not|off|disabled)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "github.secret_scanning",
@@ -466,7 +466,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "aws.root_mfa",
@@ -569,7 +569,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "aws.s3_public_access_block",
@@ -602,7 +602,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "aws.ebs_default_encryption",
@@ -878,7 +878,7 @@
      "\\b(not|no|without)\\b"
     ],
     "must_not": [
-     "^\\W*yes\\b"
+     "\\A\\W{0,10}yes\\b"
     ],
     "cite": {
      "check": "github.org_two_factor",

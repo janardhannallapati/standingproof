@@ -24,7 +24,7 @@ from evals.plan import Plan, approved, estimate, plan_for
 from evals.report import render
 from evals.result import load_result, not_whole, problems
 from evals.score import BASELINE, as_baseline, load_baseline
-from evals.transcript import RECORDINGS
+from evals.transcript import RECORDINGS, MisplacedError
 
 if TYPE_CHECKING:
     import anthropic
@@ -116,7 +116,7 @@ def _print_estimate(plan: Plan, ceiling: float, out: Callable[[str], None]) -> N
     cost = estimate(plan)
     for line in cost.lines:
         out(f"{line.calls:>5} x ${line.each:.4f}  {line.what:<40} ${line.total:.2f}")
-    out(f"estimate ${cost.total:.2f}; ceiling ${ceiling:.2f}, checked before every case")
+    out(f"estimate ${cost.total:.2f}; ceiling ${ceiling:.2f}, checked before every request")
 
 
 def main(
@@ -160,7 +160,11 @@ def main(
             return NOT_APPROVED
         return real_run(plan, ceiling=ceiling, root=root, out=out)
 
-    result = load_result(root, drafter, checker, sets)
+    try:
+        result = load_result(root, drafter, checker, sets)
+    except MisplacedError as error:
+        out(f"FAIL: {error}")
+        return 1
     if args.command == "report":
         report.write_text(render(result, load_baseline(baseline)))
         out(f"wrote {report}")

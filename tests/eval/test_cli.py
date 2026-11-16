@@ -15,6 +15,7 @@ from tests.eval.runs import (
     AGREES,
     EVIDENCE,
     LIBRARY,
+    OBJECTS,
     checked,
     drafted,
     finding,
@@ -60,6 +61,12 @@ class Repo:
             for name, turn in ((C.cases[0].name, AGREES), (C.cases[1].name, caught)):
                 today = of_checker_case(C.by_name[name], "main", CONFIG)
                 write(checked(name, turn, run=n, fingerprint=today), self.root)
+        alone = drafted(D.cases[0].name, TWO, [LIBRARY], check=OBJECTS, variant="docs_only")
+        today = of_drafter_case(D, D.cases[0], "docs_only", CONFIG)
+        write(alone.model_copy(update={"fingerprint": today}), self.root)
+        for labelled in C.cases:
+            today = of_checker_case(labelled, "cheaper", CONFIG)
+            write(checked(labelled.name, AGREES, variant="cheaper", fingerprint=today), self.root)
         manifest = {
             "complete": complete,
             "stopped": "" if complete else "the ceiling",
@@ -179,7 +186,7 @@ def test_the_report_names_every_miss_and_says_whose_labels_they_are(repo: Repo) 
     assert "1 of 2" in text  # counts, with their totals
     assert "author's labels only" in text
     assert (
-        "claude-opus-5-5" in text and "2026-11-16" in text and "$0.13" in text
+        "claude-opus-5-5" in text and "2026-11-16" in text and "$0.16" in text
     )  # summed from the recordings
     assert "%" not in text.split("## Method")[0]  # the headline is counts, not percentages
 
@@ -264,3 +271,62 @@ def test_the_real_client_goes_to_the_provider_whatever_the_shell_says(
     client = cli.provider_client("not-a-key")
 
     assert client.base_url.host == "api.anthropic.com"
+
+
+def test_a_recording_in_the_wrong_place_fails_score(repo: Repo) -> None:
+    repo.record()
+    repo.run("accept", "--note", "first")
+    source = repo.root / "checker-main" / "sound-backups.1.json"
+    (repo.root / "checker-main" / "sound-backups.9.json").write_text(source.read_text())
+
+    assert repo.run("score") == 1
+    assert "sound-backups.9.json" in repo.said
+
+
+@pytest.mark.parametrize("where", ["stray.json", "drafter-full/deeper/x.1.json"])
+def test_a_file_the_grader_would_not_read_fails_score(repo: Repo, where: str) -> None:
+    repo.record()
+    repo.run("accept", "--note", "first")
+    stray = repo.root / where
+    stray.parent.mkdir(parents=True, exist_ok=True)
+    stray.write_text("{}")
+
+    assert repo.run("score") == 1
+    assert Path(where).name in repo.said
+
+
+def test_accept_needs_the_comparison_runs_too(repo: Repo) -> None:
+    repo.record()
+    for path in [*repo.root.glob("drafter-docs_only/*"), *repo.root.glob("checker-cheaper/*")]:
+        path.unlink()
+
+    assert repo.run("accept", "--note", "x") == 1
+    assert "b-reviews-two-vs-one" in repo.said and "sound-backups" in repo.said
+
+
+def test_a_recording_that_holds_something_shaped_like_a_key_is_not_written(tmp_path: Path) -> None:
+    run = drafted("d-backups", "Our key is AKIAIOSFODNN7EXAMPLE.", [LIBRARY])
+
+    with pytest.raises(ValueError, match="shaped like a credential"):
+        write(run, tmp_path)
+    assert list(tmp_path.rglob("*.json")) == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "ASIAIOSFODNN7EXAMPLE",
+        "postgresql+asyncpg://app:hunter2@db:5432/x",
+        "pa-abcdefghijklmnopqrstuv",
+    ],
+)
+def test_more_shapes_of_credential_are_recognised(text: str) -> None:
+    assert looks_secret(text)
+
+
+def test_nothing_else_the_eval_commits_holds_anything_shaped_like_a_key() -> None:
+    from evals.transcript import RECORDINGS
+
+    for path in (RECORDINGS / MANIFEST, cli.REPORT, cli.BASELINE):
+        if path.exists():
+            assert not looks_secret(path.read_text()), path.name

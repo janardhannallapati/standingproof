@@ -224,3 +224,28 @@ def test_the_gate_refuses_missing_recordings_and_a_different_number_of_runs() ->
     assert any("no recording" in p for p in gate(BASE, drafter, checker))
     two = score_drafter(DRAFTER, all_right(2), runs=2), score_checker(CHECKER, perfect(2), runs=2)
     assert any("runs" in p for p in gate(BASE, *two))
+
+
+def test_a_check_that_did_not_finish_is_not_a_catch_the_gate_accepts() -> None:
+    graded = [
+        GradedCheck(g.case, g.run, "not_checked", True, g.correct, None, None, (0, 0), ())
+        if g.objected
+        else g
+        for g in perfect()
+    ]
+    drafter = score_drafter(DRAFTER, all_right(), runs=3)
+    checker = score_checker(CHECKER, graded, runs=3)
+    clean = BASE.model_copy(update={"drafter_wrong_cases": [], "drafter_right_cases": 32})
+
+    assert checker.missed_cases == [] and checker.not_checked_runs == 96
+    assert any("did not finish" in problem for problem in gate(clean, drafter, checker))
+
+
+def test_three_copies_of_one_run_are_not_three_runs() -> None:
+    name = DRAFTER.cases[0].name
+    graded = [g for g in all_right() if g.case != name] + [draft(name, "right", 1)] * 3
+
+    assert score_drafter(DRAFTER, graded, runs=3).missing == [name]
+    first = CHECKER.cases[0].name
+    checks = [g for g in perfect() if g.case != first] + [check(first, False, 2)] * 3
+    assert score_checker(CHECKER, checks, runs=3).missing == [first]

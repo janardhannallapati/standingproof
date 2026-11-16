@@ -91,7 +91,8 @@ class Expect(_Strict):
     """What a right result is. Patterns are regular expressions, matched ignoring case."""
 
     outcome: Literal["answered", "no_source"]
-    # A ready answer must cite an observation of this setting.
+    # The setting the case is about. Whether a ready answer cites a look at it is counted
+    # in the report; the grade itself rests on the wording.
     cite: Cite | None = None
     # Each of these must be found in a ready answer's wording, and none of `must_not`.
     must: list[str] = []

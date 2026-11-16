@@ -3,7 +3,7 @@
 import pytest
 
 from evals.cases import load_checker, load_drafter
-from evals.graders import grade_check, grade_draft
+from evals.graders import FLAGS, grade_check, grade_draft
 from tests.eval.runs import (
     EVIDENCE,
     LIBRARY,
@@ -169,3 +169,32 @@ def test_the_right_objection_of_the_wrong_kind_is_still_a_catch() -> None:
     graded = grade_check(case, checked(case.name, verdict(finding("unsupported", "daily"))))
 
     assert (graded.correct, graded.kind_ok, graded.phrase_hit) == (True, False, None)
+
+
+def test_no_pattern_of_any_case_is_slow_on_text_a_model_could_write() -> None:
+    import re
+    import time
+
+    hostile = ["\n" * 40_000 + "no", " " * 40_000 + "x", "yes " * 10_000, "a" * 40_000]
+    patterns = {p for case in DRAFTER.values() for p in (*case.expect.must, *case.expect.must_not)}
+
+    started = time.perf_counter()
+    for pattern in patterns:
+        for text in hostile:
+            re.search(pattern, text, FLAGS)
+    assert time.perf_counter() - started < 2.0
+
+
+def test_yes_counts_only_as_the_first_word_of_the_answer() -> None:
+    case = DRAFTER["b-org-2fa-off"]
+    opens_with_no = "No. Two-factor sign-in is not required.\nYes is what the library says."
+    run = drafted(
+        case.name,
+        opens_with_no,
+        [EVIDENCE],
+        tool_uses=[looked("github.org_two_factor", "harborlight")],
+    )
+
+    assert grade_draft(case, run).grade == "right"
+    said_yes = drafted(case.name, "Yes. It is not optional.", [LIBRARY])
+    assert grade_draft(case, said_yes).grade == "wrong"
