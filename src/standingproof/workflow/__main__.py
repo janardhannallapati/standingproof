@@ -16,9 +16,10 @@ from typing import Any
 import anthropic
 
 from standingproof.agent.loop import ModelCallError
-from standingproof.agent.model import AnthropicModel
-from standingproof.agent.types import ModelTurn
-from standingproof.config import get_settings
+from standingproof.agent.model import AnthropicChecker, AnthropicModel
+from standingproof.agent.pricing import cost_usd
+from standingproof.agent.types import ModelTurn, Usage
+from standingproof.config import Settings, get_settings
 from standingproof.workflow.checkpoint import setup
 from standingproof.workflow.serve import serve
 
@@ -28,6 +29,15 @@ class NoModel:
 
     async def complete(self, **_: Any) -> ModelTurn:
         raise ModelCallError("no model key is configured")
+
+
+def build_checker(settings: Settings, client: anthropic.AsyncAnthropic) -> AnthropicChecker | None:
+    """The second reader of each draft, or None when it is switched off."""
+    if not settings.check_enabled:
+        return None
+    # Raises now if the model has no price, not at the first check of the first run.
+    cost_usd(settings.check_model, Usage())
+    return AnthropicChecker(client, model=settings.check_model, effort=settings.check_effort)
 
 
 async def _worker() -> int:
@@ -46,7 +56,7 @@ async def _worker() -> int:
     )
     model = AnthropicModel(client, model=settings.draft_model, effort=settings.draft_effort)
     try:
-        await serve(settings, model)
+        await serve(settings, model, checker=build_checker(settings, client))
     finally:
         await client.close()
     return 0

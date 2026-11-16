@@ -8,6 +8,7 @@ import time
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from standingproof.agent.checker import CheckerClient, run_check
 from standingproof.agent.limits import Limits
 from standingproof.agent.pricing import cost_usd
 from standingproof.agent.prompts import SYSTEM_PROMPT, question_message
@@ -16,11 +17,19 @@ from standingproof.agent.steps import (
     decide,
     fingerprint,
     limit_reached,
+    not_checked,
     repeated,
     tool_result_block,
 )
 from standingproof.agent.tools import ToolRegistry
-from standingproof.agent.types import AgentResult, AnswerDraft, HandoffReason, ModelTurn, Usage
+from standingproof.agent.types import (
+    AgentResult,
+    AnswerDraft,
+    CheckResult,
+    HandoffReason,
+    ModelTurn,
+    Usage,
+)
 
 
 class ModelCallError(Exception):
@@ -58,6 +67,7 @@ async def run_agent(
     registry: ToolRegistry,
     limits: Limits,
     clock: Callable[[], float] = time.monotonic,
+    checker: CheckerClient | None = None,
 ) -> AgentResult:
     messages: list[dict[str, Any]] = [{"role": "user", "content": question_message(question)}]
     tools = registry.definitions()
@@ -68,8 +78,14 @@ async def run_agent(
     steps = 0
     started = clock()
 
-    def stop(handoff: HandoffReason | None, draft: AnswerDraft | None = None) -> AgentResult:
-        return AgentResult(draft=draft, handoff=handoff, steps=steps, cost_usd=spent, usage=total)
+    def stop(
+        handoff: HandoffReason | None,
+        draft: AnswerDraft | None = None,
+        check: CheckResult | None = None,
+    ) -> AgentResult:
+        return AgentResult(
+            draft=draft, handoff=handoff, steps=steps, cost_usd=spent, usage=total, check=check
+        )
 
     while True:
         limit = limit_reached(steps=steps, spent=spent, elapsed=clock() - started, limits=limits)
@@ -87,7 +103,21 @@ async def run_agent(
 
         decision = decide(turn, seen_sources)
         if decision.kind != "tools":
-            return stop(decision.handoff, decision.draft)
+            draft = decision.draft
+            if checker is None or draft is None or draft.status != "answered":
+                return stop(decision.handoff, draft)
+            # A second reader, given the question, the wording and the sources only.
+            if limit_reached(steps=0, spent=spent, elapsed=clock() - started, limits=limits):
+                return stop(None, draft, not_checked(draft.answer))
+            try:
+                check, used = await run_check(
+                    checker, question=question, draft=draft, sources=seen_sources
+                )
+            except ModelCallError:
+                return stop(None, draft, not_checked(draft.answer))
+            total = add_usage(total, used)
+            spent += check.cost_usd
+            return stop(None, draft, check)
 
         if repeated(turn.tool_calls, seen_calls):
             return stop(HandoffReason.REPEATED_CALL)

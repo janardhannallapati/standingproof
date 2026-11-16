@@ -10,19 +10,22 @@ from typing import Any
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 
+from standingproof.agent.checker import run_check
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.pricing import cost_usd
 from standingproof.agent.prompts import REDRAFT_REQUEST, SYSTEM_PROMPT, reviewer_section
 from standingproof.agent.steps import (
     add_usage,
+    check_reason,
     decide,
     fingerprint,
     limit_reached,
+    not_checked,
     plain_content,
     repeated,
     tool_result_block,
 )
-from standingproof.agent.types import AnswerDraft, HandoffReason, ToolCall, Usage
+from standingproof.agent.types import AnswerDraft, CheckResult, HandoffReason, ToolCall, Usage
 from standingproof.workflow.state import NO_APPROVED_SOURCE, QuestionContext, QuestionState
 
 Update = dict[str, Any]
@@ -139,6 +142,57 @@ async def run_tools(state: QuestionState, runtime: Runtime[QuestionContext]) -> 
         "seen_sources": seen_sources,
         "elapsed": state["elapsed"] + (ctx.clock() - started),
     }
+
+
+def _checked(outcome: dict[str, Any], result: CheckResult) -> Update:
+    """The outcome with a check attached. Anything but agreement sends it to a person.
+
+    The draft is kept either way: a reviewer needs the wording the checker disputes.
+    """
+    reason = check_reason(result)
+    changed: dict[str, Any] = {"check": result.model_dump()}
+    if reason is not None:
+        changed |= {"status": "needs_review", "reason": reason}
+    return {"outcome": outcome | changed}
+
+
+async def independent_check(state: QuestionState, runtime: Runtime[QuestionContext]) -> Update:
+    """A second model reads the draft against the sources, knowing nothing else.
+
+    It is given `question`, the draft and `seen_sources`. `messages`, where the drafter's
+    conversation is, is not read here. A step can run twice; a check already recorded in
+    the outcome is not made again.
+    """
+    ctx = runtime.context
+    outcome = state["outcome"]
+    if ctx.checker is None or outcome is None or outcome.get("check"):
+        return {}
+    draft = AnswerDraft(**outcome["draft"])
+    began = state["round_start"]
+    over = limit_reached(
+        steps=0,  # a check is not a drafter turn; the step limit is the drafter's
+        spent=state["cost_usd"] - began["cost_usd"],
+        elapsed=state["elapsed"] - began["elapsed"],
+        limits=ctx.limits,
+    )
+    if over is not None:
+        return _checked(outcome, not_checked(draft.answer))
+
+    started = ctx.clock()
+    try:
+        result, used = await run_check(
+            ctx.checker, question=state["question"], draft=draft, sources=state["seen_sources"]
+        )
+    except ModelCallError as error:
+        if error.retryable:
+            # Nothing is saved for this step. The draft is: the retry starts here, not there.
+            raise
+        return _checked(outcome, not_checked(draft.answer))
+    return {
+        "usage": add_usage(Usage(**state["usage"]), used).model_dump(),
+        "cost_usd": state["cost_usd"] + result.cost_usd,
+        "elapsed": state["elapsed"] + (ctx.clock() - started),
+    } | _checked(outcome, result)
 
 
 REDRAFT = "redraft"

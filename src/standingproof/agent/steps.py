@@ -5,6 +5,7 @@ these, so the two cannot disagree about when a run stops or which answer is acce
 """
 
 import json
+import re
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -13,8 +14,18 @@ from pydantic import BaseModel
 
 from standingproof.agent.claims import unsupported_claims
 from standingproof.agent.limits import Limits
+from standingproof.agent.pricing import cost_usd
 from standingproof.agent.tools import ToolOutcome
-from standingproof.agent.types import AnswerDraft, HandoffReason, ModelTurn, ToolCall, Usage
+from standingproof.agent.types import (
+    AnswerDraft,
+    CheckedFinding,
+    CheckResult,
+    CheckTurn,
+    HandoffReason,
+    ModelTurn,
+    ToolCall,
+    Usage,
+)
 
 _STOP_TO_HANDOFF = {
     "refusal": HandoffReason.MODEL_DECLINED,
@@ -96,6 +107,73 @@ def decide(turn: ModelTurn, seen_sources: Mapping[str, Sequence[str]]) -> TurnDe
         return TurnDecision(kind="tools")
     reason = _STOP_TO_HANDOFF.get(turn.stop_reason, HandoffReason.UNEXPECTED_STOP)
     return TurnDecision(kind="handoff", handoff=reason)
+
+
+# Why a draft the rules accepted still goes to a person one at a time.
+CHECKER_DISAGREES = "checker_disagrees"
+NOT_CHECKED = "not_checked"
+
+MAX_FINDINGS = 5
+MAX_EXPLANATION_CHARS = 300
+
+
+def _locate(quote: str, answer: str) -> str | None:
+    """The words of `answer` that `quote` names, ignoring case and spacing. None if absent."""
+    words = quote.split()
+    if not words:
+        return None
+    # Each word literally, with any run of whitespace between them.
+    pattern = r"\s+".join(re.escape(word) for word in words)
+    match = re.search(pattern, answer, re.IGNORECASE)
+    return match.group(0) if match else None
+
+
+def not_checked(answer: str) -> CheckResult:
+    """The result when no check could be made. Nobody compared this wording with anything."""
+    return CheckResult(
+        outcome="not_checked", findings=[], answer_checked=answer, model=None, cost_usd=0.0
+    )
+
+
+def judge_check(turn: CheckTurn, answer: str, source_ids: Collection[str]) -> CheckResult:
+    """Decide in code what a checker's reply means. Fails closed.
+
+    Only a finished reply that says "supported" and lists nothing agrees. A reply that
+    contradicts itself (supported, with findings) counts as disagreement. The checker can
+    take a draft out of "ready"; nothing it says can put one in.
+    """
+    cost = cost_usd(turn.model, turn.usage)
+    if turn.stop_reason != "end_turn" or turn.verdict is None:
+        return not_checked(answer).model_copy(update={"model": turn.model, "cost_usd": cost})
+    findings: list[CheckedFinding] = []
+    for found in turn.verdict.findings[:MAX_FINDINGS]:
+        located = _locate(found.quote, answer)
+        findings.append(
+            CheckedFinding(
+                kind=found.kind,
+                # As it stands in the draft when found there, so those characters can be marked.
+                quote=located if located is not None else found.quote.strip(),
+                located=located is not None,
+                # An id the checker was not given was invented or injected.
+                source_id=found.source_id if found.source_id in source_ids else None,
+                explanation=found.explanation.strip()[:MAX_EXPLANATION_CHARS],
+            )
+        )
+    agrees = turn.verdict.verdict == "supported" and not turn.verdict.findings
+    return CheckResult(
+        outcome="agrees" if agrees else "disagrees",
+        findings=findings,
+        answer_checked=answer,
+        model=turn.model,
+        cost_usd=cost,
+    )
+
+
+def check_reason(result: CheckResult) -> str | None:
+    """Why a checked draft needs a person, or None when the checker agreed."""
+    if result.outcome == "agrees":
+        return None
+    return CHECKER_DISAGREES if result.outcome == "disagrees" else NOT_CHECKED
 
 
 def tool_result_block(call: ToolCall, outcome: ToolOutcome) -> dict[str, Any]:

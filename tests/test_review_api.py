@@ -248,3 +248,84 @@ def test_another_tenant_cannot_watch_a_run(make_api: ClientFactory, db: Db) -> N
             with client.websocket_connect(f"/runs/{target}/events", headers={"origin": ALLOWED}):
                 pass
         assert refused.value.code == NOT_FOUND
+
+
+# --- What the independent checker found comes with the question. ---
+
+FINDING = {
+    "kind": "unsupported",
+    "quote": "and contractors",
+    "located": True,
+    "source_id": None,
+    "explanation": "The source covers staff only.",
+}
+
+
+def add_check(db: Db, item_id: str, answer: str, outcome: str = "disagrees") -> None:
+    from sqlalchemy import select
+
+    from standingproof.models import DraftCheck, RunQuestion
+
+    async def go() -> None:
+        async with db.sessions() as session:
+            tenant_id = (
+                await session.execute(
+                    select(RunQuestion.tenant_id).where(RunQuestion.id == uuid.UUID(item_id))
+                )
+            ).scalar_one()
+            session.add(
+                DraftCheck(
+                    tenant_id=tenant_id,
+                    run_question_id=uuid.UUID(item_id),
+                    answer_checked=answer,
+                    outcome=outcome,
+                    findings=[FINDING] if outcome == "disagrees" else [],
+                    model="claude-sonnet-5-5",
+                )
+            )
+            await session.commit()
+
+    db.run(go())
+
+
+def test_a_question_nobody_checked_has_no_check(api: TestClient, db: Db) -> None:
+    _, [first, *_] = run_with_drafts(api, db)
+
+    assert api.get(f"/run-questions/{first['id']}").json()["check"] is None
+
+
+def test_a_question_comes_with_its_latest_check(api: TestClient, db: Db) -> None:
+    wording = "Yes, for all staff and contractors."
+    _, [first, *_] = run_with_drafts(api, db, answer=wording)
+    add_check(db, first["id"], "An earlier wording.", outcome="agrees")
+    add_check(db, first["id"], wording)
+
+    check = api.get(f"/run-questions/{first['id']}").json()["check"]
+
+    assert check == {
+        "outcome": "disagrees",
+        "findings": [FINDING],
+        "model": "claude-sonnet-5-5",
+        "on_current_answer": True,
+    }
+
+
+def test_a_check_of_wording_that_was_then_edited_says_so(api: TestClient, db: Db) -> None:
+    wording = "Yes, for all staff and contractors."
+    _, [first, *_] = run_with_drafts(api, db, answer=wording)
+    add_check(db, first["id"], wording)
+
+    edited = decide(api, first, "edit", answer="Yes, for all staff.").json()
+
+    assert edited["final_answer"] == "Yes, for all staff."
+    assert edited["check"]["on_current_answer"] is False
+
+
+def test_another_tenant_cannot_read_a_check(make_api: ClientFactory, db: Db) -> None:
+    api = make_api()
+    _, [first, *_] = run_with_drafts(api, db)
+    add_check(db, first["id"], "Yes.")
+
+    other = make_api(dev_tenant_name="someone-else")
+
+    assert other.get(f"/run-questions/{first['id']}").status_code == 404

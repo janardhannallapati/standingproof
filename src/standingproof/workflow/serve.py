@@ -9,6 +9,7 @@ import uuid
 
 from redis.asyncio import Redis
 
+from standingproof.agent.checker import CheckerClient
 from standingproof.agent.loop import ModelClient
 from standingproof.checks.service import build_backends
 from standingproof.config import Settings
@@ -32,6 +33,7 @@ async def serve(
     settings: Settings,
     model: ModelClient,
     *,
+    checker: CheckerClient | None = None,
     embedder: Embedder | None = None,
     stop: asyncio.Event | None = None,
 ) -> None:
@@ -63,6 +65,7 @@ async def serve(
                     queue=JobQueue(redis, stream=settings.queue_stream, consumer=name),
                     graph=build_graph(saver),
                     model=model,
+                    checker=checker,
                     embedder=embedder,
                     backends=backends,
                     saver=saver,

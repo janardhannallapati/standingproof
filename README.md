@@ -172,6 +172,30 @@ The work is done by the `worker` service, not by the API. Run more of them to go
 - Without `ANTHROPIC_API_KEY` the worker still reuses exact approved answers and sends every
   other question to review.
 
+### The independent checker
+
+Every answer the model drafts is read once more by a second model before a person sees it.
+The second model is given the question, the draft's wording and the sources the search
+returned. It is not given the first model's conversation or notes, and it has no tools.
+
+| The checker's result | Where the question goes |
+|---|---|
+| Agrees: every claim is in a cited source | `ready` |
+| Disagrees: names the words and why | `needs_review`, reason `checker_disagrees`, with the draft kept |
+| Could not be run | `needs_review`, reason `not_checked` |
+
+- **What it reports:** a claim no cited source makes, a source that says otherwise (a live
+  check counts for more than a policy sentence), or part of the question left unanswered.
+- **What it cannot do:** make a question `ready`. Plain code decides what its reply means,
+  and anything but a clean agreement sends the draft to a person.
+- **What it is not:** proof. It is a second reader from the same provider. "The checker
+  agrees" means two readers found nothing, not that the answer is right.
+- An approved answer reused word for word is not sent to it.
+- Each check is kept (`draft_checks`): the wording it read, its findings, the model, the cost.
+- `SP_CHECK_MODEL` (default `claude-sonnet-5-5`) and `SP_CHECK_EFFORT` choose the model;
+  `SP_CHECK_ENABLED=false` turns the checker off. Its cost counts against the question and
+  the run's ceiling.
+
 ## Review a run
 
 When a question has been drafted, or handed over with a reason, it waits for a person. Nothing
@@ -207,6 +231,8 @@ curl -X POST localhost:8000/run-questions/<id>/decision -H "content-type: applic
 run to see every question with its proposed answer beside the text of its sources.
 
 - What needs a person is listed first, with the reason in words.
+- When the checker disputes a draft, the disputed words are marked in the answer and each
+  finding is listed under it with its reason.
 - One key per decision: `A` approve, `E` edit, `R` reject, `D` ask for a redraft; `J` and `K`
   move between questions. The keys are off while you type.
 - The page updates as the run progresses. If the live connection is lost it says so and asks
@@ -228,7 +254,8 @@ uv run python -m standingproof.agent "Is multi-factor authentication enforced fo
 ```
 
 The agent searches a small sample library of approved answers, replies only from what it finds,
-and reports "no approved source" when nothing supports an answer.
+and reports "no approved source" when nothing supports an answer. A draft is then read by the
+independent checker, and its result is printed.
 
 ## Develop
 

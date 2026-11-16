@@ -16,6 +16,7 @@ live system settings, and reopens them when those settings drift.
 - Browser test against a running stack: `cd web && pnpm e2e`
 - After changing a route or a response model: `uv run python scripts/export_openapi.py`, then `cd web && pnpm gen:api`
 - Ask the agent one question (calls the paid API): `uv run python -m standingproof.agent "<question>"`
+- Re-record the checker's six cases (calls the paid API): `uv run python scripts/record_checker_cases.py`
 
 ## Rules
 
@@ -38,6 +39,16 @@ live system settings, and reopens them when those settings drift.
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance
   rules go there, in code, with a test. A sentence in the prompt is not a control.
+- The checker's request is built only by `check_messages` in `agent/checker.py`, from the
+  question, the draft's wording and the sources. Never pass it the drafter's messages, its
+  note or a reviewer's instruction, and never give `CheckerClient` a tools parameter.
+- Only `judge_check` in `agent/steps.py` gives a checker's reply a meaning. A check can move
+  a question from `ready` to `needs_review` and never the other way; anything but a clean
+  "supported" demotes. Say "the checker agrees", never "verified".
+- A check is about one wording. `draft_checks` is append-only, and a finding is shown
+  against an answer only when that answer is the wording that was checked.
+- Text from outside (a question, a draft, a source) goes into a prompt through
+  `prompts.wrap`, which stops it opening or closing one of our tags.
 - `agent/steps.py` holds the loop's decisions as pure functions. The hand-written loop
   (`agent/loop.py`) and the graph (`workflow/nodes.py`) both call them, and
   `tests/workflow/test_graph.py` fails if the two disagree. Change a decision there, never in

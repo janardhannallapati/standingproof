@@ -1,12 +1,13 @@
 """The graph for one question: which step follows which.
 
     exact_match ──(matched)──────────────────────────► review ──(approve, edit, reject)─► END
-         │                                               ▲  │
-         └─► call_model ──(finished or stopped)──────────┘  │
-                 ▲   │  ▲                                    │
-                 │   │  └──────────(redraft)─────────────────┘
-                 │   └─(asked for tools)─► run_tools
-                 └────────────────────────────┘
+         │                                               ▲ ▲│
+         └─► call_model ──(stopped, or no source)────────┘ ││
+               ▲ │ │ ▲                                     ││
+               │ │ │ └──────────(redraft)──────────────────┼┘
+               │ │ └─(a draft the rules accept)─► independent_check
+               │ └─(asked for tools)─► run_tools
+               └────────────────────────┘
 
 State is saved after every step under the question's thread id. At `review` the graph
 stops and waits for a person: no process holds it, it is rows in the database. Running a
@@ -20,8 +21,14 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
-from standingproof.agent.types import AnswerDraft, Usage
-from standingproof.workflow.nodes import call_model, exact_match, review, run_tools
+from standingproof.agent.types import AnswerDraft, CheckResult, Usage
+from standingproof.workflow.nodes import (
+    call_model,
+    exact_match,
+    independent_check,
+    review,
+    run_tools,
+)
 from standingproof.workflow.state import (
     Outcome,
     Progress,
@@ -37,8 +44,12 @@ def _after_exact_match(state: QuestionState) -> Literal["call_model", "review"]:
     return "review" if state["outcome"] is not None else "call_model"
 
 
-def _after_model(state: QuestionState) -> Literal["run_tools", "review"]:
-    return "review" if state["outcome"] is not None else "run_tools"
+def _after_model(state: QuestionState) -> Literal["run_tools", "independent_check", "review"]:
+    outcome = state["outcome"]
+    if outcome is None:
+        return "run_tools"
+    # Only wording the model wrote and the rules accepted is worth a second reader.
+    return "independent_check" if outcome["status"] == "ready" else "review"
 
 
 def _after_review(state: QuestionState) -> Literal["call_model", "__end__"]:
@@ -51,11 +62,13 @@ def build_graph(checkpointer: BaseCheckpointSaver[Any]) -> QuestionGraph:
     builder.add_node("exact_match", exact_match)
     builder.add_node("call_model", call_model)
     builder.add_node("run_tools", run_tools)
+    builder.add_node("independent_check", independent_check)
     builder.add_node("review", review)
     builder.add_edge(START, "exact_match")
     builder.add_conditional_edges("exact_match", _after_exact_match)
     builder.add_conditional_edges("call_model", _after_model)
     builder.add_edge("run_tools", "call_model")
+    builder.add_edge("independent_check", "review")
     builder.add_conditional_edges("review", _after_review)
     return builder.compile(checkpointer=checkpointer)
 
@@ -70,6 +83,8 @@ def _outcome(state: dict[str, Any]) -> Outcome:
         steps=state["steps"],
         cost_usd=state["cost_usd"],
         usage=Usage(**state["usage"]),
+        # Absent in state saved before the checker existed.
+        check=CheckResult(**saved["check"]) if saved.get("check") else None,
     )
 
 

@@ -580,6 +580,23 @@ export interface components {
             /** Version */
             version: number;
         };
+        /**
+         * DraftCheckOut
+         * @description What the independent checker made of the agent's draft.
+         */
+        DraftCheckOut: {
+            /** Findings */
+            findings: components["schemas"]["FindingOut"][];
+            /** Model */
+            model: string | null;
+            /** On Current Answer */
+            on_current_answer: boolean;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "agrees" | "disagrees" | "not_checked";
+        };
         /** EvidenceOut */
         EvidenceOut: {
             /** Check Name */
@@ -620,6 +637,22 @@ export interface components {
             items: components["schemas"]["EvidenceOut"][];
             /** Next Before */
             next_before: string | null;
+        };
+        /** FindingOut */
+        FindingOut: {
+            /** Explanation */
+            explanation: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "unsupported" | "contradicted" | "not_answered";
+            /** Located */
+            located: boolean;
+            /** Quote */
+            quote: string;
+            /** Source Id */
+            source_id: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -733,6 +766,7 @@ export interface components {
         ReviewQuestionOut: {
             /** Answer */
             answer: string | null;
+            check?: components["schemas"]["DraftCheckOut"] | null;
             /** Cost Usd */
             cost_usd: string;
             /** Final Answer */

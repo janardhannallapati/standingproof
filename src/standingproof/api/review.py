@@ -14,7 +14,14 @@ from sqlalchemy import select
 from standingproof.api.deps import RedisDep, SessionDep, SettingsDep, TenantDep
 from standingproof.api.runs import ItemStatus
 from standingproof.library import sources
-from standingproof.models import REVIEW_REDRAFTING, Question, Questionnaire, Run, RunQuestion
+from standingproof.models import (
+    REVIEW_REDRAFTING,
+    DraftCheck,
+    Question,
+    Questionnaire,
+    Run,
+    RunQuestion,
+)
 from standingproof.workflow import review
 from standingproof.workflow.events import publish_changed
 from standingproof.workflow.queue import JobQueue
@@ -36,6 +43,27 @@ class SourceOut(BaseModel):
     owner: str | None = None
     valid_until: date | None = None
     observed_at: datetime | None = None
+
+
+class FindingOut(BaseModel):
+    kind: Literal["unsupported", "contradicted", "not_answered"]
+    # Words of the draft. Written by a model from text an outsider controls: show as text.
+    quote: str
+    # True when `quote` is in the checked wording character for character.
+    located: bool
+    source_id: str | None
+    explanation: str
+
+
+class DraftCheckOut(BaseModel):
+    """What the independent checker made of the agent's draft."""
+
+    outcome: Literal["agrees", "disagrees", "not_checked"]
+    findings: list[FindingOut]
+    model: str | None
+    # False when the wording now shown is not the wording that was checked (it was
+    # edited by a reviewer since). The check says nothing about the new wording.
+    on_current_answer: bool
 
 
 class ReviewQuestionOut(BaseModel):
@@ -60,6 +88,8 @@ class ReviewQuestionOut(BaseModel):
     cost_usd: Decimal
     # Strong terms in an edited answer that no cited source uses.
     warnings: list[str] = []
+    # None: the draft was not sent to the checker (reused, nothing drafted, or switched off).
+    check: DraftCheckOut | None = None
 
 
 class DecisionIn(BaseModel):
@@ -109,6 +139,14 @@ async def _question_out(
     ).scalar_one()
     cited = item.citations or []
     resolved = await sources.resolve_all(session, tenant_id, cited)
+    latest = (
+        await session.execute(
+            select(DraftCheck)
+            .where(DraftCheck.tenant_id == tenant_id, DraftCheck.run_question_id == item.id)
+            .order_by(DraftCheck.checked_at.desc(), DraftCheck.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
     return ReviewQuestionOut(
         id=item.id,
         run_id=item.run_id,
@@ -141,6 +179,14 @@ async def _question_out(
         steps=item.steps,
         cost_usd=item.cost_usd,
         warnings=warnings,
+        check=None
+        if latest is None
+        else DraftCheckOut(
+            outcome=latest.outcome,  # type: ignore[arg-type]
+            findings=[FindingOut(**found) for found in latest.findings],
+            model=latest.model,
+            on_current_answer=latest.answer_checked == (item.final_answer or item.answer),
+        ),
     )
 
 

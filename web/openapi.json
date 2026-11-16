@@ -353,6 +353,50 @@
         "title": "DecisionIn",
         "type": "object"
       },
+      "DraftCheckOut": {
+        "description": "What the independent checker made of the agent's draft.",
+        "properties": {
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/FindingOut"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "on_current_answer": {
+            "title": "On Current Answer",
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "agrees",
+              "disagrees",
+              "not_checked"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "findings",
+          "model",
+          "on_current_answer"
+        ],
+        "title": "DraftCheckOut",
+        "type": "object"
+      },
       "EvidenceOut": {
         "properties": {
           "check_name": {
@@ -450,6 +494,51 @@
           "next_before"
         ],
         "title": "EvidencePage",
+        "type": "object"
+      },
+      "FindingOut": {
+        "properties": {
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "unsupported",
+              "contradicted",
+              "not_answered"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "located": {
+            "title": "Located",
+            "type": "boolean"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "required": [
+          "kind",
+          "quote",
+          "located",
+          "source_id",
+          "explanation"
+        ],
+        "title": "FindingOut",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -737,6 +826,16 @@
               }
             ],
             "title": "Answer"
+          },
+          "check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DraftCheckOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "cost_usd": {
             "title": "Cost Usd",

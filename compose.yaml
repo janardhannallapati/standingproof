@@ -82,6 +82,9 @@ services:
       # Only the worker calls the model, so only the worker is given the key. Without one
       # it still reuses exact approved answers and hands every other question to a person.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # The second reader of each draft (see "The independent checker" in the README).
+      SP_CHECK_ENABLED: ${SP_CHECK_ENABLED:-true}
+      SP_CHECK_MODEL: ${SP_CHECK_MODEL:-claude-sonnet-5-5}
     <<: *app_hardening
     # The image's health check asks the API's port, which a worker does not open.
     healthcheck: { disable: true }

@@ -364,3 +364,30 @@ class ReviewDecision(Base):
     batch: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
     decided_by: Mapped[str] = mapped_column(String(200))
     decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class DraftCheck(Base):
+    """What the independent checker made of one wording. Append-only.
+
+    A check is evidence about the exact text in `answer_checked` and about nothing else:
+    a redraft gets a new row, and a reviewer's edit has none. The latest row for a
+    question is its current check.
+    """
+
+    __tablename__ = "draft_checks"
+    __table_args__ = (Index("ix_draft_checks_question", "run_question_id", "checked_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    run_question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("run_questions.id", ondelete="CASCADE")
+    )
+    answer_checked: Mapped[str] = mapped_column(Text)
+    # agrees | disagrees | not_checked
+    outcome: Mapped[str] = mapped_column(String(16))
+    # A list of {kind, quote, located, source_id, explanation}. Model output: show as text.
+    findings: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    # None when no call was made (the question was at its limit).
+    model: Mapped[str | None] = mapped_column(String(100))
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), server_default=_ZERO)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)

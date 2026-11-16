@@ -72,6 +72,7 @@ class Rig:
         model: Any,
         name: str = "w1",
         stream: str | None = None,
+        checker: Any = None,
         **settings: Any,
     ):
         self.db = db
@@ -95,6 +96,7 @@ class Rig:
                 queue=self.queue,
                 graph=build_graph(InMemorySaver()),
                 model=model,
+                checker=checker,
                 embedder=FakeEmbedder(),
                 backends=no_backends(),
             ),

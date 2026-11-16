@@ -102,3 +102,31 @@ def test_orm_models_match_the_migrations(
         command.check(Config("alembic.ini"))
     finally:
         get_settings.cache_clear()
+
+
+def test_draft_checks_exists_with_an_index_for_the_latest_check(migrated_postgres_url: str) -> None:
+    columns = asyncio.run(
+        _fetch_column(
+            migrated_postgres_url,
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'draft_checks'",
+        )
+    )
+    indexes = asyncio.run(
+        _fetch_column(
+            migrated_postgres_url,
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'draft_checks'",
+        )
+    )
+
+    assert set(columns) == {
+        "id",
+        "tenant_id",
+        "run_question_id",
+        "answer_checked",
+        "outcome",
+        "findings",
+        "model",
+        "cost_usd",
+        "checked_at",
+    }
+    assert "ix_draft_checks_question" in indexes

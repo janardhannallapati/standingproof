@@ -8,7 +8,7 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import case, false, update
+from sqlalchemy import case, false, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.models import (
@@ -19,6 +19,7 @@ from standingproof.models import (
     ITEM_RUNNING,
     REVIEW_PENDING,
     REVIEW_REDRAFTING,
+    DraftCheck,
     RunQuestion,
 )
 from standingproof.workflow.leases import NOW, finish_run_if_done, in_seconds
@@ -76,10 +77,24 @@ async def save_result(
                 review=REVIEW_PENDING,
                 version=RunQuestion.version + 1,
             )
-            .returning(RunQuestion.run_id)
+            .returning(RunQuestion.run_id, RunQuestion.tenant_id)
         )
     ).one_or_none()
     if row is not None:
+        check = outcome.check
+        if check is not None:
+            # In the same transaction as the draft it is about: neither is saved alone.
+            await session.execute(
+                insert(DraftCheck).values(
+                    tenant_id=row[1],
+                    run_question_id=item_id,
+                    answer_checked=check.answer_checked,
+                    outcome=check.outcome,
+                    findings=[found.model_dump() for found in check.findings],
+                    model=check.model,
+                    cost_usd=Decimal(str(round(check.cost_usd, 6))),
+                )
+            )
         await finish_run_if_done(session, row[0])
     await session.commit()
     return row is not None
