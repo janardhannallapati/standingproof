@@ -76,6 +76,8 @@ class SentOut(BaseModel):
     answers: int
     # False when a decision changed after the file that was sent was made.
     current: bool
+    # How many of those answers wait again because a live setting changed.
+    reopened: int = 0
 
 
 class FilePreviewOut(BaseModel):
@@ -109,6 +111,7 @@ def _sent_out(info: sent.SentInfo) -> SentOut:
         sent_at=info.sent_at,
         answers=info.answers,
         current=info.current,
+        reopened=info.reopened,
     )
 
 

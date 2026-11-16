@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from standingproof.models import FilledFile, SentFile
+from standingproof.models import FilledFile, RunQuestion, SentFile
 from standingproof.writeback.load import file_key, load
 
 MAX_CUSTOMER_CHARS = 200
@@ -36,6 +36,8 @@ class SentInfo:
     answers: int
     # True when the file that was sent is the one for the decisions as they are now.
     current: bool
+    # How many of its answers wait again because a live setting they rest on changed.
+    reopened: int = 0
 
 
 async def list_sent(session: AsyncSession, run_id: uuid.UUID, key: str) -> list[SentInfo]:
@@ -47,8 +49,26 @@ async def list_sent(session: AsyncSession, run_id: uuid.UUID, key: str) -> list[
             .order_by(SentFile.sent_at, SentFile.id)
         )
     ).all()
+    waiting = {
+        str(question_id)
+        for question_id in (
+            await session.execute(
+                select(RunQuestion.question_id).where(
+                    RunQuestion.run_id == run_id, RunQuestion.reopened_at.is_not(None)
+                )
+            )
+        ).scalars()
+    }
     return [
-        SentInfo(s.id, s.customer, s.sent_by, s.sent_at, len(s.answers), file_key_ == key)
+        SentInfo(
+            s.id,
+            s.customer,
+            s.sent_by,
+            s.sent_at,
+            len(s.answers),
+            file_key_ == key,
+            sum(answer["question_id"] in waiting for answer in s.answers),
+        )
         for s, file_key_ in rows
     ]
 

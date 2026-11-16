@@ -54,6 +54,8 @@ class RunQuestionOut(BaseModel):
     # What a person has decided: pending, approved, edited, rejected, redrafting, expired.
     review: str | None
     version: int
+    # True while it waits again because a live setting it rests on has changed.
+    reopened: bool = False
 
 
 class RunQuestionPage(BaseModel):
@@ -156,6 +158,7 @@ async def list_run_questions(
             cost_usd=item.cost_usd,
             review=item.review,
             version=item.version,
+            reopened=item.reopened_at is not None,
         )
         for item, question in rows
     ]

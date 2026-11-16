@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 from standingproof import __version__
 from standingproof.api import (
     checks,
+    drift,
     events,
     files,
     health,
@@ -71,6 +72,8 @@ def create_app(
     app.include_router(health.router)
     app.include_router(questionnaires.router)
     app.include_router(library.router)
+    # Before the checks routes: /checks/watched is not a check called "watched".
+    app.include_router(drift.router)
     app.include_router(checks.router)
     app.include_router(runs.router)
     app.include_router(review.router)

@@ -244,3 +244,16 @@ def test_a_change_and_a_change_back_while_waiting_are_two_rows_and_still_waiting
     assert (first_row.was_evidence_id, first_row.was_review) == (first, "approved")
     # The second is measured from what the reviewer was last shown, and restores nothing.
     assert (second_row.was_evidence_id, second_row.was_review) == (changed, None)
+
+
+def test_the_event_says_why_the_newest_look_was_made_whichever_row_is_examined_first(
+    wf: Db,
+) -> None:
+    owner, _, _ = approved_answer(wf)
+    # An agent's look is still queued when a webhook's look sees the change.
+    observe(wf, owner, dict(PROTECTED), trigger="run")
+    observe(wf, owner, OPEN, trigger="webhook")
+
+    examine_all(wf)
+
+    assert [event.trigger for event in events(wf)] == ["webhook"]

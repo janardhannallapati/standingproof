@@ -160,7 +160,13 @@ async def examine_next(session: AsyncSession) -> list[uuid.UUID] | None:
 
     runs: list[uuid.UUID] = []
     if differing or previous is not None:
-        event_id = await _event(session, latest, previous, queued.trigger)
+        # Why the newest observation was made, which may not be the row that woke us.
+        trigger = (
+            await session.execute(
+                select(DriftQueue.trigger).where(DriftQueue.evidence_id == latest.id)
+            )
+        ).scalar_one_or_none()
+        event_id = await _event(session, latest, previous, trigger or queued.trigger)
         for link, item, changes in differing:
             await _reopen(
                 session, item, link, event_id=event_id, latest_id=latest.id, changes=changes
