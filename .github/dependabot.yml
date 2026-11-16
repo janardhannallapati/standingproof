@@ -33,7 +33,24 @@ updates:
     groups:
       web:
         patterns: ["*"]
+    ignore:
+      # The types must describe the Node that runs the code: same major as web/Dockerfile
+      # and the CI workflow. Changed by hand, together with them.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 is the native compiler and has no JavaScript API. openapi-typescript,
+      # which generates src/lib/api-types.ts, calls that API and fails to start on it.
+      # Remove this when openapi-typescript supports TypeScript 7.
+      - dependency-name: typescript
+        versions: [">=7"]
   - package-ecosystem: docker
     directory: /web
     schedule:
       interval: weekly
+    # The Node version is chosen by hand and is the same here, in the CI workflow and in
+    # @types/node. The node:26 image has no corepack, which the image and CI use to
+    # get pnpm, so a new major is a change to all three. Node 22 is supported until April
+    # 2027. Patch and minor releases of the image still arrive.
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
