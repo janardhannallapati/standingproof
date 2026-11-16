@@ -523,24 +523,7 @@ export interface components {
         /** CheckList */
         CheckList: {
             /** Checks */
-            checks: components["schemas"]["CheckOut"][];
-        };
-        /** CheckOut */
-        CheckOut: {
-            /** Description */
-            description: string;
-            /** Name */
-            name: string;
-            /**
-             * Scope Kind
-             * @enum {string}
-             */
-            scope_kind: "org" | "repo" | "account";
-            /**
-             * System
-             * @enum {string}
-             */
-            system: "github" | "aws";
+            checks: components["schemas"]["standingproof__api__checks__CheckOut"][];
         };
         /** ConnectionIn */
         ConnectionIn: {
@@ -620,6 +603,22 @@ export interface components {
             items: components["schemas"]["EvidenceOut"][];
             /** Next Before */
             next_before: string | null;
+        };
+        /** FindingOut */
+        FindingOut: {
+            /** Explanation */
+            explanation: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "unsupported" | "contradicted" | "not_answered";
+            /** Located */
+            located: boolean;
+            /** Quote */
+            quote: string;
+            /** Source Id */
+            source_id: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -733,6 +732,7 @@ export interface components {
         ReviewQuestionOut: {
             /** Answer */
             answer: string | null;
+            check?: components["schemas"]["standingproof__api__review__CheckOut"] | null;
             /** Cost Usd */
             cost_usd: string;
             /** Final Answer */
@@ -962,6 +962,40 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** CheckOut */
+        standingproof__api__checks__CheckOut: {
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+            /**
+             * Scope Kind
+             * @enum {string}
+             */
+            scope_kind: "org" | "repo" | "account";
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "github" | "aws";
+        };
+        /**
+         * CheckOut
+         * @description What the independent checker made of the agent's draft.
+         */
+        standingproof__api__review__CheckOut: {
+            /** Findings */
+            findings: components["schemas"]["FindingOut"][];
+            /** Model */
+            model: string | null;
+            /** On Current Answer */
+            on_current_answer: boolean;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "agrees" | "disagrees" | "not_checked";
         };
     };
     responses: never;
