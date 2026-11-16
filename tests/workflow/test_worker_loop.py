@@ -49,11 +49,22 @@ def test_the_loop_finishes_a_run_without_exceeding_the_concurrency_cap(
     questions = [f"Question number {n}?" for n in range(12)]
     started = start(wf, owner, questionnaire(wf, owner, questions))
 
-    async def slow() -> ModelTurn:
-        await asyncio.sleep(0.05)
+    together = asyncio.Event()
+
+    async def held_until_two_are_running() -> ModelTurn:
+        # The first call waits for a second one to arrive, so that two questions being
+        # worked on at once is a fact about the worker and not luck with timing. A call
+        # that slept for a fixed time overlapped with nothing on a busy machine.
+        if rig.model.running >= 2:
+            together.set()
+        try:
+            async with asyncio.timeout(5):
+                await together.wait()
+        except TimeoutError:
+            together.set()  # nobody came: let the run finish and the assertion below fail
         return finishes(NO_SOURCE)
 
-    rig = Rig(wf, redis_url, CountingModel(slow), worker_concurrency=3)
+    rig = Rig(wf, redis_url, CountingModel(held_until_two_are_running), worker_concurrency=3)
     rig.add(started.item_ids)
 
     async def finished() -> bool:
