@@ -218,7 +218,9 @@ async def expire_unreviewed(session: AsyncSession, *, keep_days: int) -> int:
         update(RunQuestion)
         .where(
             RunQuestion.review == REVIEW_PENDING,
-            RunQuestion.finished_at < NOW - timedelta(days=keep_days),
+            # A reopened answer waits from the day it was reopened, however old it is.
+            func.coalesce(RunQuestion.reopened_at, RunQuestion.finished_at)
+            < NOW - timedelta(days=keep_days),
         )
         .values(review=REVIEW_EXPIRED, version=RunQuestion.version + 1, reviewed_at=NOW)
         .returning(RunQuestion.id)

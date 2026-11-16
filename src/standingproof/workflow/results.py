@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import case, false, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.drift.watch import rest_on
 from standingproof.models import (
     ITEM_FAILED,
     ITEM_NEEDS_REVIEW,
@@ -81,6 +82,9 @@ async def save_result(
         )
     ).one_or_none()
     if row is not None:
+        # The live settings this draft rests on, saved with it: a later change to one of
+        # them is traced back to this answer through these rows.
+        await rest_on(session, row[1], item_id, draft.citations if draft else [])
         check = outcome.check
         if check is not None:
             # In the same transaction as the draft it is about: neither is saved alone.
