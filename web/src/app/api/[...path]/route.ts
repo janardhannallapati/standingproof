@@ -59,10 +59,54 @@ async function forward(request: Request, path: string[], body?: string): Promise
   } catch {
     return refuse(502, "The API could not be reached.");
   }
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") ?? JSON_TYPE },
-  });
+  const headers: Record<string, string> = {
+    "content-type": upstream.headers.get("content-type") ?? JSON_TYPE,
+  };
+  const name =
+    upstream.ok && isDownload(request.method, path) ? safeDisposition(upstream) : null;
+  if (name !== null) {
+    // The one response that is a file. The browser is told to save it and not to guess
+    // its type. No other header of the API's ever reaches the browser.
+    headers["content-disposition"] = name;
+    headers["x-content-type-options"] = "nosniff";
+  }
+  return new Response(upstream.body, { status: upstream.status, headers });
+}
+
+/** GET /runs/<id>/file/<file id>: the filled workbook. Nothing else is a download. */
+function isDownload(method: string, path: string[]): boolean {
+  return (
+    method === "GET" &&
+    path.length === 4 &&
+    path[0] === "runs" &&
+    path[2] === "file" &&
+    isUuid(path[3] ?? "")
+  );
+}
+
+const HEX = "0123456789abcdefABCDEF";
+
+/** 8-4-4-4-12 hex digits. A file's id, and so never "preview" or "..". */
+function isUuid(text: string): boolean {
+  if (text.length !== 36) return false;
+  for (let i = 0; i < text.length; i++) {
+    const dash = i === 8 || i === 13 || i === 18 || i === 23;
+    if (dash ? text[i] !== "-" : !HEX.includes(text[i]!)) return false;
+  }
+  return true;
+}
+
+const SAFE_IN_A_NAME = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._- ";
+
+/** The API's Content-Disposition, only if it is exactly `attachment; filename="<plain name>"`. */
+function safeDisposition(upstream: Response): string | null {
+  const value = upstream.headers.get("content-disposition") ?? "";
+  const start = 'attachment; filename="';
+  if (!value.startsWith(start) || !value.endsWith('"')) return null;
+  const name = value.slice(start.length, -1);
+  if (name.length === 0 || name.length > 255) return null;
+  for (const ch of name) if (!SAFE_IN_A_NAME.includes(ch)) return null;
+  return value;
 }
 
 type Context = { params: Promise<{ path: string[] }> };

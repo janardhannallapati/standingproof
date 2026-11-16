@@ -132,3 +132,59 @@ test("a reviewer approves one, edits one and rejects one; each is recorded", asy
   const reviews = Object.fromEntries((await questions()).map((q) => [q.question, q.review]));
   expect(reviews).toEqual({ [MFA]: "approved", [ENCRYPTION]: "edited", [INSURANCE]: "rejected" });
 });
+
+test("the reviewer downloads the spreadsheet with the approved answers in it, once", async ({ page }) => {
+  await page.goto(`/runs/${runId}`);
+  await page.getByRole("link", { name: "Filled file" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Filled file" })).toBeVisible();
+  await expect(page.getByText(/^2 answers will be written\. 1 cell is left empty\./)).toBeVisible();
+  const table = page.getByRole("table", { name: "What is written" });
+  await expect(table.getByRole("row")).toHaveCount(3);
+  await expect(page.getByRole("list", { name: "Left empty" }).getByRole("listitem")).toContainText(
+    "Finance answers insurance questions.",
+  );
+
+  const waiting = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download filled file" }).click();
+  const download = await waiting;
+
+  expect(download.suggestedFilename()).toBe("three-questions-filled.xlsx");
+  const bytes = readFileSync(await download.path());
+  const { createHash } = await import("node:crypto");
+  const latest = (await (await api.get(`/runs/${runId}/file/preview`)).json()).latest;
+  expect(createHash("sha256").update(bytes).digest("hex")).toBe(latest.sha256);
+  expect(latest.current).toBe(true);
+
+  // A second download is the same file, not a second one.
+  const again = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download filled file" }).click();
+  const second = readFileSync(await (await again).path());
+  expect(createHash("sha256").update(second).digest("hex")).toBe(latest.sha256);
+  const made = await api.post(`/runs/${runId}/file`, { data: {} });
+  expect(made.status()).toBe(200);
+  expect((await made.json()).id).toBe(latest.id);
+});
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`the file page has no accessibility violations in ${scheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto(`/runs/${runId}/file`);
+    await expect(page.getByRole("table", { name: "What is written" })).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).analyze();
+
+    const found = results.violations.map((v) => `${v.id}: ${v.help} -> ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`);
+    expect(found).toEqual([]);
+  });
+}
+
+test("on a phone the file page does not scroll sideways; only its table does", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/runs/${runId}/file`);
+  await expect(page.getByRole("button", { name: "Download filled file" })).toBeVisible();
+
+  const wider = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(wider).toBe(false);
+  const box = await page.getByRole("button", { name: "Download filled file" }).boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+});

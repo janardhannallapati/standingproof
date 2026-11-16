@@ -108,3 +108,37 @@ export function money(value: string | number): string {
 export function fineMoney(value: string | number): string {
   return `$${Number(value).toFixed(4)}`;
 }
+
+/** True when nobody still has to act on any question: the filled file can be made. */
+export function allDecided(questions: Pick<RunQuestion, "status" | "review">[]): boolean {
+  if (questions.length === 0) return false;
+  return questions.every(
+    (question) =>
+      question.status !== "queued" &&
+      question.status !== "running" &&
+      question.review !== "pending" &&
+      question.review !== "redrafting",
+  );
+}
+
+const EMPTY_REASONS: Record<string, { tone: Tone; mark: string; label: string; text: string }> = {
+  rejected: { tone: "fail", mark: "×", label: "Rejected", text: "No approved answer, so the cell stays empty." },
+  expired: { tone: "quiet", mark: "…", label: "Expired", text: "Nobody decided in time, so the cell stays empty." },
+  unanswered: { tone: "fail", mark: "×", label: "Not answered", text: "The agent did not answer this question, so the cell stays empty." },
+  undecided: { tone: "review", mark: "!", label: "Undecided", text: "This question still needs a decision." },
+  no_answer: { tone: "review", mark: "!", label: "No wording", text: "The approved answer has no text." },
+  no_answer_cell: { tone: "review", mark: "!", label: "No answer column", text: "The sheet has no answer column for this question. Copy the answer in by hand." },
+  sheet_missing: { tone: "review", mark: "!", label: "Sheet not found", text: "The sheet this question came from is not in the file." },
+  cell_not_empty: { tone: "review", mark: "!", label: "Cell not empty", text: "The cell already has content, and it is left as it is." },
+  too_long: { tone: "review", mark: "!", label: "Too long", text: "The answer is longer than a cell can hold. It is not cut short." },
+  bad_character: { tone: "review", mark: "!", label: "Cannot be stored", text: "The answer has a character a workbook cannot carry." },
+};
+
+/** Why a cell is left empty, in words. `detail` is what the API adds (a dropdown's values). */
+export function emptyReason(reason: string, detail: string): { tone: Tone; mark: string; label: string; text: string } {
+  if (reason === "dropdown") {
+    const values = detail ? ` It accepts: ${detail}.` : " Its values could not be read.";
+    return { tone: "review", mark: "!", label: "Dropdown", text: `The cell is a dropdown and the answer is not one of its values.${values}` };
+  }
+  return EMPTY_REASONS[reason] ?? { tone: "review", mark: "!", label: "Left empty", text: reason.replaceAll("_", " ") };
+}

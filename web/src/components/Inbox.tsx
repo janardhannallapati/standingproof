@@ -15,7 +15,7 @@ import {
   getRun,
   getRunQuestions,
 } from "@/lib/api";
-import { GROUP_ORDER, groupOf } from "@/lib/labels";
+import { GROUP_ORDER, allDecided, groupOf } from "@/lib/labels";
 import { useRunEvents } from "@/lib/useRunEvents";
 
 import { Button } from "./Button";
@@ -194,7 +194,14 @@ export function Inbox({ run: firstRun, questions: firstQuestions, filename, even
 
   return (
     <div className="flex min-h-full flex-col">
-      <RunHeader run={run} filename={filename} live={live} needs={needsCount} ready={readyCount} />
+      <RunHeader
+        run={run}
+        filename={filename}
+        live={live}
+        needs={needsCount}
+        ready={readyCount}
+        fileHref={allDecided(questions) ? `/runs/${run.id}/file` : null}
+      />
       <main className="grid flex-1 md:grid-cols-[400px_1fr]">
         <div className={`border-line md:block md:border-r ${showDetail ? "hidden" : ""}`}>
           <QuestionList

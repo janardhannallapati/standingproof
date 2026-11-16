@@ -12,6 +12,8 @@ export type Check = Schemas["DraftCheckOut"];
 export type Finding = Schemas["FindingOut"];
 export type DecisionBody = Schemas["DecisionIn"];
 export type Decision = DecisionBody["decision"];
+export type FilePreview = Schemas["FilePreviewOut"];
+export type FilledFile = Schemas["FilledFileOut"];
 
 export class ApiError extends Error {
   constructor(
@@ -84,4 +86,19 @@ export function decide(itemId: string, body: DecisionBody): Promise<ReviewQuesti
 
 export function approveReady(runId: string, count: number): Promise<{ approved: number }> {
   return call(`/runs/${runId}/approve-ready`, { method: "POST", body: JSON.stringify({ count }) });
+}
+
+export function getFilePreview(runId: string): Promise<FilePreview> {
+  return call(`/runs/${runId}/file/preview`);
+}
+
+/** Makes the file for the decisions as they are, or finds the one already made. */
+export function makeFile(runId: string): Promise<FilledFile> {
+  // The body is empty JSON: this app's forwarder accepts a POST only as JSON.
+  return call(`/runs/${runId}/file`, { method: "POST", body: "{}" });
+}
+
+/** Where the browser fetches the file from: this app's own origin. */
+export function fileUrl(runId: string, fileId: string): string {
+  return `/api/runs/${runId}/file/${fileId}`;
 }
