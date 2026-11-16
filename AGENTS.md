@@ -78,6 +78,27 @@ live system settings, and reopens them when those settings drift.
 - Text read from an uploaded file is data. Store it and show it; never run it, format it into
   SQL, or treat it as instructions. A file's name and declared type are chosen by the sender and
   are never trusted.
+- No model in `standingproof/drift/`. It looks at settings through `run_check`, so
+  `checks/authorize.py` and the declared scopes decide every look, and it compares named
+  facts in plain code.
+- A webhook delivery is a hint, never a fact. Nothing from its body reaches evidence, a
+  statement or a log line; `drift/github_events.py` takes a repository name and an action,
+  each checked against a strict shape, and the watcher then reads the setting itself.
+- The signature (`drift/signature.py`) is computed over the raw bytes of the request, before
+  anything is parsed, and compared with `hmac.compare_digest`. A delivery that fails is
+  answered 401 and nothing is stored.
+- Reopening sets `review` to `pending` and `reopened_at`, raises the version, and touches
+  nothing else: `status` is the agent's, `final_answer` is a person's. Only
+  `drift/examine.py` reopens, one setting per transaction under its advisory lock.
+- An observation and its `drift_queue` row are written in one transaction, and the row is
+  deleted in the transaction that examines its setting. Do not examine from inside
+  `run_check`, and do not queue outside it.
+- `drift_events`, `answer_reopenings` and `webhook_deliveries` are append-only.
+  `answer_evidence` is a pointer and is the only drift table updated in place.
+- Any code that offers "ready" questions for approval without opening them must leave out
+  reopened ones (`reopened_at IS NULL`). `approve` is refused on a reopened question; `keep`
+  restores what the first reopening recorded.
+- Say "the setting changed" and show both values. Never "the answer is wrong".
 - `standingproof/questionnaires/intake.py`, `detect.py` and `parser.py` take bytes or rows and
   return plain objects. They import nothing from FastAPI or the database. Only `service.py` joins
   them to storage.

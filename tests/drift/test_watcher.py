@@ -252,3 +252,49 @@ def test_the_loop_survives_a_pass_that_fails_and_stops_when_told(wf: Db) -> None
 
     assert passes >= 2
     assert item_row(wf, scene.item).review == "pending"
+
+
+def test_the_process_announces_a_reopening_on_the_runs_channel_and_stops_on_a_signal(
+    wf: Db, migrated_postgres_url: str, redis_url: str, monkeypatch: Any
+) -> None:
+    import os
+    import signal
+
+    from pydantic import SecretStr
+    from redis.asyncio import Redis
+
+    from standingproof.drift import __main__ as process
+    from standingproof.workflow.events import CHANGED, channel
+
+    scene = Scene(wf, drift_poll_seconds=0.01)
+    scene.github.reviews = None
+    scene.deliver()
+    settings = scene.settings.model_copy(
+        update={
+            "database_url": SecretStr(migrated_postgres_url),
+            "redis_url": SecretStr(redis_url),
+        }
+    )
+    monkeypatch.setattr(process, "build_backends", lambda _: scene.github.backends())
+
+    async def run_until_announced() -> list[bytes]:
+        listener = Redis.from_url(redis_url)
+        heard: list[bytes] = []
+        try:
+            async with listener.pubsub() as pubsub:
+                await pubsub.subscribe(channel(scene.run_id))
+                task = asyncio.create_task(process.serve(settings))
+                for _ in range(500):
+                    message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.02)
+                    if message:
+                        heard.append(message["data"])
+                        break
+                # The way a container is stopped.
+                os.kill(os.getpid(), signal.SIGTERM)
+                await asyncio.wait_for(task, timeout=5)
+        finally:
+            await listener.aclose()
+        return heard
+
+    assert wf.run(run_until_announced()) == [CHANGED.encode()]
+    assert item_row(wf, scene.item).review == "pending"

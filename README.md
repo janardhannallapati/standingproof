@@ -4,8 +4,9 @@ Answers security questionnaires from approved sources, verifies each answer agai
 settings where it can, and reopens answers already sent when those settings change.
 
 > **Status:** in development. What works today: upload a questionnaire, draft answers from
-> your approved library, check them against live settings, review them, and get your
-> spreadsheet back with the approved answers in it. Not ready for production: there is no
+> your approved library, check them against live settings, review them, get your
+> spreadsheet back with the approved answers in it, and have an answer reopened when the
+> setting it rests on changes. Not ready for production: there is no
 > sign-in yet, and a deployment with `SP_ENVIRONMENT=prod` refuses every request.
 
 ## Run it
@@ -309,6 +310,50 @@ Limits: `.xlsx` only. The tests read every result back with a spreadsheet librar
 compare it with the upload; no test opens the result in Excel. The sample results were
 opened once by hand in LibreOffice 25.2. A dropdown whose values are in other cells, not
 typed into the rule, cannot be read and is left empty.
+
+## When a setting changes afterwards
+
+An answer that cites a live check rests on what that check saw. The `watcher` service looks
+at each such setting again, and when it reads differently the answer goes back to a
+reviewer: the question shows the value it was approved against, the value now, and the
+customers a file with that wording was recorded as sent to.
+
+```sh
+curl localhost:8000/changes               # each change, with the answers it reopened
+curl localhost:8000/checks/watched        # the settings answers rest on, and the last look
+```
+
+- **When it looks.** Every setting an answer rests on, once a day
+  (`SP_RECHECK_SECONDS`), and an hour after a look that could not reach the system. For
+  GitHub, also within seconds of a webhook delivery.
+- **What reopening does.** The question waits for a decision again and no file can be made
+  until it has one. Its approved wording, the files already made and the sent records are
+  not changed. A reviewer keeps the answer, edits it, withdraws it, or sends it back to the
+  agent. `approve` is refused on a reopened question: use `keep`.
+- **What counts.** The named facts of the check differ. A look that failed says nothing
+  and reopens nothing. Answers that are approved (sent or not) and drafts still waiting are
+  covered; rejected and unanswered questions are not.
+
+To have GitHub tell the product at once, add a webhook to the organisation or repository:
+payload URL `https://<your-host>/webhooks/github`, content type `application/json`, a
+secret, and the events `branch_protection_rule` and `security_and_analysis`. Put the same secret in `SP_GITHUB_WEBHOOK_SECRET`.
+
+- A delivery is believed for one thing: that its sender holds the secret
+  (`X-Hub-Signature-256`, HMAC-SHA256 over the body, compared in constant time). What it
+  says is only where to look. The watcher then reads the setting itself with the read-only
+  credential, and only that reading is ever shown as a fact.
+- A delivery that arrives twice is recorded once. Several for one setting are answered by
+  one look, and a setting is looked at for webhooks at most once in
+  `SP_WEBHOOK_MIN_GAP_SECONDS` (30).
+- With no secret configured the route answers 404. The payload is not stored: only the
+  delivery id, the event, its action and the repository name.
+
+Limits: an answer is linked to a setting only through the check it cites; an answer whose
+wording depends on a setting it never cited is not noticed. Organisation two-factor and all
+AWS settings have no webhook and rely on the daily look. Branch protection set through
+rulesets is not read. Changes to policy documents and library answers do not reopen
+anything yet. Nobody is notified outside the product: the runs list and the Changes page
+show it. Nothing alerts when the watcher itself is stopped.
 
 ## Try the agent on one question
 

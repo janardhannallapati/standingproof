@@ -4,6 +4,29 @@
  */
 
 export interface paths {
+    "/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Changes
+         * @description The newest changes seen to live settings, with the answers each one reopened.
+         *
+         *     Read-only: an answer is decided on its own question, one at a time. The statements are
+         *     built by this product from named facts; no text from the remote system is in them.
+         */
+        get: operations["list_changes_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/checks": {
         parameters: {
             query?: never;
@@ -13,6 +36,26 @@ export interface paths {
         };
         /** List Checks */
         get: operations["list_checks_checks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/checks/watched": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Watched
+         * @description The settings answers rest on, and how the last look at each went.
+         */
+        get: operations["list_watched_checks_watched_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -534,6 +577,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/github": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Github Delivery
+         * @description Record that GitHub says something changed. Answers at once; nothing is looked at here.
+         *
+         *     Set the webhook's content type to `application/json` and give it the secret in
+         *     `SP_GITHUB_WEBHOOK_SECRET`. A delivery that arrives twice is recorded once.
+         */
+        post: operations["github_delivery_webhooks_github_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -609,6 +675,45 @@ export interface components {
             /** File */
             file: string;
         };
+        /** ChangeList */
+        ChangeList: {
+            /** Items */
+            items: components["schemas"]["ChangeOut"][];
+        };
+        /** ChangeOut */
+        ChangeOut: {
+            /** Answers */
+            answers: components["schemas"]["ReopenedAnswerOut"][];
+            /** Changes */
+            changes: components["schemas"]["ChangedFactOut"][];
+            /** Check Name */
+            check_name: string;
+            /**
+             * Detected At
+             * Format: date-time
+             */
+            detected_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            now: components["schemas"]["ObservationOut"];
+            /** Scope */
+            scope: string;
+            /** Trigger */
+            trigger: string;
+            was: components["schemas"]["ObservationOut"] | null;
+        };
+        /** ChangedFactOut */
+        ChangedFactOut: {
+            /** Fact */
+            fact: string;
+            /** Now */
+            now: boolean | number | string | null;
+            /** Was */
+            was: boolean | number | string | null;
+        };
         /** CheckList */
         CheckList: {
             /** Checks */
@@ -665,9 +770,17 @@ export interface components {
              * Decision
              * @enum {string}
              */
-            decision: "approve" | "edit" | "reject" | "redraft";
+            decision: "approve" | "edit" | "reject" | "redraft" | "keep";
             /** Version */
             version: number;
+        };
+        /** DeliveryOut */
+        DeliveryOut: {
+            /**
+             * Accepted
+             * @default true
+             */
+            accepted: boolean;
         };
         /**
          * DraftCheckOut
@@ -837,6 +950,16 @@ export interface components {
             /** Sheet */
             sheet: string;
         };
+        /** ObservationOut */
+        ObservationOut: {
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Statement */
+            statement: string;
+        };
         /** PolicyOut */
         PolicyOut: {
             /** Chunk Count */
@@ -911,6 +1034,46 @@ export interface components {
              */
             status: "ready" | "not_ready";
         };
+        /** ReopenedAnswerOut */
+        ReopenedAnswerOut: {
+            /** Filename */
+            filename: string;
+            /** Position */
+            position: number;
+            /** Question */
+            question: string;
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Run Question Id
+             * Format: uuid
+             */
+            run_question_id: string;
+            /** Sent To */
+            sent_to: components["schemas"]["SentToOut"][];
+            /** Waiting */
+            waiting: boolean;
+        };
+        /**
+         * ReopeningOut
+         * @description Why a question is waiting for a decision again.
+         */
+        ReopeningOut: {
+            /**
+             * Reopened At
+             * Format: date-time
+             */
+            reopened_at: string;
+            /** Sent To */
+            sent_to: components["schemas"]["SentToOut"][];
+            /** Settings */
+            settings: components["schemas"]["SettingChangeOut"][];
+            /** Was Review */
+            was_review: string | null;
+        };
         /** ReviewQuestionOut */
         ReviewQuestionOut: {
             /** Answer */
@@ -937,6 +1100,7 @@ export interface components {
             reason: string | null;
             /** Redrafts */
             redrafts: number;
+            reopening?: components["schemas"]["ReopeningOut"] | null;
             /** Review */
             review: ("pending" | "approved" | "edited" | "rejected" | "redrafting" | "expired") | null;
             /**
@@ -992,6 +1156,11 @@ export interface components {
              * Format: uuid
              */
             questionnaire_id: string;
+            /**
+             * Reopened
+             * @default 0
+             */
+            reopened: number;
             /**
              * Status
              * @enum {string}
@@ -1054,6 +1223,11 @@ export interface components {
             question: string;
             /** Reason */
             reason: string | null;
+            /**
+             * Reopened
+             * @default false
+             */
+            reopened: boolean;
             /** Review */
             review: string | null;
             /**
@@ -1126,12 +1300,40 @@ export interface components {
              */
             id: string;
             /**
+             * Reopened
+             * @default 0
+             */
+            reopened: number;
+            /**
              * Sent At
              * Format: date-time
              */
             sent_at: string;
             /** Sent By */
             sent_by: string;
+        };
+        /** SentToOut */
+        SentToOut: {
+            /** Customer */
+            customer: string;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+        };
+        /** SettingChangeOut */
+        SettingChangeOut: {
+            /** Changes */
+            changes: components["schemas"]["ChangedFactOut"][];
+            /** Check Name */
+            check_name: string;
+            now: components["schemas"]["ObservationOut"];
+            /** Scope */
+            scope: string;
+            /** Trigger */
+            trigger: string;
+            was: components["schemas"]["ObservationOut"] | null;
         };
         /** SheetPreviewOut */
         SheetPreviewOut: {
@@ -1172,6 +1374,29 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** WatchedList */
+        WatchedList: {
+            /** Items */
+            items: components["schemas"]["WatchedOut"][];
+        };
+        /** WatchedOut */
+        WatchedOut: {
+            /** Answers */
+            answers: number;
+            /** Check Name */
+            check_name: string;
+            /**
+             * Last Looked At
+             * Format: date-time
+             */
+            last_looked_at: string;
+            /** Last Observed At */
+            last_observed_at: string | null;
+            /** Last Status */
+            last_status: string;
+            /** Scope */
+            scope: string;
+        };
         /** WrittenCellOut */
         WrittenCellOut: {
             /** Cell */
@@ -1198,6 +1423,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_changes_changes_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_checks_checks_get: {
         parameters: {
             query?: never;
@@ -1214,6 +1470,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckList"];
+                };
+            };
+        };
+    };
+    list_watched_checks_watched_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchedList"];
                 };
             };
         };
@@ -2299,6 +2575,67 @@ export interface operations {
             };
             /** @description No such source. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    github_delivery_webhooks_github_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Hub-Signature-256"?: string | null;
+                "X-GitHub-Delivery"?: string;
+                "X-GitHub-Event"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryOut"];
+                };
+            };
+            /** @description The delivery or event header is not in GitHub's form. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The signature does not match. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No webhook secret is configured for this deployment. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The delivery is too large. */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };

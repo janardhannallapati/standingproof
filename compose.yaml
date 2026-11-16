@@ -17,6 +17,8 @@ x-app-env: &app_env
   SP_AWS_REGION: ${SP_AWS_REGION:-us-east-1}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  # The secret GitHub signs webhook deliveries with. Unset: /webhooks/github answers 404.
+  SP_GITHUB_WEBHOOK_SECRET: ${SP_GITHUB_WEBHOOK_SECRET:-}
   # Web pages from these origins may open the live connection (a WebSocket is not covered
   # by CORS, so the API checks this list itself).
   SP_ALLOWED_ORIGINS: ${SP_ALLOWED_ORIGINS:-http://localhost:${SP_WEB_PORT:-3000},http://127.0.0.1:${SP_WEB_PORT:-3000}}
@@ -90,6 +92,19 @@ services:
     healthcheck: { disable: true }
     # Long enough for questions in progress to save their current step (see SIGTERM).
     stop_grace_period: 40s
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  # Looks at the live settings answers rest on, when GitHub says one changed and once a
+  # day otherwise, and puts an answer back in front of a reviewer when its setting reads
+  # differently. It never calls a model, so it is not given the model key.
+  watcher:
+    build: .
+    command: ["python", "-m", "standingproof.drift"]
+    environment: *app_env
+    <<: *app_hardening
+    healthcheck: { disable: true }
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
