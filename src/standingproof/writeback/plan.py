@@ -13,7 +13,8 @@ from standingproof.writeback.sheetxml import SheetIndex, cell_position
 # The most characters one cell can hold.
 MAX_CELL_CHARS = 32_767
 _WRITTEN_REVIEWS = ("approved", "edited")
-_CLOSED_REVIEWS = ("rejected", "expired")
+# "unanswered": the question failed or never started, so nobody could decide it.
+_CLOSED_REVIEWS = ("rejected", "expired", "unanswered")
 # Characters below a space that XML can carry.
 _ALLOWED_CONTROL = "\t\n\r"
 _HEX = "0123456789abcdefABCDEF"

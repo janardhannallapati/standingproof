@@ -67,6 +67,9 @@ def _escaped(wording: str) -> str:
 def _cell(prefix: str, ref: str, style: str | None, wording: str) -> bytes:
     """One cell holding text. An inline string: the shared string table is not touched,
     and the text can never be read as a formula."""
+    cell_position(ref)  # raises unless it is a real cell: it goes into an attribute
+    if style is not None and not (style.isascii() and style.isdigit()):
+        raise WritebackError("a cell's style is not a number")
     styled = f' s="{style}"' if style is not None else ""
     return (
         f'<{prefix}c r="{ref}"{styled} t="inlineStr"><{prefix}is>'

@@ -391,3 +391,29 @@ class DraftCheck(Base):
     model: Mapped[str | None] = mapped_column(String(100))
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), server_default=_ZERO)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+
+
+class FilledFile(Base):
+    """The uploaded workbook with approved answers written into it. Append-only.
+
+    `key` names the exact input: the upload, every question's decision and wording, and the
+    writer's version. The same input is written once; asking again finds this row. A changed
+    decision is a different key and a new row, and the earlier file stays.
+    """
+
+    __tablename__ = "filled_files"
+    __table_args__ = (UniqueConstraint("run_id", "key", name="uq_filled_files_run_key"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("runs.id", ondelete="CASCADE"))
+    key: Mapped[str] = mapped_column(String(64))
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    # [{position, sheet, cell}] and [{position, sheet, cell, reason, detail}].
+    written: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    left_empty: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    writer_version: Mapped[int] = mapped_column(Integer)
+    created_by: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)

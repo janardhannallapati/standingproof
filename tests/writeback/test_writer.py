@@ -242,3 +242,20 @@ def test_the_check_fails_when_the_cell_was_not_written_at_all() -> None:
 
     with pytest.raises(NotIdenticalError, match="should have been written"):
         verify_unchanged(upload, upload, [write("C2", "Yes.")])
+
+
+def test_an_empty_cell_with_a_closing_tag_is_replaced_whole() -> None:
+    before, after = b'</row><row r="3"', b'<c r="C2" s="0"></c></row><row r="3"'
+    upload = with_sheet(simple(QUESTIONS), lambda xml: xml.replace(before, after, 1))
+    writes = [write("C2", "Yes.")]
+
+    filled = write_cells(upload, writes)
+
+    assert member(filled, SHEET).count(b"</c></c>") == 0
+    assert value(filled, "C2") == "Yes."
+    verify_unchanged(upload, filled, writes)
+
+
+def test_a_cell_reference_that_is_not_a_cell_is_never_written() -> None:
+    with pytest.raises(Exception, match="cell reference"):
+        write_cells(simple(QUESTIONS), [write('C2" t="e', "Yes.")])

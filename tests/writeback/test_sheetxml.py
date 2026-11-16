@@ -198,3 +198,18 @@ def test_a_long_sheet_is_read_in_time_proportional_to_its_size() -> None:
     assert len(index.rows) == 60_000
     # Copying the file once per row (the defect) took minutes at this size.
     assert time.perf_counter() - began < 10
+
+
+def test_an_empty_cell_written_with_a_closing_tag_ends_after_that_tag() -> None:
+    xml = sheet(b'<row r="1"><c r="A1" s="2"></c><c r="B1"/></row>')
+
+    first, second = scan(xml).rows[0].cells
+
+    assert xml[first.start : first.end] == b'<c r="A1" s="2"></c>'
+    assert first.empty
+    assert xml[second.start : second.end] == b'<c r="B1"/>'
+
+
+def test_a_style_that_is_not_a_plain_number_is_refused() -> None:
+    with pytest.raises(UnsafeXmlError):
+        scan(sheet(b'<row r="1"><c r="A1" s="1&quot; t=&quot;e"/></row>'))

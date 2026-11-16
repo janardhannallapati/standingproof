@@ -212,7 +212,11 @@ class _Reader:
             )
         elif local == "c" and self.row is not None and "r" in attributes:
             cell_position(attributes["r"])  # refused here if it is not a real cell
-            self.cell = Cell(ref=attributes["r"], start=position, style=attributes.get("s"))
+            style = attributes.get("s")
+            # The style is copied into the cell we write, so it must be a number.
+            if style is not None and (not style.isascii() or not style.isdigit()):
+                raise UnsafeXmlError("a cell's style is not a number")
+            self.cell = Cell(ref=attributes["r"], start=position, style=style)
         elif local in ("v", "f", "is") and self.cell is not None:
             self.cell.empty = False
         elif local == "mergeCell" and "ref" in attributes:
@@ -249,7 +253,10 @@ class _Reader:
             self.row = None
         elif local == "c" and self.cell is not None and self.row is not None:
             # A self-closing element's end is reported at the position just past it.
-            self_closing = _tag_end(self.xml, self.cell.start) == position
+            # Self-closing only if the opening tag itself ends in `/>`. An empty cell
+            # written as `<c></c>` has its end reported at the same place and is not.
+            tag_end = _tag_end(self.xml, self.cell.start)
+            self_closing = tag_end == position and self.ends_empty(tag_end)
             self.cell.end = self.closed(position, self_closing)
             self.row.cells.append(self.cell)
             self.cell = None

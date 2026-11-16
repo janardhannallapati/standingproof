@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from standingproof import __version__
-from standingproof.api import checks, events, health, library, questionnaires, review, runs
+from standingproof.api import checks, events, files, health, library, questionnaires, review, runs
 from standingproof.api.body_limit import BodyLimitMiddleware
 from standingproof.checks.service import CheckBackends, build_backends
 from standingproof.config import Settings, get_settings
@@ -64,5 +64,6 @@ def create_app(
     app.include_router(checks.router)
     app.include_router(runs.router)
     app.include_router(review.router)
+    app.include_router(files.router)
     app.include_router(events.router)
     return app

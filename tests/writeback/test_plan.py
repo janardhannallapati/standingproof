@@ -43,6 +43,7 @@ def test_an_approved_and_an_edited_answer_are_written_to_their_cells() -> None:
 def test_a_rejected_or_expired_question_is_left_empty_with_that_reason() -> None:
     assert skipped(item(review="rejected", wording=None)).reason == "rejected"
     assert skipped(item(review="expired", wording=None)).reason == "expired"
+    assert skipped(item(review="unanswered", wording=None)).reason == "unanswered"
 
 
 def test_a_question_nobody_decided_is_never_written() -> None:
