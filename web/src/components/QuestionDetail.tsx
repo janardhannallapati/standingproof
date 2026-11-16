@@ -23,7 +23,9 @@ type Props = {
 function why(question: ReviewQuestion): { fine: boolean; text: string } {
   const group = groupOf(question);
   const checked = checkLine(question.check);
-  if (group === "needs" || group === "unanswered") {
+  // What the agent concluded, not what a person then decided: a draft the checker disputed
+  // keeps its warning after it has been edited, approved or rejected.
+  if (group === "unanswered" || question.status === "needs_review") {
     const sentByChecker = question.reason === "checker_disagrees" || question.reason === "not_checked";
     const reason = sentByChecker && checked ? checked : `${reasonText(question.reason)}.`;
     return { fine: false, text: reason };

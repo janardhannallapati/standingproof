@@ -262,3 +262,26 @@ describe("the drafting agent's note", () => {
     expect(screen.queryByText("The drafting agent's note")).toBeNull();
   });
 });
+
+describe("the line under a question that has been decided", () => {
+  it("stays a warning when the checker disputed the draft, whatever was decided", () => {
+    open(flagged({ review: "edited", final_answer: "Yes. MFA is required for all staff." }));
+
+    const line = screen.getByText(/^The checker disagrees/).closest("p");
+    expect(line).toHaveClass("text-review");
+    expect(line).toHaveTextContent(/^!/);
+    expect(screen.queryByText(/^Drafted from/)).toBeNull();
+  });
+
+  it("stays a warning when there was no approved source and the question was rejected", () => {
+    open(flagged({ reason: "no_approved_source", answer: null, check: null, review: "rejected" }));
+
+    expect(screen.getByText("No approved source.").closest("p")).toHaveClass("text-review");
+  });
+
+  it("is still the green line for a ready draft that was approved", () => {
+    open(flagged({ status: "ready", reason: null, review: "approved", check: check({ outcome: "agrees", findings: [] }) }));
+
+    expect(screen.getByText(/^Drafted from 1 cited source\./).closest("p")).toHaveClass("text-ready");
+  });
+});
