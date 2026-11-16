@@ -10,7 +10,7 @@ from evals import __main__ as cli
 from evals.cases import CheckerSet, DrafterSet, load_checker, load_drafter
 from evals.fingerprint import Config, of_checker_case, of_drafter_case
 from evals.plan import MANIFEST
-from evals.transcript import looks_secret, read_all, write
+from evals.transcript import holds_secret, looks_secret, read_all, write
 from tests.eval.runs import (
     AGREES,
     EVIDENCE,
@@ -250,7 +250,7 @@ def test_no_committed_recording_holds_anything_shaped_like_a_key() -> None:
     from evals.transcript import RECORDINGS
 
     for path in RECORDINGS.glob("*/*.json"):
-        assert not looks_secret(path.read_text()), path.name
+        assert not holds_secret(json.loads(path.read_text())), path.name
 
 
 @pytest.mark.parametrize("ceiling", ["nan", "inf", "0", "-1", "500"])
@@ -339,7 +339,7 @@ def test_every_kind_of_private_key_header_is_recognised(text: str) -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        json.dumps({"a": "see https://vault.internal:8200\nsecurity@harborlight.example"}),
+        "see https://vault.internal:8200\nsecurity@harborlight.example",
         "policy-pa-ssword-rotation-policy-2024.md",
         "THEQUICKBROWNFOXAKIAJUMPSOVERTHELAZYDOGAGAIN",
         "https://example.com/a:b@c",
@@ -348,6 +348,29 @@ def test_every_kind_of_private_key_header_is_recognised(text: str) -> None:
 )
 def test_ordinary_text_is_not_taken_for_a_credential(text: str) -> None:
     assert not looks_secret(text)
+
+
+@pytest.mark.parametrize(
+    "note",
+    [
+        "the key is:\nAKIAIOSFODNN7EXAMPLE",
+        "the key is:\tAKIAIOSFODNN7EXAMPLE",
+        "the key is \u2014AKIAIOSFODNN7EXAMPLE",
+        "AWS_KEY_AKIAIOSFODNN7EXAMPLE",
+        "voyage:\npa-abcd-efghijklmnopqrstuvwx",
+        "redis://:hunter2@cache:6379/0",
+        "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+    ],
+)
+def test_a_key_is_found_wherever_it_sits_in_a_recording(note: str, tmp_path: Path) -> None:
+    run = drafted("d-backups", "Daily.", [LIBRARY])
+    assert run.final_draft is not None
+    leaked = run.model_copy(
+        update={"final_draft": run.final_draft.model_copy(update={"note": note})}
+    )
+
+    with pytest.raises(ValueError, match="shaped like a credential"):
+        write(leaked, tmp_path)
 
 
 def test_the_client_does_not_retry_behind_the_meters_back() -> None:
@@ -381,3 +404,17 @@ def test_nothing_else_the_eval_commits_holds_anything_shaped_like_a_key() -> Non
     for path in (RECORDINGS / MANIFEST, cli.REPORT, cli.BASELINE):
         if path.exists():
             assert not looks_secret(path.read_text()), path.name
+
+
+@pytest.mark.parametrize("which", ["drafter-docs_only", "checker-cheaper"])
+def test_accept_refuses_a_comparison_whose_check_did_not_finish(repo: Repo, which: str) -> None:
+    repo.record()
+    [path] = list((repo.root / which).glob("*backups.1.json")) or list(
+        (repo.root / which).glob("*.1.json")
+    )
+    data = json.loads(path.read_text())
+    data["turn" if which.startswith("checker") else "check_turn"] = None
+    path.write_text(json.dumps(data))
+
+    assert repo.run("accept", "--note", "x") == 1
+    assert "did not finish" in repo.said

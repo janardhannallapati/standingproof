@@ -1,0 +1,93 @@
+{
+ "kind": "drafter",
+ "case": "e-data-residency",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "12b7304ce2780028"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text on data residency, hosting locations, or keeping customer data only in Switzerland. Two searches came back with nothing on this. One loosely related approved answer (answer:4c8c36a5-554d-4e64-80d6-25825434bb4b) says production backups are 'stored in a second region'. It doesn't say which regions are used, so it can't confirm Swiss-only storage. It may even mean data is held in more than one region. Please send this question to the security or infrastructure owner (security@harborlight.example) for an approved answer on where data is hosted and whether customers can choose the region."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "data residency Switzerland data centre location"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:2675e227-5fb0-42a4-ac26-c67ac5d336f3",
+    "answer:fccb23ec-e237-4777-93a9-11a5d95e8965",
+    "answer:bf24ca45-fdd5-484b-b87f-1a7099a7d811"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "where is customer data hosted region residency"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:bf24ca45-fdd5-484b-b87f-1a7099a7d811",
+    "answer:2675e227-5fb0-42a4-ac26-c67ac5d336f3",
+    "answer:4c8c36a5-554d-4e64-80d6-25825434bb4b",
+    "policy:2852fa89-5718-4aa0-a23f-466768dfb664",
+    "policy:ef6328cf-1eac-4c79-a78d-17e88a5db16c"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:2675e227-5fb0-42a4-ac26-c67ac5d336f3": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer.",
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:fccb23ec-e237-4777-93a9-11a5d95e8965": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:bf24ca45-fdd5-484b-b87f-1a7099a7d811": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service.",
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "answer:4c8c36a5-554d-4e64-80d6-25825434bb4b": [
+   "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region."
+  ],
+  "policy:2852fa89-5718-4aa0-a23f-466768dfb664": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "policy:ef6328cf-1eac-4c79-a78d-17e88a5db16c": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 2027,
+  "output_tokens": 394,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0172024,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

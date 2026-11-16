@@ -1,0 +1,80 @@
+{
+ "kind": "drafter",
+ "case": "c-s3-rate-limited",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "638a9965b7a1609f"
+ },
+ "handoff": "repeated_call",
+ "final_stop_reason": "tool_use",
+ "final_draft": null,
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "S3 public access block"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:93bf8cd8-0a11-4659-a524-187a929a9480",
+    "policy:64824187-d408-41f7-94fa-55f2f7576348",
+    "policy:80f18094-281b-4ce0-a86d-faa2057b8f4d",
+    "answer:258c39a8-487f-40c9-8f39-6adac3fbde8c",
+    "answer:0588a460-ead2-4634-b3d6-45be3c92dd21"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "aws.s3_public_access_block",
+    "scope": "111122223333"
+   },
+   "is_error": false,
+   "source_ids": []
+  }
+ ],
+ "seen_sources": {
+  "policy:93bf8cd8-0a11-4659-a524-187a929a9480": [
+   "Access is removed within 24 hours of a person's last working day."
+  ],
+  "policy:64824187-d408-41f7-94fa-55f2f7576348": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "policy:80f18094-281b-4ce0-a86d-faa2057b8f4d": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:258c39a8-487f-40c9-8f39-6adac3fbde8c": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:0588a460-ead2-4634-b3d6-45be3c92dd21": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 1023,
+  "output_tokens": 237,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 4048
+ },
+ "cost_usd": 0.0096416,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

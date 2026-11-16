@@ -1,0 +1,93 @@
+{
+ "kind": "drafter",
+ "case": "e-bug-bounty",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "d39b81fd2548563e"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text about a bug bounty or vulnerability disclosure programme. I tried two searches: 'bug bounty programme' and 'vulnerability disclosure policy external researchers'. The closest matches cover related topics but don't answer the question. One is weekly vulnerability scanning with fix deadlines (answer:896eb045-d61f-4af2-976b-f4c55692f890). The other is an annual independent penetration test (answer:41b3dd68-5f31-49be-80d5-ed85dea1a66e). Neither says whether a public bug bounty exists, so I haven't stated it either way. The security owner (security@harborlight.example) needs to confirm whether there is a bug bounty or disclosure programme and provide approved wording."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "bug bounty programme"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:896eb045-d61f-4af2-976b-f4c55692f890",
+    "answer:41b3dd68-5f31-49be-80d5-ed85dea1a66e",
+    "answer:eaad4cac-1a3c-44a8-821b-80b76f1a0a85"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "vulnerability disclosure policy external researchers report security issues"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:896eb045-d61f-4af2-976b-f4c55692f890",
+    "answer:41b3dd68-5f31-49be-80d5-ed85dea1a66e",
+    "answer:d3e8819e-646c-4060-a38f-713e8b88db6e",
+    "answer:a24b525b-8a33-4835-a1b8-b0f72070bc08",
+    "policy:0250961d-0e7f-4754-aa3f-a31999071d36"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:896eb045-d61f-4af2-976b-f4c55692f890": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days.",
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:41b3dd68-5f31-49be-80d5-ed85dea1a66e": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA.",
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:eaad4cac-1a3c-44a8-821b-80b76f1a0a85": [
+   "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
+  ],
+  "answer:d3e8819e-646c-4060-a38f-713e8b88db6e": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "answer:a24b525b-8a33-4835-a1b8-b0f72070bc08": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "policy:0250961d-0e7f-4754-aa3f-a31999071d36": [
+   "Access is removed within 24 hours of a person's last working day."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 2035,
+  "output_tokens": 409,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0175344,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

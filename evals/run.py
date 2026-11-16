@@ -36,6 +36,7 @@ from evals.fingerprint import (
     of_checker_case,
     of_drafter_case,
 )
+from evals.graders import grade_check, grade_draft
 from evals.plan import Manifest, Plan
 from evals.transcript import (
     MANIFEST,
@@ -111,9 +112,9 @@ class _LastTurn:
         self._meter.before(DRAFT_CALL_AT_MOST)
         try:
             self.last = await self._inner.complete(**request)
-        except ModelCallError:
-            # A request that failed on our side may still be billed. Count the most it
-            # could have cost: the ceiling must err towards stopping early.
+        except BaseException:
+            # A request that failed on our side, for whatever reason, may still be billed.
+            # Count the most it could have cost: the ceiling must err towards stopping early.
             self._meter.spent += DRAFT_CALL_AT_MOST
             raise
         self._meter.add(self.last.model, self.last.usage)
@@ -133,7 +134,7 @@ class _LastCheck:
         self.asked = True
         try:
             self.turn = await self._inner.check(system=system, messages=messages)
-        except ModelCallError:
+        except BaseException:
             self._meter.spent += CHECK_AT_MOST
             raise
         self._meter.add(self.turn.model, self.turn.usage)
@@ -255,13 +256,28 @@ class _Unit:
     at_most: float
     fingerprint: dict[str, str]
     start: Callable[[], Awaitable[Run]]
+    # Whether a stored recording of this case was read by a checker that finished.
+    read: Callable[[dict[str, Any]], bool]
 
     def recorded(self, root: Path) -> bool:
-        """Whether this case already has a recording made from today's inputs."""
+        """Whether this case already has a usable recording made from today's inputs.
+
+        One whose check did not finish is not usable: it measures nothing and the gate
+        refuses it, so it is made again and replaced.
+        """
         path = root / f"{self.kind}-{self.variant}" / f"{self.name}.{self.number}.json"
         if not path.exists():
             return False
-        return bool(json.loads(path.read_text()).get("fingerprint") == self.fingerprint)
+        data = json.loads(path.read_text())
+        return bool(data.get("fingerprint") == self.fingerprint) and self.read(data)
+
+
+def _draft_was_read(case: DrafterCase, data: dict[str, Any]) -> bool:
+    return grade_draft(case, DrafterRun.model_validate(data)).check != "not_checked"
+
+
+def _check_was_read(case: CheckerCase, data: dict[str, Any]) -> bool:
+    return grade_check(case, CheckerRun.model_validate(data)).outcome != "not_checked"
 
 
 def _units(
@@ -295,8 +311,11 @@ def _units(
                 meter,
             )
             today = of_drafter_case(drafts, case, drafter_variant, config)
+            read = partial(_draft_was_read, case)
             units.append(
-                _Unit("drafter", drafter_variant, name, number, DRAFT_CALL_AT_MOST, today, start)
+                _Unit(
+                    "drafter", drafter_variant, name, number, DRAFT_CALL_AT_MOST, today, start, read
+                )
             )
     checker_plan: list[tuple[CheckerVariant, list[tuple[str, int]], CheckerClient]] = [
         ("main", plan.checker, clients.checker),
@@ -314,6 +333,7 @@ def _units(
                     CHECK_AT_MOST,
                     of_checker_case(labelled, checker_variant, config),
                     partial(_check, labelled, number, checker_variant, client, config, meter),
+                    partial(_check_was_read, labelled),
                 )
             )
     return units
@@ -362,20 +382,22 @@ async def run_plan(
                 reused += 1
                 continue
             run: Run | None = None
+            failed = "the model provider could not be reached; this case was not recorded"
+            unreachable = False
             for _attempt in range(2):
                 if not meter.room(unit.at_most):
-                    stopped = full
+                    stopped = f"{failed}, and {full}" if unreachable else full
                     break
                 try:
                     run = await unit.start()
                     break
                 except _CeilingReachedError:
-                    stopped = full
+                    stopped = f"{failed}, and {full}" if unreachable else full
                     break
                 except _ProviderFailedError:
-                    continue
+                    unreachable = True
             else:
-                stopped = "the model provider could not be reached; this case was not recorded"
+                stopped = failed
             if run is None:
                 break
             try:

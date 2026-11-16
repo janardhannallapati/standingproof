@@ -1,0 +1,79 @@
+{
+ "kind": "drafter",
+ "case": "e-iso-27001",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "f1cb8a3814542931"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches (\"ISO 27001 certification certificate number\" and \"information security certifications audits SOC 2 ISO\"). They only returned unrelated entries: the Access Control Policy section on authentication, plus approved answers on penetration testing and encryption in transit. Nothing says whether the company holds ISO 27001 certification, so I haven't drafted an answer either way. The certificate number needs to come from the security owner (security@harborlight.example). If the company is certified, an approved answer should be added that includes the certificate number, the certification body, the scope and the expiry date."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "ISO 27001 certification certificate number"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:02668629-ebbc-4358-8b50-a5bf97457fe1"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "information security certifications audits SOC 2 ISO"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:02668629-ebbc-4358-8b50-a5bf97457fe1",
+    "answer:e4c90c7f-606f-442e-85db-fa796760eb2a",
+    "answer:bfbeaa95-7522-4778-9e3c-5f38548305b3"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:02668629-ebbc-4358-8b50-a5bf97457fe1": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:e4c90c7f-606f-442e-85db-fa796760eb2a": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:bfbeaa95-7522-4778-9e3c-5f38548305b3": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 1134,
+  "output_tokens": 395,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0136504,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

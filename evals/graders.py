@@ -25,6 +25,8 @@ Grade = Literal["right", "safe", "wrong"]
 # itself with (?m), and must then bound what it skips: an unbounded run before the word
 # is tried again from every line and takes quadratic time on text a model wrote.
 FLAGS = re.IGNORECASE
+# One pass: the run is consumed where it starts and is never tried again from inside itself.
+_LINE_LEAD = re.compile(r"(?m)^[^\w\n]+")
 
 # Handoffs the loop decides before, or instead of, reading a final turn.
 _LOOP_STOPS = {
@@ -86,6 +88,9 @@ def _wording(case: DrafterCase, answer: str) -> list[str]:
     """What is wrong with this wording as an answer to the case. Empty when nothing is."""
     if case.expect.outcome == "no_source":
         return ["wording where nothing supports an answer"]
+    # What stands before the first word of a line (indentation, a bullet, a table bar) is
+    # dropped, so "at the start of a line" in a pattern means the first word of the line.
+    answer = _LINE_LEAD.sub("", answer)
     problems = [
         f"missing: {pattern}"
         for pattern in case.expect.must

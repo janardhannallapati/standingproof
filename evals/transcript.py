@@ -84,8 +84,9 @@ def path_of(run: Run, root: Path = RECORDINGS) -> Path:
 
 def write(run: Run, root: Path = RECORDINGS) -> Path:
     path = path_of(run, root)
-    text = json.dumps(run.model_dump(mode="json"), indent=1) + "\n"
-    if looks_secret(text):
+    data = run.model_dump(mode="json")
+    text = json.dumps(data, indent=1) + "\n"
+    if holds_secret(data):
         # These files are committed to a public repository.
         raise SecretShapedError(f"{path.name} holds text shaped like a credential; not written")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,15 +120,33 @@ def read_all(root: Path = RECORDINGS) -> list[Run]:
 # is a net under the real control, which is that a recording is built only from the case,
 # the fake systems and the model's reply. `write` refuses a match and a test scans what is
 # committed.
+#
+# A key id is bounded by "not another capital or digit" and not by a word boundary: an
+# underscore, or the letter that ends an escape, is a word character and would hide it.
 _SECRET = re.compile(
     r"sk-ant-[A-Za-z0-9_-]{8,}|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{30,}"
-    r"|\bA[KS]IA[0-9A-Z]{16}\b|(?<![\w-])pa-[A-Za-z0-9_]{20,}"
-    # A password in a URL. A backslash is excluded so that, in JSON text, an escaped line
-    # break ends the host instead of joining it to an email address on the next line.
-    r"|://[^/\s:@\\]{1,64}:[^/\s:@\\]{1,128}@"
-    r"|-----BEGIN [A-Z ]{0,30}PRIVATE KEY-----"
+    r"|(?<![A-Z0-9])A[KS]IA[0-9A-Z]{16}(?![A-Z0-9])"
+    r"|(?<![A-Za-z0-9-])pa-[A-Za-z0-9_-]{20,}"
+    r"|://[^/\s:@]{0,64}:[^/\s:@]{1,128}@"
+    r"|-----BEGIN [A-Z ]{0,40}PRIVATE KEY(?: BLOCK)?-----"
 )
 
 
 def looks_secret(text: str) -> bool:
     return _SECRET.search(text) is not None
+
+
+def holds_secret(value: object) -> bool:
+    """Whether any string inside a JSON value is shaped like a credential.
+
+    The strings are looked at as themselves, not as JSON text. In JSON text a line break is
+    a backslash and the letter n, and a pattern that looks at what stands before a key
+    would see that letter instead of the break.
+    """
+    if isinstance(value, str):
+        return looks_secret(value)
+    if isinstance(value, dict):
+        return any(holds_secret(item) for pair in value.items() for item in pair)
+    if isinstance(value, list):
+        return any(holds_secret(item) for item in value)
+    return False

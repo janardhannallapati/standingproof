@@ -101,6 +101,11 @@ def load_result(
     )
 
 
+def _unread(graded: GradedDraft | GradedCheck) -> bool:
+    outcome = graded.check if isinstance(graded, GradedDraft) else graded.outcome
+    return outcome == "not_checked"
+
+
 def problems(result: Result, baseline: Baseline | None) -> list[str]:
     """Why this result fails the gate. Empty when it passes."""
     found = list(result.stale)
@@ -118,6 +123,15 @@ def not_whole(result: Result) -> list[str]:
     if missing:
         found.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
     found += unread(result.drafter, result.checker)
+    compared: list[GradedDraft | GradedCheck] = [
+        *result.graded_docs_only,
+        *result.graded_cheaper,
+    ]
+    cut_short = sorted({g.case for g in compared if _unread(g)})
+    if cut_short:
+        found.append(f"a comparison run's check did not finish, in: {', '.join(cut_short)}")
+    if any(g.run != 1 for g in compared):
+        found.append("a comparison is one run of each case; there is a recording numbered above 1")
     alone = {g.case for g in result.graded_docs_only if g.run == 1}
     cheaper = {g.case for g in result.graded_cheaper if g.run == 1}
     absent = [

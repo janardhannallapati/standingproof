@@ -206,6 +206,9 @@ def test_yes_counts_only_as_the_first_word_of_a_line() -> None:
         "Regarding two-factor, no exceptions:\nYes, it is required for all members.",
         "\n" * 12 + "Yes. It is not optional.",
         "  - Yes, without exception.",
+        "            Yes, without exception.",
+        "No.\n|            | Yes |",
+        "- - - - - - Yes, without exception.",
     ],
 )
 def test_yes_at_the_start_of_any_line_is_still_a_yes(answer: str) -> None:

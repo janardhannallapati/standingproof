@@ -1,8 +1,8 @@
 {
- "complete": true,
- "stopped": "",
- "spent_usd": 0.1355278,
- "recorded": 12,
+ "complete": false,
+ "stopped": "the run did not finish",
+ "spent_usd": 0.0,
+ "recorded": 0,
  "reused": 0,
- "finished_at": "2026-11-16T16:05:17+00:00"
+ "finished_at": "2026-11-16T16:57:04+00:00"
 }

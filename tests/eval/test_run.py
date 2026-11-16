@@ -279,6 +279,37 @@ def test_a_recording_made_from_other_inputs_is_made_again(db: Db, tmp_path: Path
     assert (used.model.calls, used.checker.calls) == (0, 1)
 
 
+def test_a_recording_whose_check_did_not_finish_is_made_again(db: Db, tmp_path: Path) -> None:
+    cut_short = Agrees(checker_says(None, stop_reason="max_tokens"))
+    go(db, tmp_path, checker=cut_short)
+
+    _, used = go(db, tmp_path)
+
+    # Both drafter cases and both labelled drafts were read by the cut-short checker.
+    assert (used.model.calls, used.checker.calls, used.cheaper_checker.calls) == (4, 4, 0)
+
+
+def test_any_error_from_a_request_is_counted_as_if_it_was_billed(db: Db, tmp_path: Path) -> None:
+    class Garbled(LooksThenAnswers):
+        async def complete(self, **request: Any) -> ModelTurn:
+            raise ValueError("the reply did not validate")
+
+    with pytest.raises(ValueError):
+        go(db, tmp_path, model=Garbled())
+
+    manifest = load_manifest(tmp_path)
+    assert manifest is not None and manifest.spent_usd == pytest.approx(DRAFT_CALL_AT_MOST)
+
+
+def test_a_provider_failure_with_no_room_to_retry_says_so(db: Db, tmp_path: Path) -> None:
+    manifest, used = go(
+        db, tmp_path, ceiling=DRAFT_CALL_AT_MOST + 0.1, model=LooksThenAnswers(fail=True)
+    )
+
+    assert used.model.calls == 1
+    assert "provider" in manifest.stopped and not manifest.complete
+
+
 def test_a_provider_failure_is_not_recorded_as_a_result(db: Db, tmp_path: Path) -> None:
     manifest, used = go(db, tmp_path, model=LooksThenAnswers(fail=True))
 
