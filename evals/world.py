@@ -19,12 +19,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from evals.cases import DrafterCase, DrafterSet, Live
 from evals.fingerprint import DrafterVariant
+from evals.fingerprint import settings as plain_settings
 from standingproof.agent.tools import ToolRegistry
 from standingproof.checks.aws import AwsReader
 from standingproof.checks.github import GitHubClient
 from standingproof.checks.service import CheckBackends, add_connection
 from standingproof.checks.tools import check_tool
-from standingproof.config import Settings
 from standingproof.library.embedding import Embedder
 from standingproof.library.service import NewAnswer, create_answer, ingest_policy
 from standingproof.library.tools import build_library_registry
@@ -172,8 +172,7 @@ async def build_world(
     variant: DrafterVariant = "full",
 ) -> World:
     """Empty the database, then put this case's company in it. One world at a time."""
-    settings = Settings(
-        _env_file=None,
+    settings = plain_settings(
         github_orgs=",".join(case.connected.get("github", [])),
         aws_accounts=",".join(case.connected.get("aws", [])),
         aws_region=_REGION,

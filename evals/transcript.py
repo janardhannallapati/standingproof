@@ -6,6 +6,7 @@ today's rules to those, so a change to a rule shows up in the score without a pa
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -82,3 +83,15 @@ def write(run: Run, root: Path = RECORDINGS) -> Path:
 def read_all(root: Path = RECORDINGS) -> list[Run]:
     """Every recording under `root`, in a stable order."""
     return [_RUN.validate_json(path.read_bytes()) for path in sorted(root.glob("*/*.json"))]
+
+
+# Shapes of the credentials this project touches. A recording that matches one is refused
+# by a test, whatever the reason it is there.
+_SECRET = re.compile(
+    r"sk-ant-[A-Za-z0-9_-]{8,}|github_pat_[A-Za-z0-9_]{10,}|gh[pousr]_[A-Za-z0-9]{30,}"
+    r"|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----"
+)
+
+
+def looks_secret(text: str) -> bool:
+    return _SECRET.search(text) is not None

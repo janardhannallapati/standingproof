@@ -33,6 +33,11 @@ DrafterVariant = Literal["full", "docs_only"]
 CheckerVariant = Literal["main", "cheaper"]
 
 
+def settings(**values: Any) -> Settings:
+    """The product's settings with no .env file read: an eval takes nothing from a deployment."""
+    return Settings(_env_file=None, **values)  # type: ignore[call-arg]
+
+
 def _default(field: str) -> Any:
     # The product's default, whatever this machine's environment says.
     return Settings.model_fields[field].default
@@ -76,9 +81,7 @@ def tool_definitions(variant: DrafterVariant) -> list[dict[str, Any]]:
     registry: ToolRegistry = build_library_registry(nothing, tenant, cast(Embedder, None))
     if variant == "full":
         backends = CheckBackends(github=None, aws=None)
-        registry = registry.with_tools(
-            check_tool(nothing, tenant, backends, Settings(_env_file=None))
-        )
+        registry = registry.with_tools(check_tool(nothing, tenant, backends, settings()))
     return registry.definitions()
 
 
