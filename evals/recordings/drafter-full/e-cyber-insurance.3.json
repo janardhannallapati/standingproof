@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. I searched for 'cyber liability insurance coverage limit' and 'insurance policy cyber'. The first search found nothing. The second found only unrelated Access Control Policy sections (accounts, leavers, authentication). The live checks can't help, since they only cover GitHub and AWS settings. To answer this, someone in finance, legal or risk needs to confirm whether the company has cyber liability insurance and the coverage limit, ideally from the policy document or a certificate of insurance. That answer should then be approved and added to the answer library."
+  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. I searched for 'cyber liability insurance coverage limit' and found nothing. A broader search for 'insurance policy' only returned unrelated Access Control Policy sections on leavers, accounts and authentication. I have not given an answer because I couldn't confirm whether the company has this cover or what the limit is. Please send this question to the person who holds the insurance details, such as Finance, Legal or Risk, for an approved answer."
  },
  "steps": 3,
  "tool_uses": [
@@ -42,35 +42,35 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "insurance policy cyber"
+    "query": "insurance policy"
    },
    "is_error": false,
    "source_ids": [
-    "policy:48747fbc-a635-4c5a-8c43-d7296ab89f3c",
-    "policy:e88d52f8-94e7-41d3-a713-98baedf958b7",
-    "policy:fb3e3c41-0cfc-4c57-ada8-001f4fe2b7de"
+    "policy:e0a6f9c0-0d83-4b31-be00-cf500a5b4846",
+    "policy:91038962-ca4d-4076-82e2-9b8998ff7586",
+    "policy:ece9b021-acfe-455a-be55-f213f27fb549"
    ]
   }
  ],
  "seen_sources": {
-  "policy:48747fbc-a635-4c5a-8c43-d7296ab89f3c": [
-   "Every workforce member has a named account. Shared accounts are not permitted."
-  ],
-  "policy:e88d52f8-94e7-41d3-a713-98baedf958b7": [
+  "policy:e0a6f9c0-0d83-4b31-be00-cf500a5b4846": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "policy:fb3e3c41-0cfc-4c57-ada8-001f4fe2b7de": [
+  "policy:91038962-ca4d-4076-82e2-9b8998ff7586": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "policy:ece9b021-acfe-455a-be55-f213f27fb549": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 887,
-  "output_tokens": 354,
+  "input_tokens": 877,
+  "output_tokens": 316,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0118424,
+ "cost_usd": 0.011067,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

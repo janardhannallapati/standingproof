@@ -4,9 +4,9 @@
  "run": 2,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "contradicted",
      "quote": "disabled immediately",
      "source_id": "LIB-OFF",
-     "explanation": "The source says accounts are disabled within 24 hours of the last day, not immediately."
+     "explanation": "The source says accounts are disabled within 24 hours of the last day, not immediately, so the draft states a stronger timeframe than the source."
     }
    ]
   },
   "usage": {
-   "input_tokens": 119,
-   "output_tokens": 87,
+   "input_tokens": 124,
+   "output_tokens": 104,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0012235,
+ "cost_usd": 0.0014219,
  "check_model": "claude-sonnet-5-5"
 }

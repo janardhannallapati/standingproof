@@ -4,9 +4,9 @@
  "run": 2,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "all employees and contractors",
      "source_id": "LIB-MFA",
-     "explanation": "The source says MFA is required for all employee accounts and does not mention contractors, so the wider scope is not supported."
+     "explanation": "The source says MFA is required for all employee accounts and does not mention contractors, so the draft widens the scope."
     }
    ]
   },
   "usage": {
-   "input_tokens": 204,
-   "output_tokens": 97,
+   "input_tokens": 209,
+   "output_tokens": 96,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0014935,
+ "cost_usd": 0.0015119,
  "check_model": "claude-sonnet-5-5"
 }

@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,10 +27,10 @@
   "status": "answered",
   "answer": "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor.",
   "citations": [
-   "answer:84550b03-9a7e-48dd-8797-8c507d53e652",
-   "policy:bbca5d84-ea23-4585-9541-2cd900d17d46"
+   "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb",
+   "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115"
   ],
-  "note": "This uses the approved answer word for word. That answer is for control CC6.1, is owned by security@harborlight.example and is valid until 2027-11-16. It is backed by section 4.2 (Authentication) of the Access Control Policy, which says all workforce members must use a second factor. The answer says MFA is 'required', not that it is technically 'enforced'. I did not check any live GitHub or AWS settings because no organisation or account was given. Also, those checks cover GitHub and AWS, not the identity provider the answer refers to."
+  "note": "This uses the approved answer word for word. It is backed by Access Control Policy section 4.2, which says all workforce members must sign in with a second factor and SMS is not accepted. The approved answer's owner is security@harborlight.example and it is valid until 2027-11-17. The answer comes from a written answer and policy, not a check of live systems. The question asks whether MFA is enforced. I could not check a live GitHub or AWS setting because no organisation name or AWS account ID was available. If the customer wants evidence from live systems, a reviewer could run github.org_two_factor or aws.root_mfa for the right organisation or account. Those checks would cover only GitHub and AWS, not the identity provider."
  },
  "steps": 2,
  "tool_uses": [
@@ -41,20 +41,20 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:bbca5d84-ea23-4585-9541-2cd900d17d46",
-    "policy:f6a0d58f-1130-45d9-9190-871d11b02d0c",
-    "answer:84550b03-9a7e-48dd-8797-8c507d53e652"
+    "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115",
+    "policy:97731d47-432a-4025-a8a5-0f0f86e50ce5",
+    "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb"
    ]
   }
  ],
  "seen_sources": {
-  "policy:bbca5d84-ea23-4585-9541-2cd900d17d46": [
+  "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "policy:f6a0d58f-1130-45d9-9190-871d11b02d0c": [
+  "policy:97731d47-432a-4025-a8a5-0f0f86e50ce5": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:84550b03-9a7e-48dd-8797-8c507d53e652": [
+  "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ]
  },
@@ -65,20 +65,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 305,
+   "input_tokens": 324,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 910,
-  "output_tokens": 427,
+  "input_tokens": 933,
+  "output_tokens": 516,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5203
+  "cache_read_input_tokens": 5469
  },
- "cost_usd": 0.012315099999999999,
+ "cost_usd": 0.014183900000000001,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

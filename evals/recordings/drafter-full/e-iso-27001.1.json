@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches (\"ISO 27001 certification certificate number\" and \"information security certifications audits SOC 2 ISO\"). They only returned unrelated entries: the Access Control Policy section on authentication, plus approved answers on penetration testing and encryption in transit. Nothing says whether the company holds ISO 27001 certification, so I haven't drafted an answer either way. The certificate number needs to come from the security owner (security@harborlight.example). If the company is certified, an approved answer should be added that includes the certificate number, the certification body, the scope and the expiry date."
+  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I searched for ISO 27001 and for certifications, audits and attestations in general. The results only covered unrelated controls: second-factor sign-in, yearly penetration testing, weekly vulnerability scanning and encryption at rest. None of these support saying we are or aren't certified, so I left the answer blank. Please ask the security team (security@harborlight.example) or the compliance owner whether we hold ISO 27001 certification. If we do, they should add an approved answer with the certificate number, the certifying body and the scope."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,42 +38,44 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:02668629-ebbc-4358-8b50-a5bf97457fe1"
+    "policy:dae0edf9-1d69-419f-82a1-9a2e969dba1c"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "information security certifications audits SOC 2 ISO"
+    "query": "information security certifications audits attestations"
    },
    "is_error": false,
    "source_ids": [
-    "policy:02668629-ebbc-4358-8b50-a5bf97457fe1",
-    "answer:e4c90c7f-606f-442e-85db-fa796760eb2a",
-    "answer:bfbeaa95-7522-4778-9e3c-5f38548305b3"
+    "answer:5d9aec68-3d03-446d-a045-e4f4dfd0c813",
+    "answer:2b33268a-bdf4-4098-90d5-e18c069f9fe9",
+    "answer:4446faa1-2a27-4cc7-99ba-2d634dbdeb9f"
    ]
   }
  ],
  "seen_sources": {
-  "policy:02668629-ebbc-4358-8b50-a5bf97457fe1": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+  "policy:dae0edf9-1d69-419f-82a1-9a2e969dba1c": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:e4c90c7f-606f-442e-85db-fa796760eb2a": [
+  "answer:5d9aec68-3d03-446d-a045-e4f4dfd0c813": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:bfbeaa95-7522-4778-9e3c-5f38548305b3": [
-   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  "answer:2b33268a-bdf4-4098-90d5-e18c069f9fe9": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:4446faa1-2a27-4cc7-99ba-2d634dbdeb9f": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1134,
-  "output_tokens": 395,
+  "input_tokens": 1195,
+  "output_tokens": 371,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0136504,
+ "cost_usd": 0.013439,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

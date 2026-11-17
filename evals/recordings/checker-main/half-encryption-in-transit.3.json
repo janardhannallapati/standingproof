@@ -4,9 +4,9 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,24 +21,24 @@
      "kind": "not_answered",
      "quote": "",
      "source_id": "",
-     "explanation": "The question asks about encryption in transit as well as at rest, but the draft only addresses encryption at rest and does not say whether data in transit is encrypted."
+     "explanation": "The question also asks whether customer data is encrypted in transit, and the draft says nothing about transit encryption or that it cannot answer it."
     },
     {
      "kind": "unsupported",
      "quote": "Yes.",
      "source_id": "LIB-ENC",
-     "explanation": "The source only states encryption at rest, so the unqualified yes to the combined at-rest-and-in-transit question is not supported for transit."
+     "explanation": "The opening 'Yes' affirms both at rest and in transit, but LIB-ENC only states encryption at rest."
     }
    ]
   },
   "usage": {
-   "input_tokens": 123,
-   "output_tokens": 178,
+   "input_tokens": 128,
+   "output_tokens": 168,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0021415,
+ "cost_usd": 0.0020699,
  "check_model": "claude-sonnet-5-5"
 }

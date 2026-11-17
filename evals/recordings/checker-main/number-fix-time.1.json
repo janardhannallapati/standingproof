@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,20 +19,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "within 3 days",
+     "quote": "fixed within 3 days",
      "source_id": "LIB-VUL",
      "explanation": "The source says critical findings are fixed within 7 days, not 3 days."
     }
    ]
   },
   "usage": {
-   "input_tokens": 122,
-   "output_tokens": 83,
+   "input_tokens": 127,
+   "output_tokens": 86,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0011895,
+ "cost_usd": 0.0012479000000000001,
  "check_model": "claude-sonnet-5-5"
 }

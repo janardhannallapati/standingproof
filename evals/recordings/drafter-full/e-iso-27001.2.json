@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches, one for 'ISO 27001 certification certificate number' and a broader one for certifications and audits. They only returned unrelated entries: an authentication policy section, a penetration testing answer and an encryption-in-transit answer. None of these says whether the company holds ISO 27001 certification, so I haven't drafted an answer and haven't said the company is or isn't certified. A human reviewer, such as the security owner (security@harborlight.example), needs to confirm whether the company holds ISO 27001 certification. If it does, they should supply an approved answer with the certificate number, issuing body and validity dates. If it doesn't, they should provide approved wording that says so."
+  "note": "I couldn't find an approved answer or any policy text about ISO 27001 certification or a certificate number. I searched for 'ISO 27001 certification certificate number' and for 'information security certifications audits attestation'. Neither search returned anything that says whether the company holds ISO 27001 certification. The closest results were about other topics: second-factor sign-in (Access Control Policy 4.2), the yearly independent penetration test, vulnerability scanning and encryption at rest. None of these supports a claim about certification, so I have given no answer. The security team (security@harborlight.example) needs to confirm whether the company is certified and, if it is, provide an approved answer with the certificate number."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,42 +38,44 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:9feee27d-0d3a-41d9-a68e-0b0daaa12931"
+    "policy:de7e9908-55a1-4906-9924-c175de4c6179"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "information security certifications audits SOC 2 ISO"
+    "query": "information security certifications audits attestation"
    },
    "is_error": false,
    "source_ids": [
-    "policy:9feee27d-0d3a-41d9-a68e-0b0daaa12931",
-    "answer:efcf8aa0-daab-4b5b-9c37-a0229b709662",
-    "answer:08bc00e0-ed09-429e-bbec-38c872b76eee"
+    "answer:50c2b914-9e2a-4403-afa0-3982c35798db",
+    "answer:638ebd8a-eb14-4a91-ba90-0c06ac955741",
+    "answer:24e3c25d-a76f-4708-ad20-b6b63c7049d3"
    ]
   }
  ],
  "seen_sources": {
-  "policy:9feee27d-0d3a-41d9-a68e-0b0daaa12931": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+  "policy:de7e9908-55a1-4906-9924-c175de4c6179": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:efcf8aa0-daab-4b5b-9c37-a0229b709662": [
+  "answer:50c2b914-9e2a-4403-afa0-3982c35798db": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:08bc00e0-ed09-429e-bbec-38c872b76eee": [
-   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  "answer:638ebd8a-eb14-4a91-ba90-0c06ac955741": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:24e3c25d-a76f-4708-ad20-b6b63c7049d3": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1143,
-  "output_tokens": 427,
+  "input_tokens": 1180,
+  "output_tokens": 390,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0143264,
+ "cost_usd": 0.013759,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

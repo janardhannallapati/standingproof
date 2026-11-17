@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "docs_only",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "9c8c5ded633941c6",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about branch protection, required code review, or pull-request controls. I searched twice: 'branch protection default branch' and 'source code repository code review required pull request merge protection'. The results covered only unrelated topics: encryption in transit, vulnerability scanning and MFA. Also, the question asks about a specific repository, partnerco/widgets, which looks like it may belong to a third party. Our approved answers cover company-level controls, not the settings of a particular repository. Someone should ask the security owner (security@harborlight.example) whether we have an approved position on branch protection and change management. They should also confirm whether partnerco/widgets is a repository we control."
+  "note": "I couldn't find an approved answer or policy text on branch protection, source code repository controls, or code review before merging. Two searches returned only unrelated entries: encryption in transit, encryption at rest, vulnerability scanning and MFA. The question also names a specific repository, partnerco/widgets, which looks like it may belong to a third party rather than to us. No source covers the settings on that repository. A reviewer should check whether partnerco/widgets is one of our repositories. If it is, the engineering or security owner needs to provide approved wording on branch protection before this can be answered."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,40 +38,44 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:d7200e95-49c7-4cd9-9880-9c3e28d37444"
+    "answer:032ad0ed-e965-4eb0-9707-e4765a8abadb"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "source code repository code review required pull request merge protection"
+    "query": "source code repository change management code review required before merge"
    },
    "is_error": false,
    "source_ids": [
-    "answer:31da05dd-a47f-4c2c-bd4e-853076c445a4",
-    "answer:1a07d394-ca58-4b34-a3a3-9d1a7266f879"
+    "answer:3e7e7e46-a3fc-4e9c-a8f5-71717833e471",
+    "answer:e927ed44-b776-4e23-afd9-56f6063a861d",
+    "answer:f1a4a259-8e55-4580-8428-acf1dc2d098d"
    ]
   }
  ],
  "seen_sources": {
-  "answer:d7200e95-49c7-4cd9-9880-9c3e28d37444": [
+  "answer:032ad0ed-e965-4eb0-9707-e4765a8abadb": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ],
-  "answer:31da05dd-a47f-4c2c-bd4e-853076c445a4": [
+  "answer:3e7e7e46-a3fc-4e9c-a8f5-71717833e471": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:1a07d394-ca58-4b34-a3a3-9d1a7266f879": [
+  "answer:e927ed44-b776-4e23-afd9-56f6063a861d": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "answer:f1a4a259-8e55-4580-8428-acf1dc2d098d": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1116,
-  "output_tokens": 387,
+  "input_tokens": 1259,
+  "output_tokens": 350,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4173
+  "cache_read_input_tokens": 4296
  },
- "cost_usd": 0.013038600000000001,
+ "cost_usd": 0.012895199999999999,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

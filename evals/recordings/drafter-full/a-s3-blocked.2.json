@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,25 +27,25 @@
   "status": "answered",
   "answer": "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide.",
   "citations": [
-   "answer:439c1edf-5dec-4825-9c0f-08701a1f7c47",
-   "evidence:8d801a8b-c8e9-4b92-9d19-6239f3b5dee5"
+   "answer:ea2c0051-4e36-4122-9fe4-e715a901fccf",
+   "evidence:eb2b2fe1-0210-4f30-a163-20050f805f5e"
   ],
-  "note": "The answer uses the approved wording as written (owner security@harborlight.example, valid until 2027-11-16). A live read-only check on 2026-11-16 at 17:03 UTC confirmed it. AWS account 111122223333 had all four S3 public access block settings turned on account-wide: block public ACLs, ignore public ACLs, block public policy and restrict public buckets. These sources only cover AWS account 111122223333. If the company has other AWS accounts or other object storage, they weren't checked."
+  "note": "This uses the approved answer word for word (owner security@harborlight.example, control CC6.6, valid until 2027-11-17). A live check of AWS account 111122223333 at 2026-11-17T01:10:12Z backs it up: all four public-access-block settings were on. Those are block public ACLs, ignore public ACLs, block public policy and restrict public buckets. The approved answer and the check only cover this one account. If the customer means every AWS account we have, a reviewer should confirm there are no others."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "S3 public access block object storage buckets"
+    "query": "S3 public access block account level"
    },
    "is_error": false,
    "source_ids": [
-    "answer:439c1edf-5dec-4825-9c0f-08701a1f7c47",
-    "policy:e6081ba9-5c21-4a06-8b76-725ad806bd91",
-    "answer:301cf9dc-ea09-4579-a0cd-2967c51efa53",
-    "answer:1b2d2a1a-6b54-4f58-9fa1-2f8a5c4c73d9",
-    "answer:bc2ee396-06df-4066-81c6-a612c24065cc"
+    "answer:ea2c0051-4e36-4122-9fe4-e715a901fccf",
+    "policy:21cd0c2e-e6d4-41f7-b8cd-10d27e020a80",
+    "policy:c03a8281-9b82-4b4e-872b-f294251ef472",
+    "answer:8c25e6b8-50fd-4637-a402-218c8194cec5",
+    "answer:35331eb8-a9b1-4c67-988f-35535a541e60"
    ]
   },
   {
@@ -56,28 +56,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:8d801a8b-c8e9-4b92-9d19-6239f3b5dee5"
+    "evidence:eb2b2fe1-0210-4f30-a163-20050f805f5e"
    ]
   }
  ],
  "seen_sources": {
-  "answer:439c1edf-5dec-4825-9c0f-08701a1f7c47": [
+  "answer:ea2c0051-4e36-4122-9fe4-e715a901fccf": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ],
-  "policy:e6081ba9-5c21-4a06-8b76-725ad806bd91": [
+  "policy:21cd0c2e-e6d4-41f7-b8cd-10d27e020a80": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:301cf9dc-ea09-4579-a0cd-2967c51efa53": [
-   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  "policy:c03a8281-9b82-4b4e-872b-f294251ef472": [
+   "Access is removed within 24 hours of a person's last working day."
   ],
-  "answer:1b2d2a1a-6b54-4f58-9fa1-2f8a5c4c73d9": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  "answer:8c25e6b8-50fd-4637-a402-218c8194cec5": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
   ],
-  "answer:bc2ee396-06df-4066-81c6-a612c24065cc": [
-   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  "answer:35331eb8-a9b1-4c67-988f-35535a541e60": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "evidence:8d801a8b-c8e9-4b92-9d19-6239f3b5dee5": [
-   "AWS account 111122223333 blocks all public access to S3 buckets account-wide. Observed 2026-11-16 17:03 UTC."
+  "evidence:eb2b2fe1-0210-4f30-a163-20050f805f5e": [
+   "AWS account 111122223333 blocks all public access to S3 buckets account-wide. Observed 2026-11-17 01:10 UTC."
   ]
  },
  "check_turn": {
@@ -87,20 +87,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 571,
+   "input_tokens": 565,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2619,
-  "output_tokens": 451,
+  "input_tokens": 2502,
+  "output_tokens": 443,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7227
+  "cache_read_input_tokens": 7534
  },
- "cost_usd": 0.0195039,
+ "cost_usd": 0.0189309,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

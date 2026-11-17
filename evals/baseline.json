@@ -1,9 +1,9 @@
 {
  "runs": 3,
  "drafter_wrong_cases": [],
- "drafter_right_cases": 21,
+ "drafter_right_cases": 29,
  "checker_missed_cases": [],
- "checker_false_alarm_cases": 1,
- "accepted_on": "2026-11-16",
- "note": "First full run, as it came out. Nothing was tuned."
+ "checker_false_alarm_cases": 0,
+ "accepted_on": "2026-11-17",
+ "note": "Second full run, after the checker was told which source is an observation and a failed look said not to repeat it. Four labelled drafts were added and one case's pattern was corrected. The prompts were changed after reading the first run, so this is not a first look."
 }

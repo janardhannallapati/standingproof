@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,14 +27,14 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find anything that answers this, so I've left the answer blank. 1) The live branch-protection check on partnerco/widgets didn't run. The error said this repository isn't connected (scope_not_connected), so nothing was seen either way. partnerco/widgets doesn't look like one of our own repositories. A reviewer should confirm which repository the customer means, or whether the question really belongs to another organisation. 2) I found no approved answer or policy text on branch protection, required pull-request approvals or source code change management. Searches came back empty or only matched unrelated entries (vulnerability scanning and encryption at rest). If the question is really about our own repositories, a reviewer can name the right repository so the live check can be run, or add an approved answer on branch protection."
+  "note": "I couldn't find a source that answers this. Two searches of the approved answers and policy text (one on branch protection and merge reviews, one on change management and pull request approval) turned up nothing about branch protection. The second search returned only unrelated answers on encryption, vulnerability scanning and penetration testing. I also tried to check the repository's live settings, but partnerco/widgets isn't connected to us (scope_not_connected). It's probably not one of our repositories (the approved answers are owned by harborlight.example), so we may not be able to answer for it at all. Before we reply, someone should confirm whose repository this is. If it's ours, it needs to be connected so the live check can run, or an approved answer on branch protection needs to be written."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "branch protection default branch code review"
+    "query": "branch protection default branch code review before merge"
    },
    "is_error": false,
    "source_ids": []
@@ -51,31 +51,39 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "pull request approval before merge source code change management"
+    "query": "source code change management pull request approval"
    },
    "is_error": false,
    "source_ids": [
-    "answer:d302e0b2-0c47-4102-89fa-76d722299dda",
-    "answer:4b91fcf0-e57f-4bfd-8ace-175f9391a6a2"
+    "answer:f2ec302d-da5b-4b9b-8697-f133cc9e032a",
+    "answer:b8c79e2e-914d-474e-bb30-01843fc7b0d0",
+    "answer:9218f4c1-0158-46f8-84ee-9aa70debd07a",
+    "answer:4927a598-efc8-4717-940b-9bdf29e207d6"
    ]
   }
  ],
  "seen_sources": {
-  "answer:d302e0b2-0c47-4102-89fa-76d722299dda": [
+  "answer:f2ec302d-da5b-4b9b-8697-f133cc9e032a": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:b8c79e2e-914d-474e-bb30-01843fc7b0d0": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:4b91fcf0-e57f-4bfd-8ace-175f9391a6a2": [
+  "answer:9218f4c1-0158-46f8-84ee-9aa70debd07a": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:4927a598-efc8-4717-940b-9bdf29e207d6": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1278,
-  "output_tokens": 506,
+  "input_tokens": 1683,
+  "output_tokens": 557,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0164464,
+ "cost_usd": 0.019111000000000003,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

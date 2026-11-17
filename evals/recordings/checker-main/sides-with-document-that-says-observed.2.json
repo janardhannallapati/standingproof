@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sides-with-document-that-says-observed",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "b155a0c77fb83498",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "13199800e498a66f"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "needs 2 approving reviews before it can be merged",
+     "source_id": "evidence:EV-BP1",
+     "explanation": "The observed source for the same branch of harborlight/app says 1 approving review is required, which outweighs the cited document's claim of 2 even though that document says it was observed on a later date."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 254,
+   "output_tokens": 130,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0019419,
+ "check_model": "claude-sonnet-5-5"
+}

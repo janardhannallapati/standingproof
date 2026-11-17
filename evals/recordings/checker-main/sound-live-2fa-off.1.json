@@ -4,13 +4,13 @@
  "run": 1,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "53aec976f732563f"
+  "case": "a1d05715be4cde7b"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,13 +19,13 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 156,
+   "input_tokens": 166,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0006075,
+ "cost_usd": 0.0006458999999999999,
  "check_model": "claude-sonnet-5-5"
 }

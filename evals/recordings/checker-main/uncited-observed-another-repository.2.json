@@ -1,0 +1,44 @@
+{
+ "kind": "checker",
+ "case": "uncited-observed-another-repository",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "b155a0c77fb83498",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "970c078bd9b58ac2"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "secret scanning is switched on for harborlight/docs",
+     "source_id": "LIB-SS-APP",
+     "explanation": "The question asks about the application repository, which LIB-SS-APP identifies as harborlight/app with secret scanning not yet on, while the draft answers \"Yes\" for a different repository (harborlight/docs)."
+    },
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The draft does not state whether secret scanning is on for the application repository (harborlight/app); it only reports on harborlight/docs."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 207,
+   "output_tokens": 212,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0026679,
+ "check_model": "claude-sonnet-5-5"
+}

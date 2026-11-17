@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -24,10 +24,12 @@
  "handoff": null,
  "final_stop_reason": "end_turn",
  "final_draft": {
-  "status": "no_approved_source",
-  "answer": "",
-  "citations": [],
-  "note": "I left this unanswered because the approved answer conflicts with the live GitHub setting. Approved answer answer:ec3fef2e-42ac-4841-ba23-27c46192e124 (owner security@harborlight.example, valid until 2027-11-16) says: \"Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members.\" But the live check evidence:d74bd638-1cce-4a63-acee-85afa7d08f10, run at 2026-11-16T17:04:16Z, found that the harborlight GitHub organisation does not require two-factor sign-in for its members (two_factor_required: false). So the approved 'Yes' can't be used, and there's no approved wording for a 'No'. The Access Control Policy (policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6) and the employee MFA answer (answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33) say workforce members must use a second factor through the identity provider. Neither says GitHub enforces this at the organisation level, so they don't answer the question. Next steps: security@harborlight.example should either turn on required two-factor sign-in for the harborlight GitHub organisation and run the check again, or approve wording that reflects the current setting. The approved answer should also be reviewed and corrected."
+  "status": "answered",
+  "answer": "No. When we checked on 2026-11-17, our GitHub organisation (harborlight) did not require two-factor sign-in for its members.",
+  "citations": [
+   "evidence:840b1d18-f096-4868-88eb-1639e1d42d49"
+  ],
+  "note": "Please don't send this yet. The live setting and the approved answer disagree. Approved answer answer:fa0b976e-0fb5-4b98-8dc5-799bd6653559 (owner security@harborlight.example, valid until 2027-11-17) says the harborlight GitHub organisation requires two-factor sign-in for all members. But a live read-only check on 2026-11-17 (evidence:840b1d18-f096-4868-88eb-1639e1d42d49) found the organisation does not require it (two_factor_required: false). I didn't reuse the approved 'Yes' because the current setting contradicts it. The answer owner should look into this: either turn the requirement back on and re-check, or withdraw the approved answer. Also, the Access Control Policy (4.2) and approved answer answer:66f66b43-04e1-477a-89cf-28352f224510 say all workforce members and employee accounts must use a second factor through the identity provider. Neither says whether the GitHub organisation enforces two-factor itself, so I didn't use them to answer this question."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,11 +40,11 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:ec3fef2e-42ac-4841-ba23-27c46192e124",
-    "answer:e7e094dd-95cc-4220-9808-5731eb1513a7",
-    "policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6",
-    "answer:b35fb0e6-5f5f-4bb9-b027-590ffd8981b7",
-    "answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33"
+    "answer:fa0b976e-0fb5-4b98-8dc5-799bd6653559",
+    "answer:f7a6a30c-8559-46ae-9e4d-3023aec6be00",
+    "answer:75374617-aadd-4714-8642-78526ef54229",
+    "policy:8fb9c358-739e-4395-8fe0-7f78948be980",
+    "answer:66f66b43-04e1-477a-89cf-28352f224510"
    ]
   },
   {
@@ -53,38 +55,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:d74bd638-1cce-4a63-acee-85afa7d08f10"
+    "evidence:840b1d18-f096-4868-88eb-1639e1d42d49"
    ]
   }
  ],
  "seen_sources": {
-  "answer:ec3fef2e-42ac-4841-ba23-27c46192e124": [
+  "answer:fa0b976e-0fb5-4b98-8dc5-799bd6653559": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:e7e094dd-95cc-4220-9808-5731eb1513a7": [
+  "answer:f7a6a30c-8559-46ae-9e4d-3023aec6be00": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "policy:5014ba8d-db0d-4847-b9b2-8bcfa59e26c6": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "answer:b35fb0e6-5f5f-4bb9-b027-590ffd8981b7": [
+  "answer:75374617-aadd-4714-8642-78526ef54229": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:9c01b6ed-8c76-46f3-a080-2551c9c24c33": [
+  "policy:8fb9c358-739e-4395-8fe0-7f78948be980": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:66f66b43-04e1-477a-89cf-28352f224510": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "evidence:d74bd638-1cce-4a63-acee-85afa7d08f10": [
-   "The GitHub organisation harborlight does not require two-factor sign-in for its members. Observed 2026-11-16 17:04 UTC."
+  "evidence:840b1d18-f096-4868-88eb-1639e1d42d49": [
+   "The GitHub organisation harborlight does not require two-factor sign-in for its members. Observed 2026-11-17 01:10 UTC."
   ]
  },
- "check_turn": null,
- "usage": {
-  "input_tokens": 2052,
-  "output_tokens": 867,
-  "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 595,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0267624,
+ "usage": {
+  "input_tokens": 2616,
+  "output_tokens": 782,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7534
+ },
+ "cost_usd": 0.0261069,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

@@ -4,13 +4,13 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "bebaceffb56b8a05"
+  "case": "bb4a924fd19050fa"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +20,19 @@
     {
      "kind": "contradicted",
      "quote": "Our AWS account blocks all public access to S3 buckets account-wide.",
-     "source_id": "EV-S3-OFF",
-     "explanation": "The observed record for account 111122223333 says it does not block all public access to S3 buckets account-wide, which conflicts with the draft and outweighs the policy statement in LIB-S3."
+     "source_id": "evidence:EV-S3-OFF",
+     "explanation": "The observed source shows account 111122223333 does not block all public access to S3 buckets account-wide, which outweighs the document the draft repeats."
     }
    ]
   },
   "usage": {
-   "input_tokens": 195,
-   "output_tokens": 140,
+   "input_tokens": 210,
+   "output_tokens": 130,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0019055,
+ "cost_usd": 0.0018539000000000001,
  "check_model": "claude-sonnet-5-5"
 }

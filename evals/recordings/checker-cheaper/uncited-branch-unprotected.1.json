@@ -4,13 +4,13 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "299c40de6c21eea0"
+  "case": "e3360fecc1ed9e8c"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +20,25 @@
     {
      "kind": "contradicted",
      "quote": "Yes.",
-     "source_id": "EV-BP0",
-     "explanation": "An observed 2026-11-10 check shows branch main of harborlight/app is not protected, which conflicts with the draft's answer that branch protection is enforced."
+     "source_id": "evidence:EV-BP0",
+     "explanation": "The observed setting shows branch main of harborlight/app is not protected, so the answer that branch protection is enforced conflicts with it."
+    },
+    {
+     "kind": "contradicted",
+     "quote": "Changes to the default branch require a pull request with two approving reviews.",
+     "source_id": "evidence:EV-BP0",
+     "explanation": "The observed source says the default branch main of harborlight/app is not protected, which conflicts with the draft's statement that changes require two approving reviews; the document is set aside as it is about the same setting but the observation outweighs it."
     }
    ]
   },
   "usage": {
-   "input_tokens": 167,
-   "output_tokens": 411,
+   "input_tokens": 182,
+   "output_tokens": 232,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00023375,
+ "cost_usd": 0.00014759,
  "check_model": "claude-haiku-5-5"
 }

@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,20 +19,20 @@
    "findings": [
     {
      "kind": "unsupported",
-     "quote": "keys rotated every 90 days",
+     "quote": "with keys rotated every 90 days",
      "source_id": "LIB-ENC",
      "explanation": "The cited source says keys are managed by the cloud provider's key management service but gives no rotation schedule or 90-day interval."
     }
    ]
   },
   "usage": {
-   "input_tokens": 131,
-   "output_tokens": 104,
+   "input_tokens": 136,
+   "output_tokens": 105,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0014175,
+ "cost_usd": 0.0014559,
  "check_model": "claude-sonnet-5-5"
 }

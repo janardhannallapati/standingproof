@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved source for this, so I left the answer blank. Two searches of the approved answers and policy text (one on branch protection and the default branch, one on pull request approval before merging) found nothing on branch protection or code review. The only result was an unrelated vulnerability-scanning answer (answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b), so I didn't use it. I also tried a live github.branch_protection check on harborlight/app, but the credential wasn't allowed to read that setting (forbidden), so nothing was observed. We can't say either way whether the default branch is protected. To answer this, a reviewer needs either an approved answer from the control owner or read access for the live check on harborlight/app."
+  "note": "I couldn't find an approved source to answer this, so I've left the answer blank. No approved answer or policy text covers branch protection, required reviews or merge rules. I searched twice. The second search only returned unrelated entries about MFA and vulnerability scanning. I also tried to check the live branch protection setting on harborlight/app, but our credential was refused access (forbidden), so nothing was seen and I can't say whether protection is on or off. To answer this, a reviewer could give the check credential read access so it can be run again, or have the owner approve an answer about branch protection."
  },
  "steps": 3,
  "tool_uses": [
@@ -51,27 +51,35 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "pull request approval before merge"
+    "query": "pull request approval required before merge"
    },
    "is_error": false,
    "source_ids": [
-    "answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b"
+    "answer:69b59a99-69b7-4338-9420-1dc5b6f722d1",
+    "policy:656ff130-1b54-4644-8f7a-a7d7d953aad1",
+    "answer:b3f04a1f-46c6-4449-9417-db55d34721bf"
    ]
   }
  ],
  "seen_sources": {
-  "answer:9ec5f5fa-be3c-470a-a8ec-1903723d815b": [
+  "answer:69b59a99-69b7-4338-9420-1dc5b6f722d1": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "policy:656ff130-1b54-4644-8f7a-a7d7d953aad1": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:b3f04a1f-46c6-4449-9417-db55d34721bf": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1049,
-  "output_tokens": 473,
+  "input_tokens": 1369,
+  "output_tokens": 427,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.014870399999999999,
+ "cost_usd": 0.015255000000000001,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

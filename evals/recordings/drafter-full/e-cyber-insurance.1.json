@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. A search for 'cyber liability insurance coverage limit' found nothing. A wider search for 'insurance policy' only found unrelated Access Control Policy sections (accounts, authentication, leavers). None of the live-setting checks cover insurance. Someone who knows the company's insurance, probably Finance or Legal, needs to confirm whether a cyber liability policy is in place, the coverage limit and the carrier if it should be shared. That answer then needs to be approved before it goes in this questionnaire."
+  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. I ran two searches. 'cyber liability insurance coverage limit' returned nothing. 'insurance policy' returned only unrelated Access Control Policy sections (accounts, authentication and leavers). Please send this question to the person who owns insurance details (for example Finance, Legal or Risk) so they can confirm whether the company has this cover and what the limit is."
  },
  "steps": 3,
  "tool_uses": [
@@ -46,31 +46,31 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:995e86c7-e125-40d7-8771-9c7c17a45802",
-    "policy:8b5b6b5d-934d-48b9-aabd-667ac308405c",
-    "policy:9a87317f-2c44-4911-b305-e6367b9c8113"
+    "policy:00792d0b-23b1-4e11-9ecb-a51b1e0af8b9",
+    "policy:0c1fcb73-7f42-4bcf-a37f-e14eb107ff01",
+    "policy:b828afba-a246-474c-906b-640ec2be0abc"
    ]
   }
  ],
  "seen_sources": {
-  "policy:995e86c7-e125-40d7-8771-9c7c17a45802": [
+  "policy:00792d0b-23b1-4e11-9ecb-a51b1e0af8b9": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "policy:8b5b6b5d-934d-48b9-aabd-667ac308405c": [
+  "policy:0c1fcb73-7f42-4bcf-a37f-e14eb107ff01": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "policy:9a87317f-2c44-4911-b305-e6367b9c8113": [
+  "policy:b828afba-a246-474c-906b-640ec2be0abc": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 876,
-  "output_tokens": 342,
+  "input_tokens": 882,
+  "output_tokens": 296,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0115584,
+ "cost_usd": 0.010687,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

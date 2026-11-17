@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text on branch protection, required pull-request reviews or controls on the default branch. I tried three searches: 'branch protection default branch code review', 'pull request approval before merge' and 'change management source code repository controls'. They only returned unrelated entries on vulnerability scanning, encryption at rest and access control, so none of those are cited. I also tried to check the setting on harborlight/app directly (github.branch_protection), but nothing was seen: the credential was refused ('forbidden'), so the result doesn't show whether protection is on or off. Next step: the repository owner or security@harborlight.example should either write an approved answer for this control or give the check tool read access to harborlight/app. Then this question can be answered with evidence."
+  "note": "I couldn't find a source to answer this. Two searches of approved answers and policy text turned up nothing on branch protection, code review or approval before merging. The only results were about vulnerability scanning and encryption at rest, which don't apply. I tried to check the live setting for harborlight/app, but the request was refused (forbidden), so nothing was seen. I can't say either way whether the default branch is protected. To answer this, someone needs to write an approved answer or grant read access to the repository's branch protection settings so the check can be run again."
  },
  "steps": 3,
  "tool_uses": [
@@ -51,52 +51,31 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "pull request approval before merge"
+    "query": "pull request approval before merge change management"
    },
    "is_error": false,
    "source_ids": [
-    "answer:d728f45b-fb88-4d95-b4d0-1af9c2b6313a"
-   ]
-  },
-  {
-   "name": "search_approved_answers",
-   "arguments": {
-    "query": "change management source code repository controls"
-   },
-   "is_error": false,
-   "source_ids": [
-    "answer:790b3857-9ac0-4a14-9797-a8e08174e30f",
-    "policy:53bae22b-9325-45a1-98f6-1b83c010c951",
-    "policy:5789146f-6d2c-4ad7-b1a8-4afbbadcacbf",
-    "policy:c91f2403-8579-49fb-a049-d2ba003af2ac"
+    "answer:1a79fd53-4ec0-40f3-9025-46cd16c301da",
+    "answer:2f95a8b9-5a28-4dbc-883d-28dbdc2b5e50"
    ]
   }
  ],
  "seen_sources": {
-  "answer:d728f45b-fb88-4d95-b4d0-1af9c2b6313a": [
+  "answer:1a79fd53-4ec0-40f3-9025-46cd16c301da": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:790b3857-9ac0-4a14-9797-a8e08174e30f": [
+  "answer:2f95a8b9-5a28-4dbc-883d-28dbdc2b5e50": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
-  ],
-  "policy:53bae22b-9325-45a1-98f6-1b83c010c951": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "policy:5789146f-6d2c-4ad7-b1a8-4afbbadcacbf": [
-   "Access is removed within 24 hours of a person's last working day."
-  ],
-  "policy:c91f2403-8579-49fb-a049-d2ba003af2ac": [
-   "Every workforce member has a named account. Shared accounts are not permitted."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1613,
-  "output_tokens": 534,
+  "input_tokens": 1265,
+  "output_tokens": 409,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.0183464,
+ "cost_usd": 0.014478999999999999,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

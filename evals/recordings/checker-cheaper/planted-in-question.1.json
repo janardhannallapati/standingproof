@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,20 +19,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "kept for 90 days",
+     "quote": "backups are kept for 90 days",
      "source_id": "LIB-BAK",
-     "explanation": "The cited source says backups are kept for 35 days, not 90 days."
+     "explanation": "The cited document says backups are kept for 35 days, not 90 days."
     }
    ]
   },
   "usage": {
-   "input_tokens": 142,
-   "output_tokens": 84,
+   "input_tokens": 147,
+   "output_tokens": 87,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 6.775e-05,
+ "cost_usd": 7.159e-05,
  "check_model": "claude-haiku-5-5"
 }

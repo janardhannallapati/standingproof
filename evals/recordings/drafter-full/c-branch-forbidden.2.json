@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about branch protection, code review or merge approval. I searched for 'branch protection default branch code review' and for 'change management pull request approval before merge'. The only match was an unrelated answer about encryption at rest (answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80), so I didn't use it. I also tried to check the live branch protection setting on harborlight/app, but nothing came back because the credential was denied access ('forbidden'). That means the setting's actual state is unknown, and the answer shouldn't say either way whether branch protection is on. To answer this, either someone with access to the repository confirms the setting and an owner approves the wording, or the check tool is given read access to branch protection on harborlight/app."
+  "note": "I couldn't find anything that supports an answer about branch protection on harborlight/app. 1) I searched the approved answers and policy text twice. The first search ('branch protection default branch code review') found nothing. The second ('pull request approval required before merge') only found unrelated entries: employee multi-factor sign-in (CC6.1), the authentication policy section, and vulnerability scanning (CC7.1). None of them covers branch protection, code review or merge rules. 2) I tried to read the live branch protection setting for harborlight/app, but the request was refused because our access doesn't allow it, so nothing was seen. The setting can't be stated either way. Next steps: the owner (likely security@harborlight.example) should write an approved answer for this, or give the checking tool read access to the repository so the setting can be checked."
  },
  "steps": 3,
  "tool_uses": [
@@ -51,27 +51,35 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "change management pull request approval before merge"
+    "query": "pull request approval required before merge"
    },
    "is_error": false,
    "source_ids": [
-    "answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80"
+    "answer:81f93e9a-7920-4668-ba20-05d7e678eef5",
+    "policy:fb4419b7-16c5-4513-bd85-3c25805ca666",
+    "answer:76393706-3c2b-49a6-91ae-77367d1c56eb"
    ]
   }
  ],
  "seen_sources": {
-  "answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  "answer:81f93e9a-7920-4668-ba20-05d7e678eef5": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "policy:fb4419b7-16c5-4513-bd85-3c25805ca666": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:76393706-3c2b-49a6-91ae-77367d1c56eb": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1039,
-  "output_tokens": 486,
+  "input_tokens": 1377,
+  "output_tokens": 497,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.015090399999999999,
+ "cost_usd": 0.016687,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

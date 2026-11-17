@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -24,25 +24,27 @@
  "handoff": null,
  "final_stop_reason": "end_turn",
  "final_draft": {
-  "status": "no_approved_source",
-  "answer": "",
-  "citations": [],
-  "note": "Don't send the approved answer. It says yes, but a live check says no. The approved answer (answer:0db5a32b-3d0c-44c6-a70c-a97d52416a65, owner security@harborlight.example, valid until 2027-11-16) says: \"Yes. The root user of our production AWS account (111122223333) has multi-factor authentication.\" A live check of that account (evidence:895ede02-4373-47dd-9b6b-3218a3114afa, run 2026-11-16T17:11:09Z) found: \"The root user of AWS account 111122223333 does not have multi-factor authentication\" (root_mfa_enabled: false). Because the live setting contradicts the approved answer, no source supports a 'Yes'. The security team should check the root account, add multi-factor authentication if it is missing, and run the check again. They should also update or withdraw the approved answer so it matches what is actually set. After that, someone needs to decide what to tell the customer."
+  "status": "answered",
+  "answer": "No. As of 2026-11-17, the root user of our production AWS account (111122223333) does not have multi-factor authentication.",
+  "citations": [
+   "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227"
+  ],
+  "note": "This answer must not go out without review because the live account and the approved answer disagree. The approved answer (answer:fff72d41-811c-4362-8344-3afeb13b5749, owner security@harborlight.example, valid until 2027-11-17) says yes: the root user of AWS account 111122223333 has multi-factor authentication. A live check of that account at 2026-11-17T01:17:11Z found it does not (root_mfa_enabled: false). I used the live check instead of the approved wording because sending 'Yes' would be a false statement. Before sending: (1) Ask security@harborlight.example to confirm whether root MFA is meant to be on, and switch it on if so. (2) Once it is on, run the check again and go back to the approved 'Yes' answer. (3) Until then, have someone with authority decide whether to send this 'No' or delay the response. The approved answer also needs to be corrected or withdrawn."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "root user multi-factor authentication cloud account"
+    "query": "root user multi-factor authentication production cloud account"
    },
    "is_error": false,
    "source_ids": [
-    "answer:0db5a32b-3d0c-44c6-a70c-a97d52416a65",
-    "answer:41d9ef81-7185-4783-8eb3-d440f654a140",
-    "policy:1dcacd08-55bd-487a-8510-5b1ea55c25ae",
-    "answer:e60bcbee-1846-4979-933f-fcbd102a7bd9",
-    "answer:e0db9d07-52bd-4a86-a1ee-969f4b15657e"
+    "answer:fff72d41-811c-4362-8344-3afeb13b5749",
+    "answer:931d3149-9cfd-4601-aec5-916b76161efd",
+    "policy:f4ea9fa9-a1c6-4721-9539-6fdc6d9fb0bf",
+    "answer:6de65635-7653-458c-aa4c-fba9865adfa5",
+    "answer:7df0077d-598f-4b09-8303-5824824acf5b"
    ]
   },
   {
@@ -53,38 +55,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:895ede02-4373-47dd-9b6b-3218a3114afa"
+    "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227"
    ]
   }
  ],
  "seen_sources": {
-  "answer:0db5a32b-3d0c-44c6-a70c-a97d52416a65": [
+  "answer:fff72d41-811c-4362-8344-3afeb13b5749": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:41d9ef81-7185-4783-8eb3-d440f654a140": [
+  "answer:931d3149-9cfd-4601-aec5-916b76161efd": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "policy:1dcacd08-55bd-487a-8510-5b1ea55c25ae": [
+  "policy:f4ea9fa9-a1c6-4721-9539-6fdc6d9fb0bf": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:e60bcbee-1846-4979-933f-fcbd102a7bd9": [
+  "answer:6de65635-7653-458c-aa4c-fba9865adfa5": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:e0db9d07-52bd-4a86-a1ee-969f4b15657e": [
+  "answer:7df0077d-598f-4b09-8303-5824824acf5b": [
    "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "evidence:895ede02-4373-47dd-9b6b-3218a3114afa": [
-   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-16 17:11 UTC."
+  "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227": [
+   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-17 01:17 UTC."
   ]
  },
- "check_turn": null,
- "usage": {
-  "input_tokens": 2054,
-  "output_tokens": 674,
-  "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 609,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.022910399999999997,
+ "usage": {
+  "input_tokens": 2656,
+  "output_tokens": 819,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7534
+ },
+ "cost_usd": 0.0269789,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

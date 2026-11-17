@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sides-with-document-that-says-observed",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "b155a0c77fb83498",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "13199800e498a66f"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "needs 2 approving reviews",
+     "source_id": "evidence:EV-BP1",
+     "explanation": "An observed check of the same branch (main of harborlight/app) found that a change needs 1 approving review, and the draft instead relies on the document that says 2."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 254,
+   "output_tokens": 339,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 0.00020829000000000003,
+ "check_model": "claude-haiku-5-5"
+}
