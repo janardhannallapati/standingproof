@@ -83,36 +83,43 @@ async def _reopen(
     latest_id: uuid.UUID,
     changes: list[Change],
 ) -> None:
-    waiting = item.review == REVIEW_PENDING
-    made = await session.execute(
-        insert(AnswerReopening)
-        .values(
-            tenant_id=item.tenant_id,
-            drift_event_id=event_id,
-            run_question_id=item.id,
-            was_evidence_id=link.evidence_id,
-            changes=[{"fact": c.fact, "was": c.was, "now": c.now} for c in changes],
-            # What "keep" puts back. A question already waiting has nothing to put back.
-            was_review=None if waiting else item.review,
-        )
-        .on_conflict_do_nothing(constraint="uq_answer_reopenings_once")
-        .returning(AnswerReopening.seq)
-    )
-    seq = made.scalar_one_or_none()
-    if seq is None:
-        # This event reopened this answer before, in a wait that a decision has since
-        # closed (a redraft came to rest on the older observation again). That record
-        # stays where it is, and this wait starts after every reopening the answer has
-        # had, whichever setting each was about: nothing of an earlier wait, least of
-        # all the state "keep" would put back, belongs to this one.
+    # Whether the answer is already in front of a reviewer because of a changed setting.
+    in_a_wait = item.reopened_at is not None
+    seq = None
+    if in_a_wait:
+        # One record for a change in a wait: a second pass over the same change adds none.
         seq = (
             await session.execute(
-                select(func.max(AnswerReopening.seq)).where(
+                select(func.min(AnswerReopening.seq)).where(
                     AnswerReopening.tenant_id == item.tenant_id,
+                    AnswerReopening.drift_event_id == event_id,
                     AnswerReopening.run_question_id == item.id,
+                    AnswerReopening.seq >= item.reopened_seq,
                 )
             )
-        ).scalar_one() + 1
+        ).scalar_one()
+    if seq is None:
+        # A new record, also when this change reopened this answer before, in a wait that
+        # a decision has since closed (a redraft came to rest on the older observation
+        # again). That wait's record stays as it is. This one says what the answer rests
+        # on now and what state it was in, so the reviewer is shown this wait's change
+        # and "keep" restores nothing from the earlier one.
+        seq = (
+            await session.execute(
+                insert(AnswerReopening)
+                .values(
+                    tenant_id=item.tenant_id,
+                    drift_event_id=event_id,
+                    run_question_id=item.id,
+                    was_evidence_id=link.evidence_id,
+                    changes=[{"fact": c.fact, "was": c.was, "now": c.now} for c in changes],
+                    # What "keep" puts back. A question already waiting for a person,
+                    # reopened or not, has nothing to put back.
+                    was_review=None if item.review == REVIEW_PENDING else item.review,
+                )
+                .returning(AnswerReopening.seq)
+            )
+        ).scalar_one()
     await record(
         session,
         item.tenant_id,
@@ -126,7 +133,7 @@ async def _reopen(
     # Back to a person. `status`, `reason` and the approved wording are not touched: they
     # say what the agent concluded and what was approved, and both are still true.
     item.review = REVIEW_PENDING
-    if item.reopened_at is None:
+    if not in_a_wait:
         item.reopened_at = func.now()
         # Which reopenings belong to this wait: this one and every later one.
         item.reopened_seq = seq

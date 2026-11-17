@@ -21,6 +21,12 @@ let questionId: string;
 
 /** `python -m standingproof.limits ...` as an operator would run it. */
 function limits(...words: string[]): string {
+  // This command goes to whichever stack Compose resolves from the environment. With the
+  // tests pointed at a second stack (E2E_API_URL) and no COMPOSE_PROJECT_NAME, that would be
+  // the default one: somebody's own running stack, whose ceiling this test sets to zero.
+  if (process.env.E2E_API_URL && !process.env.COMPOSE_PROJECT_NAME) {
+    throw new Error("E2E_API_URL is set: set COMPOSE_PROJECT_NAME to that stack's project as well");
+  }
   return execFileSync(
     "docker",
     ["compose", "-f", "compose.yaml", "-f", "compose.e2e.yaml", "exec", "-T", "api", "python", "-m", "standingproof.limits", ...words],
