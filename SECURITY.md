@@ -105,6 +105,69 @@ Limits you should know:
   another's by its id. It has no row-level policy: the tables belong to the workflow library.
 - The evals (`python -m evals run`) start their own throwaway database and use it as its owner.
 
+## Audit log
+
+Every decision is written to an append-only log in the same transaction as the decision, so
+neither exists without the other. Each entry carries a hash of itself and of the entry before
+it. Changing, removing or reordering one entry breaks every hash after it.
+
+Recorded: a review decision (with a hash of the approved wording, never the wording), a
+connection added, a library answer or policy added, a run started or cancelled, a file made, a
+file recorded as sent, an answer reopened by a changed setting, and every change to the stop
+switch or a spend ceiling. Each tenant has its own chain; operator actions go in the
+deployment's.
+
+To check every chain, run:
+
+```sh
+docker compose exec api python -m standingproof.audit verify
+```
+
+```text
+deployment: 4 entries, chain intact
+tenant default: 412 entries, chain intact
+```
+
+A broken chain names the first bad entry on standard error, and the command exits 1.
+
+What a sound chain proves: nobody who could change single rows did. The running services can
+only add and read entries, and a trigger refuses an update or delete from anyone. What it
+does not prove: that the owner of the database did not rebuild a whole chain, or cut one
+short. To cover that, keep the output of `python -m standingproof.audit head` somewhere the
+database's owner cannot reach. An earlier head must still be an entry of the later chain.
+
+## Spend ceiling and stop switch
+
+Before every model call the worker checks two things, in code:
+
+| Check | Where it lives | When it refuses |
+|---|---|---|
+| Stop switch | A row in Postgres, per tenant and for the deployment | The call is not made. A question in progress goes to a reviewer with the reason; a question not yet started waits and goes on after `resume`. No live check runs either |
+| Daily ceiling (UTC) | A counter in Redis, per tenant and for the deployment | The call is not made and the question goes to a reviewer with the reason |
+
+The defaults are `SP_DAILY_LIMIT_USD=20` for the deployment and `SP_TENANT_DAILY_LIMIT_USD=10`
+for each tenant. An operator changes them, and the switch, with:
+
+```sh
+docker compose exec api python -m standingproof.limits show
+docker compose exec api python -m standingproof.limits stop --by YOUR_NAME
+docker compose exec api python -m standingproof.limits resume --by YOUR_NAME
+docker compose exec api python -m standingproof.limits daily --by YOUR_NAME --usd 5 --tenant default
+```
+
+A tenant cannot change its own switch or ceiling: the application's role may only read them.
+
+Limits you should know:
+
+- A call is counted as `SP_CALL_RESERVE_USD` (10 cents) until it returns, then as what it cost.
+  Calls that start together cannot all see the same room, but one call that costs more than
+  its reservation can take the day slightly over the ceiling.
+- If Redis cannot be reached, no model call is made. If Redis loses its data during the day,
+  the day's count starts again from zero.
+- The ceiling covers the worker's model calls. `python -m evals run` and
+  `python -m standingproof.agent` have their own ceilings and are not counted here.
+- `--by` is a name you type. Until sign-in exists it is not proof of who ran the command.
+
 ## Where the model key lives
 
 Only the `worker` service is given `ANTHROPIC_API_KEY`. The API service faces the network and

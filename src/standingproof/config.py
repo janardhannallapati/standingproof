@@ -101,6 +101,14 @@ class Settings(BaseSettings):
     # How many of each the watcher handles in one pass.
     drift_batch: int = 20
 
+    # The most the model may cost in one day (UTC), for the whole deployment and for any
+    # one tenant. Checked before every model call; over it, the call is not made and the
+    # question goes to a person. `python -m standingproof.limits` sets other values.
+    daily_limit_usd: float = 20.0
+    tenant_daily_limit_usd: float = 10.0
+    # What one model call is counted as until it returns and its real cost replaces this.
+    call_reserve_usd: float = 0.10
+
     # Running a questionnaire. A run stops starting questions once it has spent its ceiling.
     run_cost_limit_usd: float = 5.0
     # How many questions one worker works on at once (the provider's rate limit is shared).

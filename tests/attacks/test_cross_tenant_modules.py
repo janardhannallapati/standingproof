@@ -18,6 +18,7 @@ ALLOWED = {
     "drift/watcher.py": "works through deliveries; finds settings that are due",
     "library/__main__.py": "lists the tenants whose libraries to re-embed",
     "audit/__main__.py": "lists the tenants whose chains to check; reads the deployment's",
+    "limits/__main__.py": "the operator's switch and ceilings, for any tenant or all",
     "drift/examine.py": "finds which tenants have an observation waiting",
 }
 MARKS = ("across_tenants", "SystemSessionDep", "get_system_session", 'role_url("system")')

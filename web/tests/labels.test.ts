@@ -39,3 +39,12 @@ describe("how a state is named", () => {
     expect(reasonText(null)).toBe("");
   });
 });
+
+describe("why our own rules stopped a question", () => {
+  it.each([
+    ["daily_limit", "Stopped: today's spend ceiling was reached"],
+    ["stopped", "Stopped: an operator has paused this work"],
+  ])("%s is said in words, not shown as a code", (reason, words) => {
+    expect(reasonText(reason)).toBe(words);
+  });
+});

@@ -602,3 +602,24 @@ class AuditEntry(Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSONB)
     prev_hash: Mapped[str] = mapped_column(String(64))
     hash: Mapped[str] = mapped_column(String(64))
+
+
+class Limit(Base):
+    """A stop switch and a daily spend ceiling: one row per tenant that has its own, and one
+    with tenant_id NULL for the deployment. Changed by an operator, read before every model
+    call and every look. See standingproof.limits."""
+
+    __tablename__ = "limits"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_limits_tenant", postgresql_nulls_not_distinct=True),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE")
+    )
+    stopped: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
+    # None: the ceiling in the settings applies.
+    daily_limit_usd: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    changed_by: Mapped[str] = mapped_column(String(200))
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)

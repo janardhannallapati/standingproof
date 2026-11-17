@@ -199,6 +199,15 @@ live system settings, and reopens them when those settings drift.
 - No running service gets `SP_DATABASE_URL` (the owner). A migration that must read rows as
   a plain owner, or add a foreign key between existing tables, sets `NO FORCE ROW LEVEL SECURITY` for its own transaction and restores it.
 - "Newest observation" means highest `evidence.seq`, never latest `observed_at`.
+- An action a person or an operator decides is recorded with `audit.record(session, ...)`
+  before its own `commit()`, never after and never in a second transaction. `details` holds
+  strings, integers, booleans and nulls only; put a hash of customer text there, never the text.
+- Never give a running role `UPDATE` or `DELETE` on `audit_log`, and never write to `limits`
+  as the app role: a tenant must not be able to lift its own ceiling.
+- Every model call in the worker goes through `limits.guard` (`GuardedModel`,
+  `GuardedChecker`). Do not hand the worker's raw model client to new code.
+- A new `HandoffReason` needs its words in `web/src/lib/labels.ts`;
+  `tests/test_reason_labels.py` fails until it has them.
 - The saved-state tables belong to the workflow library and live in schema `workflow`. They are
   created by `python -m standingproof.workflow setup`, not by a migration.
 - `LANGSMITH_TRACING=false` is set in the image. Never enable tracing to a hosted service:
