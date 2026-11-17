@@ -35,8 +35,8 @@ def get_app_settings(request: Request) -> Settings:
 
 
 async def get_system_session(request: Request) -> AsyncIterator[AsyncSession]:
-    """A session that crosses tenants. For the two things a request does before it has a
-    tenant: finding out which tenant it is, and recording a webhook delivery."""
+    """A session that crosses tenants, for recording a webhook delivery: the one thing a
+    request does that may be about no tenant at all."""
     async with get_database(request).across_tenants() as session:
         yield session
 
@@ -55,14 +55,19 @@ SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
 BackendsDep = Annotated[CheckBackends, Depends(get_backends)]
 SystemSessionDep = Annotated[AsyncSession, Depends(get_system_session)]
+DatabaseDep = Annotated[Database, Depends(get_database)]
 
 
-async def current_tenant(session: SystemSessionDep, settings: SettingsDep) -> uuid.UUID:
+async def current_tenant(database: DatabaseDep, settings: SettingsDep) -> uuid.UUID:
     """The tenant this request acts for.
 
     Until sign-in exists this is one development tenant, created on first use. Sign-in
     replaces the body of this function; nothing that depends on it changes.
     """
+    return await resolve_tenant(database, settings)
+
+
+async def resolve_tenant(database: Database, settings: Settings) -> uuid.UUID:
     if settings.environment == "prod":
         # Fail closed. Without this, a production deployment would serve every caller
         # as one shared tenant, with no authentication at all.
@@ -71,14 +76,19 @@ async def current_tenant(session: SystemSessionDep, settings: SettingsDep) -> uu
         )
     name = settings.dev_tenant_name
     lookup = select(Tenant.id).where(Tenant.name == name)
-    tenant_id = (await session.execute(lookup)).scalar_one_or_none()
-    if tenant_id is None:
-        # ON CONFLICT DO NOTHING: two first requests at once both succeed.
-        await session.execute(
-            insert(Tenant).values(name=name).on_conflict_do_nothing(index_elements=[Tenant.name])
-        )
-        await session.commit()
-        tenant_id = (await session.execute(lookup)).scalar_one()
+    # Asked across tenants, in a session that ends here: its connection is back in the
+    # pool before the request's own work begins.
+    async with database.across_tenants() as session:
+        tenant_id = (await session.execute(lookup)).scalar_one_or_none()
+        if tenant_id is None:
+            # ON CONFLICT DO NOTHING: two first requests at once both succeed.
+            await session.execute(
+                insert(Tenant)
+                .values(name=name)
+                .on_conflict_do_nothing(index_elements=[Tenant.name])
+            )
+            await session.commit()
+            tenant_id = (await session.execute(lookup)).scalar_one()
     return tenant_id
 
 

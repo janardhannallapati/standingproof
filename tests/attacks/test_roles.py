@@ -35,6 +35,43 @@ def test_a_process_refuses_to_use_the_owners_login(wf: Db) -> None:
     wf.run(go())
 
 
+def test_a_role_is_refused_where_another_roles_login_was_given(wf: Db) -> None:
+    settings = settings_for(wf.url)
+    # The system role's login as the app's: "tenant" sessions would then cross tenants.
+    swapped = Database(app_url=settings.role_url("system"), system_url=settings.role_url("app"))
+
+    async def go() -> None:
+        try:
+            for sessions in (swapped.tenant(uuid.uuid4()), swapped.across_tenants):
+                with pytest.raises((UnsafeRoleError, DBAPIError), match="refusing to use it"):
+                    async with sessions() as session:
+                        await session.execute(text("SELECT 1"))
+        finally:
+            await swapped.dispose()
+
+    wf.run(go())
+
+
+def test_saved_state_is_not_kept_under_the_owners_login(wf: Db) -> None:
+    async def go() -> None:
+        await setup(wf.url)
+        with pytest.raises(Exception, match="refusing to use it|pool initialization incomplete"):
+            async with open_checkpointer(wf.url, max_connections=1, wait_seconds=3):
+                pass
+
+    wf.run(go())
+
+
+def test_role_name_passwords_are_set_only_on_this_machine() -> None:
+    elsewhere = Settings(
+        _env_file=None,
+        database_url=SecretStr("postgresql+asyncpg://owner:secret@db.internal:5432/standingproof"),
+    )
+
+    with pytest.raises(ValueError, match="SP_APP_DATABASE_URL"):
+        asyncio.run(ensure_logins(elsewhere))
+
+
 def test_in_production_each_role_must_be_given_its_own_url() -> None:
     settings = Settings(_env_file=None, environment="prod")
 

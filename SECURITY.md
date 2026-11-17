@@ -91,6 +91,10 @@ python -m standingproof.roles
 
 Limits you should know:
 
+- The rules guard against a query that forgets its tenant filter. They do not guard against
+  injected SQL: a statement that runs as the app role can name another tenant itself. No
+  value from a request reaches that setting, and queries are parameterised.
+
 - There is no sign-in yet, so a deployment has one tenant in practice. The rules above are what
   make a second one safe to add.
 - The system role reads scheduling data of every tenant, can close an idle run, and can

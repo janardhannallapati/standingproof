@@ -59,6 +59,33 @@ TENANT_TABLES = (
     "answer_reopenings",
 )
 
+# The rows each table's rows point at. The database checks a foreign key with no regard to
+# policies, so without this a tenant could write a row that is its own by tenant_id and
+# points at another tenant's row: that would block the other tenant's own row where the
+# reference is unique, and the error would tell whether an id exists. Each policy
+# therefore also asks that the row pointed at is one this tenant can see.
+REFERENCES = {
+    "questionnaire_files": {"questionnaire_id": "questionnaires"},
+    "questions": {"questionnaire_id": "questionnaires"},
+    "policy_chunks": {"policy_doc_id": "policy_docs"},
+    "library_answer_embeddings": {"answer_id": "library_answers"},
+    "policy_chunk_embeddings": {"chunk_id": "policy_chunks"},
+    "runs": {"questionnaire_id": "questionnaires"},
+    "run_questions": {"run_id": "runs", "question_id": "questions"},
+    "review_decisions": {"run_question_id": "run_questions"},
+    "draft_checks": {"run_question_id": "run_questions"},
+    "filled_files": {"run_id": "runs"},
+    "sent_files": {"run_id": "runs", "filled_file_id": "filled_files"},
+    "answer_evidence": {"run_question_id": "run_questions", "evidence_id": "evidence"},
+    "drift_queue": {"evidence_id": "evidence"},
+    "drift_events": {"evidence_id": "evidence", "previous_evidence_id": "evidence"},
+    "answer_reopenings": {
+        "drift_event_id": "drift_events",
+        "run_question_id": "run_questions",
+        "was_evidence_id": "evidence",
+    },
+}
+
 # What finding work across tenants needs, and no more. Not here: the library, uploaded and
 # filled files, questions, decisions, checks of drafts.
 SYSTEM_RIGHTS = {
@@ -107,15 +134,22 @@ def upgrade() -> None:
     for table in TENANT_TABLES:
         _secure(table)
         op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO {APP}")
+        check = f"tenant_id = {TENANT}"
+        for column, parent in REFERENCES.get(table, {}).items():
+            # The inner query runs under the caller's policies: a row of another tenant
+            # is not found, exactly as a row that does not exist.
+            # Names from the constants above.
+            seen = f"EXISTS (SELECT 1 FROM {parent} WHERE {parent}.id = {table}.{column})"  # noqa: S608
+            check += f" AND ({table}.{column} IS NULL OR {seen})"
         op.execute(
             f"CREATE POLICY tenant_only ON {table} TO {APP} "
-            f"USING (tenant_id = {TENANT}) WITH CHECK (tenant_id = {TENANT})"
+            f"USING (tenant_id = {TENANT}) WITH CHECK ({check})"
         )
 
     # Its own row, to read. A tenant is created by the system role, never by a request.
     _secure("tenants")
     op.execute(f"GRANT SELECT ON tenants TO {APP}")
-    op.execute(f"CREATE POLICY tenant_only ON tenants TO {APP} USING (id = {TENANT})")
+    op.execute(f"CREATE POLICY tenant_only ON tenants FOR SELECT TO {APP} USING (id = {TENANT})")
 
     # A delivery may be about no tenant at all, so it is the system role's table alone.
     _secure("webhook_deliveries")
@@ -128,9 +162,15 @@ def upgrade() -> None:
     for table, rights in SYSTEM_COLUMN_RIGHTS.items():
         for command, columns in rights.items():
             op.execute(f"GRANT {command} ({columns}) ON {table} TO {SYSTEM}")
+            # The one thing the system role sets on a run: that it is over.
+            closing = (
+                " WITH CHECK (status = 'finished')"
+                if (table, command) == ("runs", "UPDATE")
+                else ""
+            )
             op.execute(
                 f"CREATE POLICY across_tenants_{command.lower()} ON {table} "
-                f"FOR {command} TO {SYSTEM} USING (true)"
+                f"FOR {command} TO {SYSTEM} USING (true){closing}"
             )
 
 

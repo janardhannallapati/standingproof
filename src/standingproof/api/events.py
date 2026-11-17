@@ -16,7 +16,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import select
 
-from standingproof.api.deps import current_tenant
+from standingproof.api.deps import resolve_tenant
 from standingproof.config import Settings
 from standingproof.db import Database
 from standingproof.models import Run
@@ -45,11 +45,10 @@ async def _owned(websocket: WebSocket, run_id: uuid.UUID) -> int | None:
     """None if this caller may watch the run; otherwise the code to close with."""
     settings = cast(Settings, websocket.app.state.settings)
     database = cast(Database, websocket.app.state.database)
-    async with database.across_tenants() as session:
-        try:
-            tenant_id = await current_tenant(session, settings)
-        except HTTPException:
-            return NOT_SIGNED_IN
+    try:
+        tenant_id = await resolve_tenant(database, settings)
+    except HTTPException:
+        return NOT_SIGNED_IN
     async with database.tenant(tenant_id)() as session:
         found = await session.execute(
             select(Run.id).where(Run.tenant_id == tenant_id, Run.id == run_id)

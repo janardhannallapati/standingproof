@@ -13,7 +13,6 @@ SOURCE = Path(__file__).parents[2] / "src" / "standingproof"
 ALLOWED = {
     "db.py": "defines it",
     "api/deps.py": "finds which tenant a request is for, before there is one",
-    "api/events.py": "the same, for a live connection",
     "api/webhooks.py": "records a delivery, which may be about no tenant",
     "workflow/worker.py": "finds whose question a job names; sweeps and prunes",
     "drift/watcher.py": "works through deliveries; finds settings that are due",

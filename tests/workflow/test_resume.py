@@ -24,6 +24,7 @@ from standingproof.workflow.checkpoint import (
 from standingproof.workflow.graph import build_graph, run_question
 from standingproof.workflow.state import ExactMatch, Outcome, QuestionContext
 from tests.agent.fakes import ScriptedModel, finishes, search, wants_tools
+from tests.conftest import settings_for
 
 MFA_ID = "LIB-MFA-01"
 QUESTION = "Is multi-factor authentication enforced for all employees?"
@@ -68,7 +69,7 @@ def database(migrated_postgres_url: str) -> str:
 
 async def one_worker(database: str, thread: str, ctx: QuestionContext) -> Outcome:
     """Everything a fresh process would build: its own pool, saver and graph."""
-    async with open_checkpointer(database) as saver:
+    async with open_checkpointer(settings_for(database).role_url("state")) as saver:
         return await run_question(
             build_graph(saver), thread_id=thread, question=QUESTION, context=ctx
         )
@@ -196,7 +197,7 @@ async def test_deleting_saved_state_removes_every_row_for_the_question(
     await one_worker(database, thread, context(model))
     assert _saved_rows(database, thread) > 0
 
-    async with open_checkpointer(database) as saver:
+    async with open_checkpointer(settings_for(database).role_url("state")) as saver:
         await delete_state(saver, [thread])
 
     assert _saved_rows(database, thread) == 0

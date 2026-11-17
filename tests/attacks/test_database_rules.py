@@ -110,9 +110,12 @@ def test_every_tenant_table_has_a_forced_policy(wf: Db, table: str) -> None:
         t=table,
     )
     found = rows(
-        wf, wf.sessions, "SELECT policyname, roles FROM pg_policies WHERE tablename = :t", t=table
+        wf,
+        wf.sessions,
+        "SELECT policyname, roles, cmd, qual, with_check FROM pg_policies WHERE tablename = :t",
+        t=table,
     )
-    policies = [(name, list(roles)) for name, roles in found]
+    policies = [(name, list(roles)) for name, roles, *_ in found]
 
     assert (enabled, forced) == (True, True)
     if table == "webhook_deliveries":
@@ -121,8 +124,28 @@ def test_every_tenant_table_has_a_forced_policy(wf: Db, table: str) -> None:
         nobody_special = wf.database.tenant(uuid.uuid4())
         reason = refused(wf, nobody_special, f"SELECT 1 FROM {table}")  # noqa: S608
         assert "permission denied" in reason
-    else:
-        assert ("tenant_only", [APP_ROLE]) in policies
+        return
+    assert ("tenant_only", [APP_ROLE]) in policies
+    # The name is not the rule. What the policy says is checked too: it covers every
+    # command, and compares the row's tenant with the one the transaction named.
+    [(command, using, check)] = [
+        (cmd, qual, with_check) for name, _, cmd, qual, with_check in found if name == "tenant_only"
+    ]
+    column = "id" if table == "tenants" else "tenant_id"
+    names_the_tenant = (
+        f"({column} = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)"
+    )
+    assert names_the_tenant in using
+    if table == "tenants":
+        assert command == "SELECT"
+        return
+    assert command == "ALL" and names_the_tenant in check
+    # And a row may only point at rows this tenant can see: a foreign key is checked by
+    # the database with no regard to policies, so the policy has to ask.
+    for key in Base.metadata.tables[table].foreign_keys:
+        parent = key.column.table.name
+        if parent != "tenants":
+            assert f"FROM {parent}" in check and f"{parent}.id = {table}.{key.parent.name}" in check
 
 
 def test_a_query_with_no_filter_sees_one_tenant_and_none_without_a_tenant(wf: Db) -> None:
@@ -165,6 +188,32 @@ def test_a_row_cannot_be_written_for_or_moved_to_another_tenant(wf: Db) -> None:
     assert "row-level security" in refused(wf, nobody, library_answer, t=ours)
 
 
+def test_a_row_cannot_point_at_another_tenants_row(wf: Db) -> None:
+    ours, theirs = two_tenants(wf)
+    as_us = wf.database.tenant(ours)
+    [(their_evidence,)] = rows(
+        wf, wf.sessions, "SELECT id FROM evidence WHERE tenant_id = :t", t=theirs
+    )
+    [(their_item,)] = rows(
+        wf, wf.sessions, "SELECT id FROM run_questions WHERE tenant_id = :t", t=theirs
+    )
+
+    # Ours by tenant_id, theirs by reference. Left alone, the first would block their own
+    # queue row for that observation, and a foreign-key error would say "that id exists".
+    queue = "INSERT INTO drift_queue (evidence_id, tenant_id, trigger) VALUES (:e, :t, 'manual')"
+    decision = (
+        "INSERT INTO review_decisions (tenant_id, run_question_id, decision, decided_by) "
+        "VALUES (:t, :i, 'approve', 'us')"
+    )
+    assert "row-level security" in refused(wf, as_us, queue, e=their_evidence, t=ours)
+    assert "row-level security" in refused(wf, as_us, decision, i=their_item, t=ours)
+    # The same refusal as for an id nobody has: nothing is learned from it.
+    assert "row-level security" in refused(wf, as_us, queue, e=uuid.uuid4(), t=ours)
+    assert "row-level security" in refused(
+        wf, as_us, "UPDATE answer_evidence SET evidence_id = :e", e=their_evidence
+    )
+
+
 def test_the_tenant_holds_across_commits_and_does_not_stay_on_the_connection(wf: Db) -> None:
     ours, _ = two_tenants(wf)
     names = text("SELECT name FROM tenants")
@@ -195,6 +244,7 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
     assert len(rows(wf, system, "SELECT DISTINCT tenant_id FROM run_questions")) == 2
     assert len(rows(wf, system, "SELECT status, observed_at FROM evidence")) == 2
     assert len(rows(wf, system, "UPDATE run_questions SET enqueue_after = now() RETURNING id")) == 2
+    assert len(rows(wf, system, "UPDATE runs SET status = 'finished' RETURNING id")) == 2
     for sql in (
         # Where and when, never what: not an answer, a note, a citation or a cost.
         "SELECT answer FROM run_questions",
@@ -211,6 +261,9 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
         f"UPDATE runs SET tenant_id = '{theirs}'",  # noqa: S608
         "INSERT INTO run_questions (id) VALUES (gen_random_uuid())",
         "DELETE FROM runs",
+        # It may close a run that has nothing left to do, and that is all it may set.
+        "UPDATE runs SET status = 'running'",
+        "UPDATE runs SET status = 'cancelled'",
         "SELECT facts FROM evidence",
         "SELECT statement FROM evidence",
         "SELECT answer FROM library_answers",
@@ -221,4 +274,5 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
         "DELETE FROM run_questions",
         "UPDATE evidence SET status = 'observed'",
     ):
-        assert "permission denied" in refused(wf, system, sql), sql
+        reason = refused(wf, system, sql)
+        assert "permission denied" in reason or "row-level security" in reason, sql

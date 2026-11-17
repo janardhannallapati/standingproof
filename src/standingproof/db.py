@@ -75,13 +75,31 @@ def build_session_factory(engine: AsyncEngine, **info: object) -> async_sessionm
 
 _UNSAFE = """
     SELECT r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb
+           OR r.rolname <> '{role}'
+           OR EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.member = r.oid)
            OR EXISTS (SELECT 1 FROM pg_tables
                       WHERE schemaname IN ('public', 'workflow') AND tableowner = current_user)
     FROM pg_roles r WHERE r.rolname = current_user
 """
 
 
-def _refuse_unsafe_role(engine: AsyncEngine, name: str) -> None:
+def unsafe_role_query(role: str) -> str:
+    """SQL that is true when the signed-in role is not exactly `role`, with its limits:
+    a superuser, an owner, exempt from row-level security, or a member of another role
+    (whose rights it would then have). `role` is one of our three constants."""
+    if role not in ROLES.values():
+        raise ValueError("not one of the running roles")
+    return _UNSAFE.format(role=role)
+
+
+def refusal(role: str) -> UnsafeRoleError:
+    return UnsafeRoleError(
+        f"this database login is not {role} with that role's limits (it is another role, a "
+        "superuser, an owner of tables, or exempt from row-level security); refusing to use it"
+    )
+
+
+def _refuse_unsafe_role(engine: AsyncEngine, role: str) -> None:
     """Check each new connection of a pool, as it is made.
 
     Not once at start: a process must be able to start while the database is away, and
@@ -92,15 +110,12 @@ def _refuse_unsafe_role(engine: AsyncEngine, name: str) -> None:
     def check(dbapi_connection: Any, record: Any) -> None:
         cursor = dbapi_connection.cursor()
         try:
-            cursor.execute(_UNSAFE)
+            cursor.execute(unsafe_role_query(role))
             (unsafe,) = cursor.fetchone()
         finally:
             cursor.close()
         if unsafe:
-            raise UnsafeRoleError(
-                f"the {name} database role is a superuser, owns tables or is exempt from "
-                "row-level security; refusing to use it"
-            )
+            raise refusal(role)
 
 
 class Database:
@@ -109,8 +124,8 @@ class Database:
     def __init__(self, *, app_url: str, system_url: str) -> None:
         self.app_engine = build_engine(app_url)
         self._system_engine = build_engine(system_url)
-        _refuse_unsafe_role(self.app_engine, "app")
-        _refuse_unsafe_role(self._system_engine, "system")
+        _refuse_unsafe_role(self.app_engine, APP_ROLE)
+        _refuse_unsafe_role(self._system_engine, SYSTEM_ROLE)
         self._system = build_session_factory(self._system_engine)
 
     def tenant(self, tenant_id: uuid.UUID) -> async_sessionmaker[AsyncSession]:
