@@ -25,6 +25,9 @@ SYSTEM = "standingproof_system"
 
 def upgrade() -> None:
     op.add_column("webhook_deliveries", sa.Column("seq", sa.BigInteger(), nullable=True))
+    # The policies are forced, so they bind an owner that is not a superuser and the two
+    # statements below would be refused. Lifted for this transaction, and put back.
+    op.execute("ALTER TABLE webhook_deliveries NO FORCE ROW LEVEL SECURITY")
     # A delivery already dealt with needs no place in the order. One still waiting is
     # numbered after every look made so far, so it gets a look of its own: the safe side.
     op.execute("UPDATE webhook_deliveries SET seq = 0 WHERE handled_at IS NOT NULL")
@@ -33,6 +36,7 @@ def upgrade() -> None:
         "SET seq = nextval(pg_get_serial_sequence('public.evidence', 'seq')) "
         "WHERE handled_at IS NULL"
     )
+    op.execute("ALTER TABLE webhook_deliveries FORCE ROW LEVEL SECURITY")
     op.execute(
         "ALTER TABLE webhook_deliveries ALTER COLUMN seq "
         "SET DEFAULT nextval(pg_get_serial_sequence('public.evidence', 'seq'))"
