@@ -15,7 +15,7 @@ from redis.asyncio import Redis
 
 from standingproof.checks.service import build_backends
 from standingproof.config import Settings, get_settings
-from standingproof.db import build_engine, build_session_factory
+from standingproof.db import build_database
 from standingproof.drift.watcher import Watcher, WatcherDeps
 from standingproof.workflow.events import publish_changed
 
@@ -29,7 +29,7 @@ async def serve(settings: Settings, *, stop: asyncio.Event | None = None) -> Non
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stop.set)
 
-    engine = build_engine(settings.database_url.get_secret_value())
+    database = build_database(settings)
     redis = Redis.from_url(
         settings.redis_url.get_secret_value(), socket_connect_timeout=2, socket_timeout=5
     )
@@ -38,7 +38,7 @@ async def serve(settings: Settings, *, stop: asyncio.Event | None = None) -> Non
         watcher = Watcher(
             WatcherDeps(
                 settings=settings,
-                sessions=build_session_factory(engine),
+                database=database,
                 backends=backends,
                 announce=lambda run_id: publish_changed(redis, run_id),
             )
@@ -49,7 +49,7 @@ async def serve(settings: Settings, *, stop: asyncio.Event | None = None) -> Non
     finally:
         await backends.aclose()
         await redis.aclose()
-        await engine.dispose()
+        await database.dispose()
 
 
 def main() -> None:

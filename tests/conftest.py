@@ -21,10 +21,11 @@ from standingproof.app import create_app
 from standingproof.checks.aws import AwsReader
 from standingproof.checks.service import CheckBackends
 from standingproof.config import Settings, get_settings
-from standingproof.db import build_engine, build_session_factory
+from standingproof.db import Database, build_database, build_engine, build_session_factory
 from standingproof.library.embedding import Embedder
 from standingproof.library.tools import build_library_registry
 from standingproof.models import Tenant
+from standingproof.roles import ensure_logins
 from tests.fakes import FakeEmbedder
 
 ClientFactory = Callable[..., TestClient]
@@ -62,6 +63,8 @@ def migrated_postgres_url(postgres_url: str) -> str:
     get_settings.cache_clear()
     try:
         command.upgrade(Config("alembic.ini"), "head")
+        # The roles the running code signs in as get their (development) passwords.
+        asyncio.run(ensure_logins(settings_for(postgres_url)))
     finally:
         if previous is None:
             del os.environ["SP_DATABASE_URL"]
@@ -69,6 +72,12 @@ def migrated_postgres_url(postgres_url: str) -> str:
             os.environ["SP_DATABASE_URL"] = previous
         get_settings.cache_clear()
     return postgres_url
+
+
+def settings_for(database_url: str, **overrides: Any) -> Settings:
+    """Settings for a test: the owner's URL is given, the three roles' URLs follow from it."""
+    values = {"database_url": SecretStr(database_url), "environment": "test", **overrides}
+    return Settings(_env_file=None, **values)
 
 
 async def _execute(database_url: str, sql: str) -> None:
@@ -81,10 +90,10 @@ async def _execute(database_url: str, sql: str) -> None:
 
 
 @pytest.fixture
-def client(postgres_url: str, redis_url: str) -> Iterator[TestClient]:
+def client(migrated_postgres_url: str, redis_url: str) -> Iterator[TestClient]:
     settings = Settings(
         _env_file=None,
-        database_url=SecretStr(postgres_url),
+        database_url=SecretStr(migrated_postgres_url),
         redis_url=SecretStr(redis_url),
         environment="test",
     )
@@ -113,6 +122,11 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
                 "aws_accounts": "123456789012",
                 **overrides,
             }
+            # Stated, not derived: a test may run the application as "prod", where each
+            # role's URL has to be given.
+            roles = settings_for(migrated_postgres_url)
+            for role in ("app", "system", "state"):
+                values.setdefault(f"{role}_database_url", SecretStr(roles.role_url(role)))
             settings = Settings(_env_file=None, **values)  # type: ignore[arg-type]
             return stack.enter_context(
                 TestClient(
@@ -135,7 +149,11 @@ class Db:
         # One loop for the whole test: a pool belongs to the loop it was first used on.
         self.loop = asyncio.new_event_loop()
         self._engine = build_engine(database_url)
+        # As the owner, for arranging rows and reading results across tenants. The code
+        # under test is given `database`, which signs in as the roles production uses.
         self.sessions: async_sessionmaker[AsyncSession] = build_session_factory(self._engine)
+        self.url = database_url
+        self.database: Database = build_database(settings_for(database_url))
         self._closers: list[Callable[[], Coroutine[Any, Any, object]]] = []
 
     def closing(self, closer: Callable[[], Coroutine[Any, Any, object]]) -> None:
@@ -159,6 +177,7 @@ class Db:
     def close(self) -> None:
         for closer in self._closers:
             self.run(closer())
+        self.run(self.database.dispose())
         self.run(self._engine.dispose())
         self.loop.close()
 

@@ -86,7 +86,7 @@ def examine_all(db: Db) -> list[uuid.UUID]:
     """Examine everything queued. Returns the runs with a reopened answer."""
 
     async def go() -> list[uuid.UUID]:
-        return await examine.examine_pending(db.sessions, limit=50)
+        return await examine.examine_pending(db.database, limit=50)
 
     return db.run(go())
 

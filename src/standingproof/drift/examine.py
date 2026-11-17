@@ -10,8 +10,9 @@ import uuid
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.db import Database
 from standingproof.drift.compare import Change, changed_facts
 from standingproof.drift.watch import LIVE_REVIEWS, LIVE_STATUSES
 from standingproof.models import (
@@ -178,15 +179,28 @@ async def examine_next(session: AsyncSession) -> list[uuid.UUID] | None:
     return runs
 
 
-async def examine_pending(
-    sessions: async_sessionmaker[AsyncSession], *, limit: int
-) -> list[uuid.UUID]:
-    """Examine up to `limit` queued observations. Returns the runs with a reopened answer."""
+async def examine_pending(database: Database, *, limit: int) -> list[uuid.UUID]:
+    """Examine up to `limit` queued observations. Returns the runs with a reopened answer.
+
+    Which tenants have something queued is asked across tenants. Each observation is then
+    examined as its own tenant, so the comparison can read and reopen that tenant's
+    answers and nobody else's.
+    """
+    async with database.across_tenants() as session:
+        waiting = await session.execute(
+            select(DriftQueue.tenant_id)
+            .group_by(DriftQueue.tenant_id)
+            .order_by(func.min(DriftQueue.queued_at))
+        )
+        tenants = [row[0] for row in waiting]
     runs: list[uuid.UUID] = []
-    for _ in range(limit):
-        async with sessions() as session:
-            reopened = await examine_next(session)
-        if reopened is None:
-            break
-        runs.extend(run for run in reopened if run not in runs)
+    examined = 0
+    for tenant_id in tenants:
+        while examined < limit:
+            async with database.tenant(tenant_id)() as session:
+                reopened = await examine_next(session)
+            if reopened is None:
+                break
+            examined += 1
+            runs.extend(run for run in reopened if run not in runs)
     return runs

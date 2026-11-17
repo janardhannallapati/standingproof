@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
-from standingproof.api.deps import SessionDep, SettingsDep
+from standingproof.api.deps import SettingsDep, SystemSessionDep
 from standingproof.checks.service import utc_now
 from standingproof.drift import deliveries
 from standingproof.drift.github_events import read
@@ -68,7 +68,7 @@ def _well_formed(value: str, allowed: frozenset[str], longest: int) -> bool:
 )
 async def github_delivery(
     request: Request,
-    session: SessionDep,
+    session: SystemSessionDep,
     settings: SettingsDep,
     signature: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
     delivery: Annotated[str, Header(alias="X-GitHub-Delivery")] = "",

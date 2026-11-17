@@ -20,7 +20,7 @@ from standingproof.api import (
 from standingproof.api.body_limit import BodyLimitMiddleware
 from standingproof.checks.service import CheckBackends, build_backends
 from standingproof.config import Settings, get_settings
-from standingproof.db import build_engine, build_session_factory
+from standingproof.db import build_database
 from standingproof.library.embedding import Embedder, build_embedder
 
 _MULTIPART_OVERHEAD_BYTES = 64 * 1024
@@ -46,8 +46,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Runs once at startup; the code after `yield` runs once at shutdown.
-        app.state.engine = build_engine(settings.database_url.get_secret_value())
-        app.state.sessions = build_session_factory(app.state.engine)
+        app.state.database = build_database(settings)
         app.state.redis = Redis.from_url(
             settings.redis_url.get_secret_value(),
             socket_connect_timeout=2,
@@ -59,7 +58,7 @@ def create_app(
             await backends.aclose()
             await embedder.aclose()
             await app.state.redis.aclose()
-            await app.state.engine.dispose()
+            await app.state.database.dispose()
 
     app = FastAPI(title="Standingproof", version=__version__, lifespan=lifespan)
     app.state.settings = settings

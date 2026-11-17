@@ -1,0 +1,90 @@
+"""The roles the processes sign in as: refused when unsafe, and kept apart."""
+
+import asyncio
+import uuid
+
+import pytest
+from psycopg import AsyncConnection, errors
+from pydantic import SecretStr
+from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
+
+from standingproof.config import Settings
+from standingproof.db import Database, UnsafeRoleError
+from standingproof.roles import ensure_logins
+from standingproof.workflow.checkpoint import conninfo, open_checkpointer, setup
+from tests.conftest import Db, settings_for
+from tests.workflow.seed import wf
+
+__all__ = ["wf"]
+
+
+def test_a_process_refuses_to_use_the_owners_login(wf: Db) -> None:
+    # What a deployment gets wrong: every URL set to the one login it already had.
+    as_owner = Database(app_url=wf.url, system_url=wf.url)
+
+    async def go() -> None:
+        try:
+            for sessions in (as_owner.tenant(uuid.uuid4()), as_owner.across_tenants):
+                with pytest.raises((UnsafeRoleError, DBAPIError), match="refusing to use it"):
+                    async with sessions() as session:
+                        await session.execute(text("SELECT 1"))
+        finally:
+            await as_owner.dispose()
+
+    wf.run(go())
+
+
+def test_in_production_each_role_must_be_given_its_own_url() -> None:
+    settings = Settings(_env_file=None, environment="prod")
+
+    for role in ("app", "system", "state"):
+        with pytest.raises(ValueError, match=f"SP_{role.upper()}_DATABASE_URL"):
+            settings.role_url(role)  # type: ignore[arg-type]
+
+
+def test_a_role_url_must_sign_in_as_the_role_the_rights_were_given_to(wf: Db) -> None:
+    wrong = settings_for(wf.url, app_database_url=SecretStr(wf.url))
+
+    with pytest.raises(ValueError, match="standingproof_app"):
+        asyncio.run(ensure_logins(wrong))
+
+
+def test_a_failure_to_set_a_password_does_not_print_it(wf: Db) -> None:
+    settings = settings_for(wf.url)
+    secret = "hunter2-do-not-print"  # noqa: S105 - made up, to look for in the message
+    app = settings.role_url("app").replace(":standingproof_app@", f":{secret}@")
+    # The owner's login is replaced by one that may not alter roles.
+    weak = settings_for(settings.role_url("system"), app_database_url=SecretStr(app))
+
+    with pytest.raises(RuntimeError) as failed:
+        asyncio.run(ensure_logins(weak))
+
+    assert secret not in str(failed.value) and failed.value.__cause__ is None
+
+
+def test_saved_state_and_customer_tables_are_kept_by_different_roles(wf: Db) -> None:
+    settings = settings_for(wf.url)
+    state_url = settings.role_url("state")
+
+    async def go() -> None:
+        await setup(wf.url)
+        # The state role does its own work...
+        async with open_checkpointer(state_url, max_connections=1) as saver:
+            assert await saver.aget_tuple({"configurable": {"thread_id": "nobody"}}) is None
+        # ...and cannot read a customer table, or be used to set the rules aside.
+        async with await AsyncConnection.connect(conninfo(state_url), autocommit=True) as conn:
+            for statement in (
+                "SELECT 1 FROM public.questionnaires",
+                "SELECT 1 FROM public.run_questions",
+                "CREATE TABLE workflow.loot (id int)",
+            ):
+                with pytest.raises(errors.InsufficientPrivilege):
+                    await conn.execute(statement)
+        # The app and system roles cannot read saved state.
+        for sessions in (wf.database.tenant(uuid.uuid4()), wf.database.across_tenants):
+            async with sessions() as session:
+                with pytest.raises(DBAPIError, match="permission denied"):
+                    await session.execute(text("SELECT 1 FROM workflow.checkpoints"))
+
+    wf.run(go())

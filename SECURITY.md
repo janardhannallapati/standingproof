@@ -51,6 +51,54 @@ settings against one set of credentials; per-tenant credentials are planned.
 They are not stored in the database, and they are not written to logs, error messages or
 stored evidence.
 
+## Tenant isolation
+
+Postgres keeps one tenant's rows from another, not the application's queries. Every table that
+holds customer data has a row-level security policy, enabled and forced. A query with no
+tenant filter still returns one tenant's rows, and a session that names no tenant gets none.
+
+```mermaid
+flowchart LR
+  R["Request or job for tenant A"] --> S["Transaction sets app.tenant_id = A"]
+  S --> Q["Any statement, with or without a tenant filter"]
+  Q --> P{"Policy: tenant_id = app.tenant_id"}
+  P -- "row of A" --> OK["read or written"]
+  P -- "row of B" --> NO["not visible; a write for B is refused"]
+```
+
+The services sign in as roles that own nothing. Only the `migrate` service has the owner's URL.
+
+| Role | Used by | What it can do |
+|---|---|---|
+| owner (`SP_DATABASE_URL`) | `migrate`: migrations, `workflow setup`, `roles` | Everything. No running service has it |
+| `standingproof_app` (`SP_APP_DATABASE_URL`) | API, worker, watcher, for one tenant at a time | Read and write customer tables, one tenant's rows per transaction |
+| `standingproof_system` (`SP_SYSTEM_DATABASE_URL`) | Finding work: which question is due, which setting to look at, which tenant a webhook is for | Read scheduling columns across tenants. No right on the library, uploaded or filled files, questions, decisions, or what an observation saw |
+| `standingproof_state` (`SP_STATE_DATABASE_URL`) | The worker's saved workflow state | Schema `workflow` only |
+
+A process refuses a database connection whose role is a superuser, owns a table, or is exempt
+from row-level security. Setting every URL to the owner's login therefore fails at the first
+query; it does not run without the rules.
+
+To set or change the three passwords, run this as the owner after the migrations. Each password
+is the one in that role's URL:
+
+```sh
+python -m standingproof.roles
+```
+
+> **Warning:** Back up as a superuser or a role with `BYPASSRLS`. The policies are forced, so
+> `pg_dump` as a plain owner stops with an error instead of writing a dump with rows missing.
+
+Limits you should know:
+
+- There is no sign-in yet, so a deployment has one tenant in practice. The rules above are what
+  make a second one safe to add.
+- The system role reads scheduling data of every tenant. A test
+  (`tests/attacks/test_cross_tenant_modules.py`) lists the modules allowed to use it.
+- Saved workflow state is separated from customer tables by role, and one question's state from
+  another's by its id. It has no row-level policy: the tables belong to the workflow library.
+- The evals (`python -m evals run`) start their own throwaway database and use it as its owner.
+
 ## Where the model key lives
 
 Only the `worker` service is given `ANTHROPIC_API_KEY`. The API service faces the network and

@@ -13,6 +13,8 @@ from psycopg import AsyncConnection
 from psycopg.rows import DictRow, dict_row
 from psycopg_pool import AsyncConnectionPool
 
+from standingproof.db import STATE_ROLE
+
 SCHEMA = "workflow"
 
 _CONNECTION_OPTIONS = {
@@ -42,6 +44,16 @@ async def setup(database_url: str) -> None:
         **_CONNECTION_OPTIONS,  # type: ignore[arg-type]
     ) as conn:
         await AsyncPostgresSaver(conn).setup()  # type: ignore[arg-type]
+    # The role the workers keep state as: rows in this schema and nothing else anywhere.
+    # It exists once the migrations have run; before that there is nobody to grant to.
+    async with await AsyncConnection.connect(conninfo(database_url), autocommit=True) as conn:
+        found = await conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (STATE_ROLE,))
+        if await found.fetchone() is not None:
+            await conn.execute(f"GRANT USAGE ON SCHEMA {SCHEMA} TO {STATE_ROLE}")
+            await conn.execute(
+                f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {SCHEMA} "
+                f"TO {STATE_ROLE}"
+            )
 
 
 @asynccontextmanager

@@ -136,7 +136,7 @@ def test_two_examiners_at_once_reopen_an_answer_once(wf: Db) -> None:
         observe(wf, owner, OPEN)
 
     async def both() -> None:
-        await asyncio.gather(*(examine.examine_pending(wf.sessions, limit=10) for _ in range(4)))
+        await asyncio.gather(*(examine.examine_pending(wf.database, limit=10) for _ in range(4)))
 
     wf.run(both())
 

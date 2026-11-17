@@ -14,10 +14,11 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.checks.service import CheckBackends, run_check, utc_now
 from standingproof.config import Settings
+from standingproof.db import Database
 from standingproof.drift import deliveries
 from standingproof.drift.examine import examine_pending
 from standingproof.drift.watch import Setting, due, is_watched
@@ -30,7 +31,7 @@ _FRESH = dt.timedelta(0)
 @dataclass
 class WatcherDeps:
     settings: Settings
-    sessions: async_sessionmaker[AsyncSession]
+    database: Database
     backends: CheckBackends
     # Tells whoever is watching a run that it changed. Best effort.
     announce: Callable[[uuid.UUID], Awaitable[None]]
@@ -43,7 +44,8 @@ class Watcher:
         self._settings = deps.settings
 
     async def _look(self, setting: Setting, trigger: str) -> None:
-        async with self._deps.sessions() as session:
+        # As the tenant whose setting it is: what is seen is that tenant's to keep.
+        async with self._deps.database.tenant(setting.tenant_id)() as session:
             await run_check(
                 session,
                 tenant_id=setting.tenant_id,
@@ -74,7 +76,7 @@ class Watcher:
     async def _answer_deliveries(self, now: dt.datetime) -> None:
         settle = dt.timedelta(seconds=self._settings.webhook_settle_seconds)
         gap = dt.timedelta(seconds=self._settings.webhook_min_gap_seconds)
-        async with self._deps.sessions() as session:
+        async with self._deps.database.across_tenants() as session:
             # Locked until this session commits; another watcher passes them over.
             waiting = await deliveries.waiting(
                 session, before=now - settle, limit=self._settings.drift_batch
@@ -123,12 +125,12 @@ class Watcher:
                     now=now,
                 )
             await session.commit()
-        async with self._deps.sessions() as session:
+        async with self._deps.database.across_tenants() as session:
             keep = dt.timedelta(days=self._settings.webhook_keep_days)
             await deliveries.prune(session, before=now - keep)
 
     async def _look_at_due(self, now: dt.datetime) -> None:
-        async with self._deps.sessions() as session:
+        async with self._deps.database.across_tenants() as session:
             settings = await due(
                 session,
                 now=now,
@@ -144,7 +146,7 @@ class Watcher:
         now = self._deps.clock()
         await self._answer_deliveries(now)
         await self._look_at_due(now)
-        runs = await examine_pending(self._deps.sessions, limit=self._settings.drift_batch)
+        runs = await examine_pending(self._deps.database, limit=self._settings.drift_batch)
         for run_id in runs:
             await self._deps.announce(run_id)
 

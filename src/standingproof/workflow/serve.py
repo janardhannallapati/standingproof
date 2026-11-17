@@ -13,7 +13,7 @@ from standingproof.agent.checker import CheckerClient
 from standingproof.agent.loop import ModelClient
 from standingproof.checks.service import build_backends
 from standingproof.config import Settings
-from standingproof.db import build_engine, build_session_factory
+from standingproof.db import build_database
 from standingproof.library.embedding import Embedder, build_embedder
 from standingproof.workflow.checkpoint import open_checkpointer
 from standingproof.workflow.events import publish_changed
@@ -43,8 +43,7 @@ async def serve(
     for signum in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(signum, stop.set)
 
-    database_url = settings.database_url.get_secret_value()
-    engine = build_engine(database_url)
+    database = build_database(settings)
     # A read blocks for a second waiting for a job, so the socket must wait longer than that.
     redis = Redis.from_url(
         settings.redis_url.get_secret_value(), socket_connect_timeout=2, socket_timeout=5
@@ -55,13 +54,13 @@ async def serve(
     try:
         # One connection per question in progress, and one for housekeeping.
         async with open_checkpointer(
-            database_url, max_connections=settings.worker_concurrency + 1
+            settings.role_url("state"), max_connections=settings.worker_concurrency + 1
         ) as saver:
             worker = Worker(
                 name,
                 WorkerDeps(
                     settings=settings,
-                    sessions=build_session_factory(engine),
+                    database=database,
                     queue=JobQueue(redis, stream=settings.queue_stream, consumer=name),
                     graph=build_graph(saver),
                     model=model,
@@ -79,4 +78,4 @@ async def serve(
         await backends.aclose()
         await embedder.aclose()
         await redis.aclose()
-        await engine.dispose()
+        await database.dispose()
