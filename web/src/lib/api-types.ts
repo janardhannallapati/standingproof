@@ -854,8 +854,8 @@ export interface components {
         EvidencePage: {
             /** Items */
             items: components["schemas"]["EvidenceOut"][];
-            /** Next Before Seq */
-            next_before_seq: number | null;
+            /** Next Before */
+            next_before: string | null;
         };
         /** FilePreviewOut */
         FilePreviewOut: {
@@ -1608,7 +1608,7 @@ export interface operations {
             query?: {
                 check?: string | null;
                 scope?: string | null;
-                before_seq?: number | null;
+                before?: string | null;
                 limit?: number;
             };
             header?: never;

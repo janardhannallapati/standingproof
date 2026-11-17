@@ -209,13 +209,13 @@ def test_evidence_is_listed_newest_first_filtered_and_paged(make_api: ClientFact
         params={
             "check": "github.org_two_factor",
             "limit": 2,
-            "before_seq": first["next_before_seq"],
+            "before": first["next_before"],
         },
     ).json()
 
     assert [e["id"] for e in first["items"]] == ids[:0:-1]
     assert [e["id"] for e in second["items"]] == ids[:1]
-    assert second["next_before_seq"] is None
+    assert second["next_before"] is None
     assert len(api.get("/evidence", params={"scope": "acme/app"}).json()["items"]) == 1
 
 

@@ -187,14 +187,23 @@ def test_evidence_is_paged_in_stored_order_with_no_row_skipped_or_repeated(
 
     pages, before = [], None
     for _ in range(4):
-        params = {"limit": 1} if before is None else {"limit": 1, "before_seq": before}
+        params = {"limit": 1} if before is None else {"limit": 1, "before": before}
         page = api.get("/evidence", params=params).json()
         pages.extend(e["id"] for e in page["items"])
-        before = page["next_before_seq"]
+        before = page["next_before"]
         if before is None:
             break
+        # The cursor is the last row's own id. The number behind the order is one sequence
+        # for every tenant, so showing it would tell a tenant how busy the others are.
+        assert before == pages[-1]
+        assert "seq" not in page["items"][0]
 
     assert pages == ids[::-1]
+    # A cursor that is not a row of this tenant's finds nothing, like a row that is not there.
+    other = make_api(dev_tenant_name="another-company", backends=backends(ORG_2FA))
+    assert other.get("/evidence", params={"before": ids[-1]}).json()["items"] == []
+    assert api.get("/evidence", params={"before": str(uuid.uuid4())}).json()["items"] == []
+    assert api.get("/evidence", params={"before": "7"}).status_code == 422
 
 
 def test_a_look_asked_to_be_fresh_is_never_an_earlier_one(wf: Db) -> None:

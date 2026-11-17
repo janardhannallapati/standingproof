@@ -255,16 +255,26 @@ async def page_of_evidence(
     *,
     check_name: str | None,
     scope: str | None,
-    before_seq: int | None,
+    before: uuid.UUID | None,
     limit: int,
 ) -> list[Evidence]:
-    """Up to `limit` rows stored before the one numbered `before_seq`, newest first."""
+    """Up to `limit` rows stored before the row `before`, newest first.
+
+    The order is `seq`, and the cursor is a row's id, not its number: one sequence numbers
+    every tenant's rows, so the number itself would show a tenant how busy the others are.
+    An id that is not a row of this tenant's finds nothing.
+    """
     statement = select(Evidence).where(Evidence.tenant_id == tenant_id)
     if check_name is not None:
         statement = statement.where(Evidence.check_name == check_name)
     if scope is not None:
         statement = statement.where(Evidence.scope == scope.lower())
-    if before_seq is not None:
-        statement = statement.where(Evidence.seq < before_seq)
+    if before is not None:
+        cursor = (
+            select(Evidence.seq)
+            .where(Evidence.tenant_id == tenant_id, Evidence.id == before)
+            .scalar_subquery()
+        )
+        statement = statement.where(Evidence.seq < cursor)
     rows = await session.execute(statement.order_by(Evidence.seq.desc()).limit(limit))
     return list(rows.scalars())

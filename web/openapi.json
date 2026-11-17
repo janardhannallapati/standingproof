@@ -682,21 +682,22 @@
             "title": "Items",
             "type": "array"
           },
-          "next_before_seq": {
+          "next_before": {
             "anyOf": [
               {
-                "type": "integer"
+                "format": "uuid",
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Next Before Seq"
+            "title": "Next Before"
           }
         },
         "required": [
           "items",
-          "next_before_seq"
+          "next_before"
         ],
         "title": "EvidencePage",
         "type": "object"
@@ -2528,19 +2529,19 @@
           },
           {
             "in": "query",
-            "name": "before_seq",
+            "name": "before",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "minimum": 1,
-                  "type": "integer"
+                  "format": "uuid",
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "title": "Before Seq"
+              "title": "Before"
             }
           },
           {
