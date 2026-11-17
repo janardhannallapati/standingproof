@@ -97,14 +97,17 @@ def upgrade() -> None:
     op.add_column("run_questions", sa.Column("reopened_seq", sa.BigInteger(), nullable=True))
     op.execute(f"GRANT UPDATE (reopened_seq) ON run_questions TO {APP}")
     # An answer waiting now: its first reopening by the rule used until today. Where that
-    # rule found none, every reopening of the question counts (0 is below any number).
+    # rule found none, none belongs to this wait: it starts after every reopening the
+    # question has had (0 when it has had none at all).
     for table in ("answer_reopenings", "run_questions"):
         op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
     op.execute(
         """
         UPDATE run_questions q SET reopened_seq = coalesce((
           SELECT min(r.seq) FROM answer_reopenings r
-          WHERE r.run_question_id = q.id AND r.reopened_at >= q.reopened_at), 0)
+          WHERE r.run_question_id = q.id AND r.reopened_at >= q.reopened_at),
+          (SELECT max(r.seq) + 1 FROM answer_reopenings r WHERE r.run_question_id = q.id),
+          0)
         WHERE q.reopened_at IS NOT NULL
         """
     )

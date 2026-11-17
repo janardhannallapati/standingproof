@@ -211,7 +211,9 @@ live system settings, and reopens them when those settings drift.
   `seq` identity column in its migration, and `INSERT` for the app role column by column
   without it (whole-table `INSERT` lets a statement name `seq`). A column added to one of
   these tables needs `GRANT INSERT (column)`; `tests/attacks/test_database_rules.py` fails
-  until it has it. A cursor for paging is a `seq`, not a time.
+  until it has it. A page is cut by `seq`, never by a time, and the cursor a client holds is
+  the last row's id: one sequence numbers every tenant's rows, so a `seq` shown to a client
+  tells it how busy the others are. Never put a `seq` in a response.
 - `run_questions.reopened_seq` is set and cleared with `reopened_at`. "The reopenings of
   this wait" are those with `seq >= reopened_seq`.
 - `run_check` with `max_age` of zero always looks. It never asks the clock whether an

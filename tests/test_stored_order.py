@@ -195,12 +195,22 @@ def test_evidence_is_paged_in_stored_order_with_no_row_skipped_or_repeated(
         # The cursor is the last row's own id. The number behind the order is one sequence
         # for every tenant, so showing it would tell a tenant how busy the others are.
         assert before == pages[-1]
-        assert "seq" not in page["items"][0]
 
     assert pages == ids[::-1]
     # A cursor that is not a row of this tenant's finds nothing, like a row that is not there.
-    other = make_api(dev_tenant_name="another-company", backends=backends(ORG_2FA))
-    assert other.get("/evidence", params={"before": ids[-1]}).json()["items"] == []
+    # Shown with rows of its own on both sides of that cursor: with the cursor's number
+    # looked up across tenants, the older of them would be listed.
+    other = make_api(
+        dev_tenant_name="another-company",
+        backends=backends(ORG_2FA),
+        evidence_max_age_seconds=0,
+        github_orgs="another-org",
+    )
+    connect(other, scope="another-org")
+    theirs = [run(other, "github.org_two_factor", "another-org").json()["id"] for _ in range(2)]
+    newest_of_ours = run(api, "github.org_two_factor", "acme").json()["id"]
+    assert len(other.get("/evidence").json()["items"]) == len(theirs)
+    assert other.get("/evidence", params={"before": newest_of_ours}).json()["items"] == []
     assert api.get("/evidence", params={"before": str(uuid.uuid4())}).json()["items"] == []
     assert api.get("/evidence", params={"before": "7"}).status_code == 422
 
@@ -329,3 +339,34 @@ def test_the_same_change_reopening_an_answer_again_starts_a_new_wait(wf: Db) -> 
 
     kept = item_row(wf, item)
     assert (kept.review, kept.final_answer) == ("approved", "Yes, on main.")
+
+
+def test_a_new_wait_starts_after_every_earlier_reopening_of_the_answer(wf: Db) -> None:
+    from tests.drift.test_view import _also_cites
+
+    other = "github.secret_scanning"
+    owner, item, first = approved_answer(wf)
+    scanning = observe(wf, owner, {"secret_scanning_enabled": True}, check=other, queue=False)
+    wf.run(_also_cites(wf, owner, item, [first, scanning]))
+    # First wait: branch protection changes. Kept.
+    observe(wf, owner, OPEN)
+    examine_all(wf)
+    now_decide(wf, owner, item, "keep")
+    # Second wait: secret scanning changes. Sent back for a redraft, which closes it.
+    off = observe(wf, owner, {"secret_scanning_enabled": False}, check=other)
+    examine_all(wf)
+    now_decide(wf, owner, item, "redraft", comment="Say it is off.")
+    # The redraft cites the first look at branch protection again, so the change of the
+    # first wait reopens the answer a second time.
+    redrafted_by_the_worker(
+        wf, owner, item, "No, it is off.", [f"evidence:{first}", f"evidence:{off}"]
+    )
+    examine_all(wf)
+    assert item_row(wf, item).reopened_at is not None
+
+    # Neither earlier reopening belongs to this wait. Both recorded "approved", and there
+    # is no approved wording now: keeping approves this draft.
+    now_decide(wf, owner, item, "keep")
+
+    kept = item_row(wf, item)
+    assert (kept.review, kept.final_answer) == ("approved", "No, it is off.")

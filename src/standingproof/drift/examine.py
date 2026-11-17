@@ -102,13 +102,13 @@ async def _reopen(
     if seq is None:
         # This event reopened this answer before, in a wait that a decision has since
         # closed (a redraft came to rest on the older observation again). That record
-        # stays where it is, and this wait starts after it: nothing of the earlier wait,
-        # least of all the state "keep" would put back, belongs to this one.
+        # stays where it is, and this wait starts after every reopening the answer has
+        # had, whichever setting each was about: nothing of an earlier wait, least of
+        # all the state "keep" would put back, belongs to this one.
         seq = (
             await session.execute(
-                select(AnswerReopening.seq).where(
+                select(func.max(AnswerReopening.seq)).where(
                     AnswerReopening.tenant_id == item.tenant_id,
-                    AnswerReopening.drift_event_id == event_id,
                     AnswerReopening.run_question_id == item.id,
                 )
             )
