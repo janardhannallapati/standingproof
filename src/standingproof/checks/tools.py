@@ -11,7 +11,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from standingproof.agent.tools import Tool, ToolOutcome
+from standingproof.agent.tools import OBSERVED_PREFIX, Tool, ToolOutcome
 from standingproof.checks.registry import CHECKS
 from standingproof.checks.service import CheckBackends, run_check, source_text
 from standingproof.config import Settings
@@ -33,6 +33,12 @@ class CheckInput(BaseModel):
             "or a 12-digit AWS account id."
         )
     )
+
+
+_NO_SECOND_TRY = (
+    "Do not make this same call again for this question. Nothing was observed, so do not "
+    "state this setting either way."
+)
 
 
 def _description() -> str:
@@ -73,9 +79,12 @@ def check_tool(
                 is_error=True,
             )
         if evidence.status != "observed":
-            # No source: an answer cannot cite something that was not seen.
-            return ToolOutcome(content=f"{evidence.statement} Reason: {evidence.reason}.")
-        source_id = f"evidence:{evidence.id}"
+            # No source: an answer cannot cite something that was not seen. The loop ends a
+            # run that makes the same call twice, so the result says not to try again.
+            return ToolOutcome(
+                content=f"{evidence.statement} Reason: {evidence.reason}. {_NO_SECOND_TRY}"
+            )
+        source_id = f"{OBSERVED_PREFIX}{evidence.id}"
         return ToolOutcome(
             content=json.dumps(
                 {

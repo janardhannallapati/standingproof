@@ -11,6 +11,7 @@ from typing import Any, Protocol
 
 from standingproof.agent.prompts import CHECKER_PROMPT, wrap
 from standingproof.agent.steps import judge_check
+from standingproof.agent.tools import OBSERVED_PREFIX
 from standingproof.agent.types import AnswerDraft, CheckResult, CheckTurn, Usage
 
 
@@ -34,7 +35,10 @@ def check_messages(
         cited = "yes" if source_id in draft.citations else "no"
         # The same source can come back from two searches; one copy is enough.
         text = "\n".join(dict.fromkeys(texts))
-        parts.append(wrap("source", text, f' id="{escape(source_id)}" cited="{cited}"'))
+        # Decided here from the id our own code gave the source, never from its text.
+        kind = "observed" if source_id.startswith(OBSERVED_PREFIX) else "document"
+        attributes = f' id="{escape(source_id)}" cited="{cited}" kind="{kind}"'
+        parts.append(wrap("source", text, attributes))
     return [{"role": "user", "content": "\n\n".join(parts)}]
 
 

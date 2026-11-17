@@ -73,7 +73,10 @@ def test_a_refused_or_unavailable_check_gives_no_source(api: TestClient, db: Db)
     unknown = db.run(tools.execute(call("github.delete_everything", "acme")))
 
     assert unavailable.sources == {}
+    assert "do not state this setting either way" in unavailable.content
     assert "Not observed" in unavailable.content
+    # A repeated call ends the run (`repeated`), so the result says not to make one.
+    assert "Do not make this same call again for this question" in unavailable.content
     assert not_connected.is_error is True
     assert not_connected.sources == {}
     assert unknown.is_error is True
