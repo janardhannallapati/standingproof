@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.exceptions import RedisError
+from sqlalchemy import select
 
 from standingproof.agent.checker import CheckerClient
 from standingproof.agent.limits import Limits
@@ -25,6 +26,7 @@ from standingproof.config import Settings
 from standingproof.db import Database
 from standingproof.library.embedding import Embedder
 from standingproof.library.tools import build_library_registry
+from standingproof.models import Tenant
 from standingproof.workflow import leases, results, runs
 from standingproof.workflow import sweep as sweeping
 from standingproof.workflow.checkpoint import delete_state
@@ -238,15 +240,23 @@ class Worker:
         """Delete saved state of questions that finished long enough ago."""
         if self._deps.saver is None:
             return 0
+        # Which tenants there are is asked across tenants. Closing what nobody decided and
+        # forgetting old state change a tenant's rows, so each is done as that tenant.
         async with self._deps.database.across_tenants() as session:
-            await runs.expire_unreviewed(session, keep_days=self._settings.review_keep_days)
-            old = await runs.finished_with_state(
-                session, keep_days=self._settings.state_keep_days, limit=_SWEEP_BATCH
-            )
-        await delete_state(self._deps.saver, [str(item_id) for item_id in old])
-        async with self._deps.database.across_tenants() as session:
-            await runs.mark_state_deleted(session, old)
-        return len(old)
+            tenants = list((await session.execute(select(Tenant.id))).scalars())
+        pruned = 0
+        for tenant_id in tenants:
+            sessions = self._deps.database.tenant(tenant_id)
+            async with sessions() as session:
+                await runs.expire_unreviewed(session, keep_days=self._settings.review_keep_days)
+                old = await runs.finished_with_state(
+                    session, keep_days=self._settings.state_keep_days, limit=_SWEEP_BATCH
+                )
+            await delete_state(self._deps.saver, [str(item_id) for item_id in old])
+            async with sessions() as session:
+                await runs.mark_state_deleted(session, old)
+            pruned += len(old)
+        return pruned
 
     # --- the loop ---
 

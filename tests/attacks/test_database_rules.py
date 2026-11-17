@@ -191,9 +191,26 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
     two_tenants(wf)
     system = wf.database.across_tenants
 
+    ours, theirs = (tenant_id for (tenant_id,) in rows(wf, wf.sessions, "SELECT id FROM tenants"))
     assert len(rows(wf, system, "SELECT DISTINCT tenant_id FROM run_questions")) == 2
     assert len(rows(wf, system, "SELECT status, observed_at FROM evidence")) == 2
+    assert len(rows(wf, system, "UPDATE run_questions SET enqueue_after = now() RETURNING id")) == 2
     for sql in (
+        # Where and when, never what: not an answer, a note, a citation or a cost.
+        "SELECT answer FROM run_questions",
+        "SELECT final_answer FROM run_questions",
+        "SELECT note, citations FROM run_questions",
+        "SELECT * FROM run_questions",
+        "SELECT max_cost_usd FROM runs",
+        "UPDATE run_questions SET answer = 'planted'",
+        "UPDATE run_questions SET final_answer = 'planted', review = 'approved'",
+        "UPDATE run_questions SET status = 'ready'",
+        "UPDATE run_questions SET review = 'approved'",
+        "SELECT version, reviewed_at FROM run_questions",
+        f"UPDATE run_questions SET tenant_id = '{theirs}' WHERE tenant_id = '{ours}'",  # noqa: S608
+        f"UPDATE runs SET tenant_id = '{theirs}'",  # noqa: S608
+        "INSERT INTO run_questions (id) VALUES (gen_random_uuid())",
+        "DELETE FROM runs",
         "SELECT facts FROM evidence",
         "SELECT statement FROM evidence",
         "SELECT answer FROM library_answers",

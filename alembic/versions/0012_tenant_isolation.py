@@ -64,14 +64,23 @@ TENANT_TABLES = (
 SYSTEM_RIGHTS = {
     "tenants": "SELECT, INSERT",
     "connections": "SELECT",
-    "runs": "SELECT, UPDATE",
-    "run_questions": "SELECT, UPDATE",
     "answer_evidence": "SELECT",
     "drift_queue": "SELECT",
     "webhook_deliveries": "SELECT, INSERT, UPDATE, DELETE",
 }
-# Of an observation, only where and when it was made: not what it saw.
-SYSTEM_EVIDENCE_COLUMNS = "id, tenant_id, check_name, scope, status, observed_at, seq"
+# On the tables that also hold customer content, rights are given column by column: where
+# and when, never what. The system role cannot read an answer, a note or what an
+# observation saw, and cannot move a row to another tenant.
+SYSTEM_COLUMN_RIGHTS = {
+    "evidence": {"SELECT": "id, tenant_id, check_name, scope, status, observed_at, seq"},
+    "runs": {"SELECT": "id, tenant_id, status", "UPDATE": "status, finished_at"},
+    "run_questions": {
+        "SELECT": "id, tenant_id, run_id, status, review, lease_until, enqueue_after",
+        # The sweep pushes a due question's next queueing forward. Nothing else: it cannot
+        # change a status, a review state or a wording.
+        "UPDATE": "enqueue_after",
+    },
+}
 
 TENANT = "nullif(current_setting('app.tenant_id', true), '')::uuid"
 
@@ -116,14 +125,20 @@ def upgrade() -> None:
         op.execute(
             f"CREATE POLICY across_tenants ON {table} TO {SYSTEM} USING (true) WITH CHECK (true)"
         )
-    op.execute(f"GRANT SELECT ({SYSTEM_EVIDENCE_COLUMNS}) ON evidence TO {SYSTEM}")
-    op.execute(f"CREATE POLICY across_tenants ON evidence FOR SELECT TO {SYSTEM} USING (true)")
+    for table, rights in SYSTEM_COLUMN_RIGHTS.items():
+        for command, columns in rights.items():
+            op.execute(f"GRANT {command} ({columns}) ON {table} TO {SYSTEM}")
+            op.execute(
+                f"CREATE POLICY across_tenants_{command.lower()} ON {table} "
+                f"FOR {command} TO {SYSTEM} USING (true)"
+            )
 
 
 def downgrade() -> None:
     for table in (*TENANT_TABLES, "tenants", "webhook_deliveries"):
         op.execute(f"DROP POLICY IF EXISTS tenant_only ON {table}")
-        op.execute(f"DROP POLICY IF EXISTS across_tenants ON {table}")
+        for name in ("across_tenants", "across_tenants_select", "across_tenants_update"):
+            op.execute(f"DROP POLICY IF EXISTS {name} ON {table}")
         op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
     for role in (APP, SYSTEM):
