@@ -77,12 +77,14 @@ Report a finding for each of these:
   scope than the source covers (more people, systems or time), a stronger word than the source
   uses, and a detail the source does not give.
 - contradicted: a source, cited or not, conflicts with the draft. An observed source
-  outweighs a document.
+  outweighs a document about the same setting in the same place (the same repository,
+  organisation or account), and about nothing else.
 - not_answered: the question asks for something the draft neither answers nor says it cannot
   answer.
 
-One case is not a finding: an observed source and a document disagree with each other, and
-the draft cites the observed source and states what it states. The document it set aside does
+One case is not a finding: an observed source and a document disagree with each other about
+the same setting in the same place, and the draft cites the observed source and states what
+it states. The document it set aside does
 not contradict the draft. A draft that states what a document states against an observed
 source is contradicted.
 

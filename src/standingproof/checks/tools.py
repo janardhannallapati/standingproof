@@ -36,8 +36,8 @@ class CheckInput(BaseModel):
 
 
 _NO_SECOND_TRY = (
-    "Do not make this same call again for this question. Nothing was observed, so do not "
-    "state this setting either way."
+    "Do not make this same call again unless a reviewer asks for it. Nothing was observed, "
+    "so do not state this setting either way."
 )
 
 

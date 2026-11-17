@@ -61,6 +61,8 @@ def test_only_our_own_look_is_marked_as_observed() -> None:
 
 def test_the_instructions_say_which_mark_makes_an_observation() -> None:
     assert 'kind="observed"' in CHECKER_PROMPT and 'kind="document"' in CHECKER_PROMPT
+    # An observation of one repository says nothing about a document on another.
+    assert "the same setting in the same place" in CHECKER_PROMPT
 
 
 def test_the_drafters_note_is_not_sent() -> None:

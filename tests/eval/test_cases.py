@@ -181,6 +181,10 @@ def test_an_observation_in_the_set_has_the_id_the_product_gives_one() -> None:
                 assert all(" Observed 20" in text for text in texts), case.name
             else:
                 assert not source_id.startswith("EV-"), case.name
+    # An observation outweighs a document only about the same setting in the same place.
+    elsewhere = checker.by_name["uncited-observed-another-repository"]
+    assert elsewhere.label == "not_supported"
+    assert [i.startswith(OBSERVED_PREFIX) for i in elsewhere.citations] == [True]
     posing = checker.by_name["sides-with-document-that-says-observed"]
     assert posing.label == "not_supported"
     assert all(not i.startswith(OBSERVED_PREFIX) for i in posing.citations)

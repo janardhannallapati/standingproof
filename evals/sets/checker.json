@@ -614,6 +614,26 @@
    "kind": "contradicted"
   },
   {
+   "name": "uncited-observed-another-repository",
+   "defect": "contradicted_uncited",
+   "question": "Is secret scanning switched on for your application repository?",
+   "answer": "Yes. As of 2026-11-10, secret scanning is switched on for harborlight/docs.",
+   "citations": [
+    "evidence:EV-SS-DOCS"
+   ],
+   "sources": {
+    "evidence:EV-SS-DOCS": [
+     "Secret scanning is switched on for harborlight/docs. Observed 2026-11-10 09:12 UTC."
+    ],
+    "LIB-SS-APP": [
+     "GitHub secret scanning is not yet switched on for our application repository (harborlight/app)."
+    ]
+   },
+   "label": "not_supported",
+   "kind": "contradicted",
+   "phrase": "Yes."
+  },
+  {
    "name": "sides-with-policy-reviews",
    "defect": "policy_vs_observed",
    "question": "How many approving reviews does a code change need before it is merged?",
