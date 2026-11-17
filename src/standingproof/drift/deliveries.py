@@ -7,7 +7,7 @@ delivery that arrives while the watcher is down waits here.
 import datetime as dt
 import uuid
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, true, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -92,11 +92,15 @@ async def mark_handled(
     tenant_id: uuid.UUID,
     check_name: str,
     scope: str,
-    upto: dt.datetime,
+    before_seq: int | None,
+    settled_by: dt.datetime | None,
     outcome: str,
     now: dt.datetime,
 ) -> None:
-    """Every waiting delivery for one setting received up to `upto` is dealt with.
+    """Every waiting delivery for one setting that a decision covers is dealt with.
+
+    `before_seq`: stored before the look numbered so (None: all of them). `settled_by`:
+    and received no later than this, where a delivery must also have had time to settle.
 
     All of them, not only the ones this pass claimed: one look answers them all, so a
     setting that is sent a thousand deliveries cannot keep others waiting behind it.
@@ -109,7 +113,8 @@ async def mark_handled(
             WebhookDelivery.tenant_id == tenant_id,
             WebhookDelivery.check_name == check_name,
             WebhookDelivery.scope == scope,
-            WebhookDelivery.received_at <= upto,
+            true() if before_seq is None else WebhookDelivery.seq < before_seq,
+            true() if settled_by is None else WebhookDelivery.received_at <= settled_by,
         )
         .with_for_update(skip_locked=True)
     )

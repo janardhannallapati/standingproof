@@ -573,6 +573,11 @@ class WebhookDelivery(Base):
     check_name: Mapped[str | None] = mapped_column(String(100))
     scope: Mapped[str | None] = mapped_column(String(300))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # Its place among deliveries and observations, from the sequence that numbers
+    # `evidence.seq`. "Was it looked at after this arrived?" compares these, not two clocks.
+    seq: Mapped[int] = mapped_column(
+        BigInteger, server_default=text("nextval(pg_get_serial_sequence('evidence', 'seq'))")
+    )
     handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # looked | ignored:<reason>
     outcome: Mapped[str | None] = mapped_column(String(60))

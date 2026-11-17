@@ -31,6 +31,19 @@ APP = "standingproof_app"
 # columns are chosen again, what a redrafted answer no longer rests on, and an observation
 # once it has been compared.
 MAY_DELETE = ("questions", "answer_evidence", "drift_queue")
+# Rows here are written once and never changed: what was seen, what was decided, what was
+# made and sent. The app role gets no UPDATE on them at all, not even column by column. With
+# it, SQL running as a tenant could renumber its own observations (`seq`) or rewrite its own
+# record of decisions.
+APPEND_ONLY = (
+    "evidence",
+    "review_decisions",
+    "draft_checks",
+    "filled_files",
+    "sent_files",
+    "drift_events",
+    "answer_reopenings",
+)
 TENANT_TABLES = (
     "questionnaires",
     "questionnaire_files",
@@ -58,6 +71,8 @@ TENANT_TABLES = (
 def upgrade() -> None:
     for table in TENANT_TABLES:
         op.execute(f"REVOKE UPDATE, DELETE ON {table} FROM {APP}")
+        if table in APPEND_ONLY:
+            continue
         # Column by column, as the columns are today. format() with %I quotes each name.
         # The table names are the constants above.
         op.execute(

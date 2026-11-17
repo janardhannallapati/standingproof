@@ -92,7 +92,9 @@ python -m standingproof.roles
 Limits you should know:
 
 - The app role cannot lock a whole table and make every tenant wait: it holds `UPDATE` on
-  columns, not tables, and cannot change a row's tenant at all. Three tables are the
+  columns, not tables, and cannot change a row's tenant at all. On the tables that are
+  written once (observations, decisions, checks of drafts, files made and sent, changes seen)
+  it holds no `UPDATE` of any kind. Three tables are the
   exception, because the application deletes rows from them and `DELETE` also permits a
   table lock: `questions`, `answer_evidence` and `drift_queue`. SQL injected as the app role
   could lock those. That is a loss of availability, not of data.

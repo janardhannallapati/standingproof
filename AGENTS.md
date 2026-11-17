@@ -188,6 +188,9 @@ live system settings, and reopens them when those settings drift.
 - A provider failure that can pass (rate limit, outage) is retried later and ends as `failed`,
   never as "needs review". A person cannot fix a rate limit.
 - Log an exception's type, not its message, in the workflow: a message can carry customer text.
+- The app role holds no `UPDATE` on the append-only tables (`APPEND_ONLY` in
+  `alembic/versions/0015_narrower_rights.py`); a new table of that kind joins that list in
+  its own migration and in `tests/attacks/test_database_rules.py`.
 - The app role holds `UPDATE` column by column (never on `tenant_id`) and `DELETE` on
   `questions`, `answer_evidence` and `drift_queue` only. A migration that adds a column to a
   tenant table adds `GRANT UPDATE (column) ON table TO standingproof_app`. Never grant

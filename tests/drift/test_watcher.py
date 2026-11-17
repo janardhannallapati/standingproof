@@ -76,7 +76,7 @@ class Scene:
             )
         )
 
-    def deliver(self, count: int = 1) -> None:
+    def deliver(self, count: int = 1, *, at: dt.datetime | None = None) -> None:
         async def go() -> None:
             for _ in range(count):
                 async with self.db.sessions() as session:
@@ -85,7 +85,7 @@ class Scene:
                         delivery_id=str(uuid.uuid4()),
                         event="branch_protection_rule",
                         reading=read("branch_protection_rule", PAYLOAD),
-                        now=utc_now(),
+                        now=at or utc_now(),
                     )
 
         self.db.run(go())
@@ -94,7 +94,7 @@ class Scene:
         self.db.run(self.watcher().tick())
 
     def looks(self) -> list[Evidence]:
-        return sorted(all_rows(self.db, Evidence), key=lambda row: row.observed_at)
+        return sorted(all_rows(self.db, Evidence), key=lambda row: row.seq)
 
     def outcomes(self) -> list[str | None]:
         return [row.outcome for row in all_rows(self.db, WebhookDelivery)]
@@ -324,6 +324,21 @@ def test_a_delivery_about_a_setting_no_answer_rests_on_is_not_looked_at(wf: Db) 
     assert scene.github.requests == before
     assert len(scene.looks()) == 1
     assert scene.outcomes() == ["ignored:not_watched"] * 5
+
+
+def test_a_delivery_stamped_earlier_than_the_last_look_still_gets_its_look(wf: Db) -> None:
+    scene = Scene(wf)
+    scene.github.reviews = None
+    # The delivery arrives after the look the answer was drafted from, but carries an
+    # earlier time: the clock was stepped back, or the API's host runs behind the watcher's.
+    scene.deliver(at=utc_now() - dt.timedelta(seconds=30))
+
+    scene.tick()
+
+    # By the clock the old look "already answered" it. It did not: the look came first.
+    assert scene.outcomes() == ["looked"]
+    assert len(scene.looks()) == 2
+    assert item_row(wf, scene.item).review == "pending"
 
 
 def test_one_look_answers_every_waiting_delivery_for_its_setting_however_many(wf: Db) -> None:
