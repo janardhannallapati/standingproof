@@ -13,6 +13,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Computed,
     Date,
     DateTime,
@@ -305,6 +306,12 @@ class RunQuestion(Base):
             "status",
             "enqueue_after",
             postgresql_where=text("status IN ('queued', 'running')"),
+        ),
+        # Reopened means both or neither. Code that set only the time would leave "keep"
+        # with no reopening to restore from.
+        CheckConstraint(
+            "(reopened_at IS NULL) = (reopened_seq IS NULL)",
+            name="ck_run_questions_reopened_together",
         ),
     )
 

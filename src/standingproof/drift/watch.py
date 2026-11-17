@@ -184,7 +184,7 @@ async def due(
         .subquery()
     )
     last = (
-        select(Evidence.status, Evidence.observed_at, Evidence.seq)
+        select(Evidence.status, Evidence.observed_at)
         .where(
             Evidence.tenant_id == watched.c.tenant_id,
             Evidence.check_name == watched.c.check_name,
@@ -199,8 +199,9 @@ async def due(
     rows = await session.execute(
         select(watched, last.c.status, last.c.observed_at)
         .join(last, true())
-        # The setting whose last look was stored longest ago comes first.
-        .order_by(last.c.seq)
+        # Longest since its last look first. A length of time, so the clock is the right
+        # measure: a wrong one changes whose turn comes first, never whether a look is made.
+        .order_by(last.c.observed_at)
     )
     found = []
     for tenant_id, check_name, scope, status, looked_at in rows:

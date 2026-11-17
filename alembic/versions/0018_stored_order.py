@@ -96,26 +96,38 @@ def upgrade() -> None:
 
     op.add_column("run_questions", sa.Column("reopened_seq", sa.BigInteger(), nullable=True))
     op.execute(f"GRANT UPDATE (reopened_seq) ON run_questions TO {APP}")
-    # An answer waiting now: its first reopening by the rule used until today.
+    # An answer waiting now: its first reopening by the rule used until today. Where that
+    # rule found none, every reopening of the question counts (0 is below any number).
     for table in ("answer_reopenings", "run_questions"):
         op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
     op.execute(
         """
-        UPDATE run_questions q SET reopened_seq = (
+        UPDATE run_questions q SET reopened_seq = coalesce((
           SELECT min(r.seq) FROM answer_reopenings r
-          WHERE r.run_question_id = q.id AND r.reopened_at >= q.reopened_at)
+          WHERE r.run_question_id = q.id AND r.reopened_at >= q.reopened_at), 0)
         WHERE q.reopened_at IS NOT NULL
         """
     )
     for table in ("answer_reopenings", "run_questions"):
         op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
+    # Both or neither, kept by the database. Code from before this migration sets only the
+    # time; it is refused, loudly, where it would otherwise leave "keep" with no reopening
+    # to restore from.
+    op.create_check_constraint(
+        "ck_run_questions_reopened_together",
+        "run_questions",
+        "(reopened_at IS NULL) = (reopened_seq IS NULL)",
+    )
 
 
 def downgrade() -> None:
+    op.drop_constraint("ck_run_questions_reopened_together", "run_questions")
     op.drop_column("run_questions", "reopened_seq")
     for table, index in INDEXES.items():
         op.drop_index(index, table)
         op.create_index(index, table, ["run_question_id", NUMBERED[table]])
     for table in NUMBERED:
         op.drop_column(table, "seq")
+        # Revoking the table right takes the column grants with it; then as it was.
+        op.execute(f"REVOKE INSERT ON {table} FROM {APP}")
         op.execute(f"GRANT INSERT ON {table} TO {APP}")

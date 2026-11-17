@@ -17,7 +17,6 @@ from tests.conftest import ClientFactory, Db
 from tests.drift.rig import (
     OPEN,
     PROTECTED,
-    SCOPE,
     all_rows,
     answers,
     approved_answer,
@@ -26,7 +25,7 @@ from tests.drift.rig import (
     observe,
 )
 from tests.drift.test_keep import now_decide, reopened
-from tests.drift.test_looks import DAY, due_now, look
+from tests.drift.test_looks import look
 from tests.drift.test_view import record_sent, reopening
 from tests.test_checks_api import ORG_2FA, backends, connect, run
 from tests.test_files_api import decided_run
@@ -243,16 +242,6 @@ def test_the_observation_stored_first_is_examined_first(wf: Db) -> None:
     assert [row.evidence_id for row in all_rows(wf, DriftQueue)] == [newer]
 
 
-def test_the_setting_looked_at_longest_ago_is_due_first_by_stored_order(wf: Db) -> None:
-    seen = dt.datetime(2026, 11, 1, 9, 0, tzinfo=dt.UTC)
-    owner = tenant(wf)
-    # Stored first, stamped later.
-    answers(wf, owner, observe(wf, owner, at=seen + dt.timedelta(hours=1), scope="acme/older"))
-    answers(wf, owner, observe(wf, owner, at=seen, queue=False))
-
-    assert [s.scope for s in due_now(wf, seen + 3 * DAY)] == ["acme/older", SCOPE]
-
-
 def test_customers_a_file_went_to_are_listed_in_the_order_recorded(wf: Db) -> None:
     owner, item, _ = approved_answer(wf)
     record_sent(wf, item, "Acme Corp", "Yes, two reviews.")
@@ -281,3 +270,62 @@ def test_sent_records_of_a_run_are_listed_in_the_order_recorded(api: TestClient,
     sent = api.get(f"/runs/{run_id}/file/preview").json()["sent"]
 
     assert [s["customer"] for s in sent] == ["Acme Corp", "Globex"]
+
+
+def test_a_question_cannot_be_marked_reopened_without_its_first_reopening(wf: Db) -> None:
+    import pytest
+    from sqlalchemy.exc import DBAPIError
+
+    _, item, _ = approved_answer(wf)
+
+    # What code from before the sequence would do: set the time and nothing else. "Keep"
+    # would then find no reopening and approve the agent's draft over a reviewer's edit.
+    with pytest.raises(DBAPIError, match="ck_run_questions_reopened_together"):
+        sql(wf, "UPDATE run_questions SET reopened_at = now() WHERE id = :id", id=item)
+
+
+def redrafted_by_the_worker(
+    db: Db, owner: uuid.UUID, item: uuid.UUID, answer: str, citations: list[str]
+) -> None:
+    """A new draft saved as the worker saves it: signed in as the application, for this
+    tenant, so that what the earlier draft rested on is this tenant's to replace."""
+    from standingproof.agent.types import AnswerDraft, Usage
+    from standingproof.workflow import results
+    from standingproof.workflow.state import Outcome
+
+    outcome = Outcome(
+        status="ready",
+        path="drafted",
+        reason=None,
+        draft=AnswerDraft(status="answered", answer=answer, citations=citations, note=""),
+        steps=2,
+        cost_usd=0.02,
+        usage=Usage(),
+    )
+    assert take(db, item) is not None
+
+    async def save() -> bool:
+        async with db.database.tenant(owner)() as session:
+            return await results.save_result(session, item_id=item, owner="w1", outcome=outcome)
+
+    assert db.run(save())
+
+
+def test_the_same_change_reopening_an_answer_again_starts_a_new_wait(wf: Db) -> None:
+    owner, item, first = approved_answer(wf)
+    observe(wf, owner, OPEN)
+    examine_all(wf)
+    # The reviewer sends it back, and the new draft cites the first observation again. The
+    # newest reading is queued for it and is the same change as before.
+    now_decide(wf, owner, item, "redraft", comment="Say which branch.")
+    redrafted_by_the_worker(wf, owner, item, "Yes, on main.", [f"evidence:{first}"])
+    examine_all(wf)
+    row = item_row(wf, item)
+    assert (row.review, row.reopened_at is not None) == ("pending", True)
+
+    # The earlier reopening belonged to a wait a decision closed. It recorded "approved",
+    # and there is no approved wording any more: keeping must approve this draft, not fail.
+    now_decide(wf, owner, item, "keep")
+
+    kept = item_row(wf, item)
+    assert (kept.review, kept.final_answer) == ("approved", "Yes, on main.")

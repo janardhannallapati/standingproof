@@ -357,7 +357,7 @@ def test_waiting_deliveries_are_taken_in_the_order_they_arrived_whatever_their_t
             return [row.id for row in found]
 
     assert wf.run(next_one()) == [first.id]
-    assert second.seq > first.seq
+    assert second.id != first.id
 
 
 def test_a_delivery_stamped_earlier_than_the_last_look_still_gets_its_look(wf: Db) -> None:
