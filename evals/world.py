@@ -30,6 +30,18 @@ from standingproof.library.service import NewAnswer, create_answer, ingest_polic
 from standingproof.library.tools import build_library_registry
 from standingproof.models import Tenant
 
+# Emptying a throwaway database between cases and between tests. The audit log refuses to
+# be emptied, by design, so this says so on purpose: as the owner, it switches that refusal
+# off for the statement. Never run against a database that holds a real record.
+EMPTY_THE_DATABASE = (
+    "ALTER TABLE audit_log DISABLE TRIGGER audit_log_no_truncate",
+    "ALTER TABLE audit_heads DISABLE TRIGGER audit_heads_no_truncate",
+    "TRUNCATE tenants CASCADE",
+    "ALTER TABLE audit_log ENABLE TRIGGER audit_log_no_truncate",
+    "ALTER TABLE audit_heads ENABLE TRIGGER audit_heads_no_truncate",
+)
+
+
 _OWNER = "security@harborlight.example"
 _REGION = "us-east-1"
 _AWS_ERRORS = {"forbidden": "AccessDenied", "rate_limited": "Throttling"}
@@ -182,7 +194,8 @@ async def build_world(
     library = cases.library(case.library)
     valid_until = dt.datetime.now(dt.UTC).date() + dt.timedelta(days=365)
     async with sessions() as session:
-        await session.execute(text("TRUNCATE tenants CASCADE"))
+        for statement in EMPTY_THE_DATABASE:
+            await session.execute(text(statement))
         tenant = Tenant(name=f"eval-{case.name}")
         session.add(tenant)
         await session.commit()

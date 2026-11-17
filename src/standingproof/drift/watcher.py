@@ -48,8 +48,8 @@ class Watcher:
         async with self._deps.database.tenant(tenant_id)() as session:
             return (await switch.read(session, tenant_id, self._settings)).stopped
 
-    async def _look(self, setting: Setting, trigger: str) -> bool:
-        """Look at a setting. False when the stop switch refused the look."""
+    async def _look(self, setting: Setting, trigger: str) -> Evidence | None:
+        """Look at a setting. None when the stop switch refused the look."""
         # As the tenant whose setting it is: what is seen is that tenant's to keep.
         async with self._deps.database.tenant(setting.tenant_id)() as session:
             seen = await run_check(
@@ -63,13 +63,15 @@ class Watcher:
                 max_age=_FRESH,
                 trigger=trigger,
             )
-            return seen.reason != STOPPED
+            return None if seen.reason == STOPPED else seen
 
-    async def _last_look(self, session: AsyncSession, setting: Setting) -> dt.datetime | None:
-        """When this setting was last looked at, whatever came of it."""
-        return (
+    async def _last_look(
+        self, session: AsyncSession, setting: Setting
+    ) -> tuple[int, dt.datetime] | None:
+        """The number and the time of the last look at this setting, whatever came of it."""
+        found = (
             await session.execute(
-                select(Evidence.observed_at)
+                select(Evidence.seq, Evidence.observed_at)
                 .where(
                     Evidence.tenant_id == setting.tenant_id,
                     Evidence.check_name == setting.check_name,
@@ -79,11 +81,14 @@ class Watcher:
                 .order_by(Evidence.seq.desc())
                 .limit(1)
             )
-        ).scalar_one_or_none()
+        ).one_or_none()
+        return None if found is None else (found.seq, found.observed_at)
 
     async def _answer_deliveries(self, now: dt.datetime) -> None:
         settle = dt.timedelta(seconds=self._settings.webhook_settle_seconds)
         gap = dt.timedelta(seconds=self._settings.webhook_min_gap_seconds)
+        # The longest a look can be in flight, and the wait for a change to be readable.
+        in_flight = settle + dt.timedelta(seconds=self._settings.check_timeout_seconds)
         async with self._deps.database.across_tenants() as session:
             # Locked until this session commits; another watcher passes them over.
             waiting = await deliveries.waiting(
@@ -104,30 +109,54 @@ class Watcher:
                     # the change they announce is read as soon as work resumes.
                     continue
                 outcome = "looked"
-                # Up to when waiting deliveries count as dealt with by this decision.
-                upto = now
+                # Which waiting deliveries this decision covers: those stored before the
+                # look numbered `before_seq` (None: all), received no later than `settled_by`.
+                before_seq: int | None = None
+                # Not later than this pass: one that arrives while we decide is not ours.
+                settled_by: dt.datetime | None = now
                 if not await is_watched(session, setting):
                     # No answer rests on it, so there is nothing a look could reopen. A
                     # sender who names repository after repository gets no look for any.
                     outcome = "ignored:not_watched"
                 else:
                     last = await self._last_look(session, setting)
-                    newest = max(delivery.received_at for delivery in group)
-                    # A look made after the newest delivery arrived has already answered
-                    # them, and every other delivery that arrived before that look.
-                    upto = last if last is not None else now
-                    if last is None or last < newest:
-                        if last is not None and last > now - gap:
+                    newest = max(delivery.seq for delivery in group)
+                    # A look stored after the newest delivery has already answered them,
+                    # and every other delivery stored before that look. "After" is by the
+                    # number both take from one sequence, never by two clocks: a delivery
+                    # stamped a second early would otherwise count as answered unseen.
+                    #
+                    # And only a look that cannot have begun before they arrived. A look's
+                    # row is stored when the look ends, so it is numbered after a delivery
+                    # that came in while it was still reading, though it read the setting
+                    # before the change. A look takes at most `check_timeout_seconds`: a
+                    # delivery received longer ago than that before the look ended was
+                    # there when the look began. This uses the clock to be more careful,
+                    # never less: when in doubt, look again.
+                    began_by = None if last is None else last[1] - in_flight
+                    answered = (
+                        last is not None
+                        and began_by is not None
+                        and last[0] > newest
+                        and all(delivery.received_at <= began_by for delivery in group)
+                    )
+                    if answered and last is not None:
+                        before_seq, settled_by = last[0], began_by
+                    else:
+                        if last is not None and last[1] > now - gap:
                             # Too soon after the last look. They stay waiting, so the last
                             # delivery of a burst still gets its look when the gap has passed.
                             continue
-                        if not await self._look(setting, "webhook"):
-                            # Stopped between our reading the switch and the look. The
-                            # deliveries stay waiting; nothing was read for them.
+                        seen = await self._look(setting, "webhook")
+                        if seen is None or seen.seq <= newest:
+                            # Stopped between our reading the switch and the look, or the
+                            # check handed back an observation from before these arrived.
+                            # The deliveries stay waiting; nothing was read for them.
                             continue
-                        # The look answers what had settled when this pass began. A
-                        # delivery that came later may be about a later change.
-                        upto = now - settle
+                        # The look answers what was stored before it and had settled when
+                        # this pass began. A delivery that came later may be about a later
+                        # change.
+                        before_seq, settled_by = seen.seq, now - settle
                 for delivery in group:
                     delivery.handled_at = now
                     delivery.outcome = outcome
@@ -138,7 +167,8 @@ class Watcher:
                     tenant_id=setting.tenant_id,
                     check_name=setting.check_name,
                     scope=setting.scope,
-                    upto=upto,
+                    before_seq=before_seq,
+                    settled_by=settled_by,
                     outcome=outcome,
                     now=now,
                 )

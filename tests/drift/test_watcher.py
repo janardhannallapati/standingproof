@@ -37,7 +37,13 @@ class Scene:
             webhook_min_gap_seconds=settings.pop("webhook_min_gap_seconds", 0),
             **settings,
         )
-        self.ahead = dt.timedelta(0)
+        # How far the watcher's clock runs ahead of the clock that stamps deliveries. This
+        # machine's clock is stepped back by a second or two now and then. A delivery then
+        # looks as if it arrived in the future and, correctly, waits for the next pass. A
+        # test that makes one pass is not about that, so its watcher runs a little ahead.
+        # A test about settling sets its own.
+        settled_at_once = self.settings.webhook_settle_seconds == 0
+        self.ahead = dt.timedelta(seconds=5 if settled_at_once else 0)
         self.announced: list[uuid.UUID] = []
         self.owner = tenant(db)
         db.run(self._connect())
@@ -76,7 +82,7 @@ class Scene:
             )
         )
 
-    def deliver(self, count: int = 1) -> None:
+    def deliver(self, count: int = 1, *, at: dt.datetime | None = None) -> None:
         async def go() -> None:
             for _ in range(count):
                 async with self.db.sessions() as session:
@@ -85,7 +91,7 @@ class Scene:
                         delivery_id=str(uuid.uuid4()),
                         event="branch_protection_rule",
                         reading=read("branch_protection_rule", PAYLOAD),
-                        now=utc_now(),
+                        now=at or utc_now(),
                     )
 
         self.db.run(go())
@@ -94,7 +100,7 @@ class Scene:
         self.db.run(self.watcher().tick())
 
     def looks(self) -> list[Evidence]:
-        return sorted(all_rows(self.db, Evidence), key=lambda row: row.observed_at)
+        return sorted(all_rows(self.db, Evidence), key=lambda row: row.seq)
 
     def outcomes(self) -> list[str | None]:
         return [row.outcome for row in all_rows(self.db, WebhookDelivery)]
@@ -158,7 +164,9 @@ def test_a_delivery_is_left_until_the_change_has_had_time_to_show(wf: Db) -> Non
 
 def test_a_look_made_since_the_delivery_arrived_answers_it(wf: Db) -> None:
     scene = Scene(wf, recheck_seconds=10**9)
-    scene.deliver()
+    # It arrived a minute before the look: longer than a look can take, so the look began
+    # after it and saw whatever it announced.
+    scene.deliver(at=utc_now() - dt.timedelta(minutes=1))
     wf.run(scene._look())
 
     scene.tick()
@@ -326,6 +334,57 @@ def test_a_delivery_about_a_setting_no_answer_rests_on_is_not_looked_at(wf: Db) 
     assert scene.outcomes() == ["ignored:not_watched"] * 5
 
 
+def test_a_delivery_stamped_earlier_than_the_last_look_still_gets_its_look(wf: Db) -> None:
+    scene = Scene(wf)
+    scene.github.reviews = None
+    # The delivery arrives after the look the answer was drafted from, but carries an
+    # earlier time: the clock was stepped back, or the API's host runs behind the watcher's.
+    scene.deliver(at=utc_now() - dt.timedelta(seconds=30))
+
+    scene.tick()
+
+    # By the clock the old look "already answered" it. It did not: the look came first.
+    assert scene.outcomes() == ["looked"]
+    assert len(scene.looks()) == 2
+    assert item_row(wf, scene.item).review == "pending"
+
+
+def test_a_look_that_may_have_begun_before_a_delivery_does_not_answer_it(wf: Db) -> None:
+    from tests.workflow.seed import sql
+
+    # A look can take up to 15 seconds. Its row is stored when it ends, so it is numbered
+    # after a delivery that arrived while it was reading, though it read before the change.
+    scene = Scene(wf, check_timeout_seconds=15)
+    scene.github.reviews = None
+    scene.deliver()
+    # Put the delivery before the look in the stored order, as that interleaving would.
+    sql(wf, "UPDATE webhook_deliveries SET seq = (SELECT min(seq) FROM evidence) - 1")
+
+    scene.tick()
+
+    # Stored before the look, but only just: the look cannot be trusted to have seen it.
+    assert scene.outcomes() == ["looked"]
+    assert len(scene.looks()) == 2
+
+
+def test_a_look_made_well_after_a_delivery_answers_it_with_no_second_look(wf: Db) -> None:
+    from tests.workflow.seed import sql
+
+    scene = Scene(wf, check_timeout_seconds=15)
+    scene.deliver()
+    sql(
+        wf,
+        "UPDATE webhook_deliveries SET seq = (SELECT min(seq) FROM evidence) - 1, "
+        "received_at = now() - interval '1 minute'",
+    )
+
+    scene.tick()
+
+    # It arrived a minute before the look ended: longer than any look takes.
+    assert scene.outcomes() == ["looked"]
+    assert len(scene.looks()) == 1
+
+
 def test_one_look_answers_every_waiting_delivery_for_its_setting_however_many(wf: Db) -> None:
     # More than one pass's batch: a replayed delivery must not hold up other settings.
     scene = Scene(wf, drift_batch=3)
@@ -359,7 +418,7 @@ def test_handled_deliveries_are_removed_after_the_keep_time(wf: Db) -> None:
 def test_a_delivery_that_arrived_after_the_last_look_is_never_marked_without_one(wf: Db) -> None:
     # One look answers the deliveries that came before it, and only those.
     scene = Scene(wf, drift_batch=1, recheck_seconds=10**9)
-    scene.deliver()
+    scene.deliver(at=utc_now() - dt.timedelta(minutes=1))
     wf.run(scene._look())
     scene.github.reviews = None
     scene.deliver()

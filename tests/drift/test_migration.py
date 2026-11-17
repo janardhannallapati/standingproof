@@ -11,6 +11,7 @@ from sqlalchemy import text
 from alembic import command
 from standingproof.config import get_settings
 from standingproof.db import build_engine
+from tests.conftest import EMPTY_THE_DATABASE
 
 FACTS = json.dumps({"protected": True})
 
@@ -78,7 +79,7 @@ def test_answers_that_already_cite_a_live_check_are_linked_to_it(
     migrated_postgres_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     url = migrated_postgres_url
-    asyncio.run(_run(url, [("TRUNCATE tenants CASCADE", {})]))
+    asyncio.run(_run(url, [(statement, {}) for statement in EMPTY_THE_DATABASE]))
     _alembic(url, monkeypatch, "downgrade", "0009")
     ids = {name: uuid.uuid4() for name in ["t", "qn", "q1", "q2", "q3", "run", "seen", "failed"]}
     citing = uuid.uuid4()
@@ -151,7 +152,7 @@ def test_existing_observations_keep_their_order_and_new_ones_come_after(
 ) -> None:
     """Migration 0011: `seq` is filled in the order `observed_at` gave until now."""
     url = migrated_postgres_url
-    asyncio.run(_run(url, [("TRUNCATE tenants CASCADE", {})]))
+    asyncio.run(_run(url, [(statement, {}) for statement in EMPTY_THE_DATABASE]))
     _alembic(url, monkeypatch, "downgrade", "0010")
     tenant, old, new, later = (uuid.uuid4() for _ in range(4))
     evidence = (

@@ -16,6 +16,7 @@ from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
 
 from alembic import command
+from evals.world import EMPTY_THE_DATABASE
 from standingproof.agent.tools import ToolRegistry
 from standingproof.app import create_app
 from standingproof.checks.aws import AwsReader
@@ -80,11 +81,12 @@ def settings_for(database_url: str, **overrides: Any) -> Settings:
     return Settings(_env_file=None, **values)
 
 
-async def _execute(database_url: str, sql: str) -> None:
+async def _execute(database_url: str, *statements: str) -> None:
     engine = build_engine(database_url)
     try:
         async with engine.begin() as conn:
-            await conn.execute(text(sql))
+            for sql in statements:
+                await conn.execute(text(sql))
     finally:
         await engine.dispose()
 
@@ -105,7 +107,7 @@ def client(migrated_postgres_url: str, redis_url: str) -> Iterator[TestClient]:
 def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFactory]:
     """Build clients against an empty, migrated database. Keyword arguments override settings."""
     # A plain `def` fixture: asyncio.run needs to be outside any running event loop.
-    asyncio.run(_execute(migrated_postgres_url, "TRUNCATE tenants CASCADE"))
+    asyncio.run(_execute(migrated_postgres_url, *EMPTY_THE_DATABASE))
     with ExitStack() as stack:
 
         def build(**overrides: object) -> TestClient:

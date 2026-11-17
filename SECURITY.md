@@ -91,9 +91,13 @@ python -m standingproof.roles
 
 Limits you should know:
 
-- SQL injected as the app role could also take a table lock (`LOCK TABLE`) on a table that
-  role may update or delete from, and make every tenant wait. That is a loss of availability,
-  not of data. The audit chain's lock rows are protected against it; the other tables are not.
+- The app role cannot lock a whole table and make every tenant wait: it holds `UPDATE` on
+  columns, not tables, and cannot change a row's tenant at all. On the tables that are
+  written once (observations, decisions, checks of drafts, files made and sent, changes seen)
+  it holds no `UPDATE` of any kind. Three tables are the
+  exception, because the application deletes rows from them and `DELETE` also permits a
+  table lock: `questions`, `answer_evidence` and `drift_queue`. SQL injected as the app role
+  could lock those. That is a loss of availability, not of data.
 - The rules guard against a query that forgets its tenant filter. They do not guard against
   injected SQL: a statement that runs as the app role can name another tenant itself. No
   value from a request reaches that setting, and queries are parameterised.
@@ -157,10 +161,11 @@ What a sound chain does not prove:
 - Without `SP_AUDIT_KEY`, who wrote an entry. The chain then shows that entries were not
   altered or removed, and SQL run as the application could add a false one.
 - Who a person is. Until sign-in exists, every request is recorded under `SP_DEV_REVIEWER`.
-- That the owner of the database did not rebuild a whole chain, cut one short, or empty it
-  with `TRUNCATE` (the trigger covers rows, not `TRUNCATE`). An emptied chain verifies as "0
-  entries". To cover this, keep the output of `python -m standingproof.audit head` somewhere
-  the database's owner cannot reach. An earlier head must still be an entry of the later
+- That the owner of the database did not rebuild a whole chain or cut one short. Triggers
+  refuse `UPDATE`, `DELETE` and `TRUNCATE`, which stops an accident (a script that empties the
+  tenants would otherwise take the log with it), but an owner can remove a trigger. To cover
+  this, keep the output of `python -m standingproof.audit head` somewhere the database's owner
+  cannot reach. An earlier head must still be an entry of the later
   chain.
 
 A tenant that has audit entries cannot be deleted: the log would have to go with it, and the

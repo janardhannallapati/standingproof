@@ -161,6 +161,27 @@ def test_only_customers_who_have_the_approved_wording_are_named(wf: Db) -> None:
     assert [sent.customer for sent in found.sent_to] == ["Acme Corp"]
 
 
+def test_the_newest_change_is_listed_first_even_when_the_clock_says_otherwise(wf: Db) -> None:
+    from tests.workflow.seed import sql
+
+    owner, _, _ = approved_answer(wf)
+    observe(wf, owner, {"secret_scanning_enabled": False}, check="github.secret_scanning")
+    observe(wf, owner, {"secret_scanning_enabled": True}, check="github.secret_scanning")
+    examine_all(wf)
+    observe(wf, owner, OPEN)
+    examine_all(wf)
+    # The clock was stepped back between the two: the later change carries the earlier time.
+    sql(
+        wf,
+        "UPDATE drift_events SET detected_at = now() - interval '1 hour' WHERE check_name = :c",
+        c=CHECK,
+    )
+
+    listed = changes(wf, owner)
+
+    assert [entry.change.check_name for entry in listed] == [CHECK, "github.secret_scanning"]
+
+
 def test_changes_are_listed_newest_first_with_and_without_answers(wf: Db) -> None:
     owner, item, _ = approved_answer(wf)
     early = dt.datetime(2026, 11, 1, 9, 0, tzinfo=dt.UTC)
