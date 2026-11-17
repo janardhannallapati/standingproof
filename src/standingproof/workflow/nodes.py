@@ -90,7 +90,9 @@ async def call_model(state: QuestionState, runtime: Runtime[QuestionContext]) ->
         if error.retryable:
             # Nothing is saved for this step, so the next attempt starts here again.
             raise
-        return _needs_review(HandoffReason.MODEL_ERROR)
+        # Our own refusal (the stop switch, the day's ceiling) says why; anything else is
+        # the provider's.
+        return _needs_review(getattr(error, "reason", HandoffReason.MODEL_ERROR))
 
     update: Update = {
         "steps": state["steps"] + 1,

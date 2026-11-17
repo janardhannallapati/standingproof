@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.models import FilledFile, RunQuestion, SentFile
 from standingproof.writeback.load import file_key, load
 
@@ -134,6 +135,24 @@ async def record_sent(
             .returning(SentFile.id)
         )
     ).scalar_one_or_none()
+    if inserted is not None:
+        await record(
+            session,
+            tenant_id,
+            Entry(
+                action="file.sent",
+                subject=f"file:{file_id}",
+                # The record's id, not the customer's name or anything made from it: a
+                # hash of a company name can be undone by guessing names, and this log
+                # is kept for good.
+                details={
+                    "run_id": str(run_id),
+                    "sent_file_id": str(inserted),
+                    "answers": len(answers),
+                },
+                actor=sent_by,
+            ),
+        )
     await session.commit()
     stored = (
         (

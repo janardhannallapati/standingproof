@@ -91,6 +91,9 @@ python -m standingproof.roles
 
 Limits you should know:
 
+- SQL injected as the app role could also take a table lock (`LOCK TABLE`) on a table that
+  role may update or delete from, and make every tenant wait. That is a loss of availability,
+  not of data. The audit chain's lock rows are protected against it; the other tables are not.
 - The rules guard against a query that forgets its tenant filter. They do not guard against
   injected SQL: a statement that runs as the app role can name another tenant itself. No
   value from a request reaches that setting, and queries are parameterised.
@@ -104,6 +107,105 @@ Limits you should know:
 - Saved workflow state is separated from customer tables by role, and one question's state from
   another's by its id. It has no row-level policy: the tables belong to the workflow library.
 - The evals (`python -m evals run`) start their own throwaway database and use it as its owner.
+
+## Audit log
+
+Every decision is written to an append-only log in the same transaction as the decision, so
+neither exists without the other. Each entry carries a hash of itself and of the entry before
+it. Changing, removing or reordering one entry breaks every hash after it.
+
+Recorded: a review decision (with a hash of the approved wording, never the wording), a
+connection added, a library answer or policy added, a run started or cancelled, a file made, a
+file recorded as sent (by the id of its record, not the customer's name), an answer reopened by a changed
+setting, and every change to the stop switch or a spend ceiling. Each tenant has its own
+chain; operator actions go in the deployment's. No customer text is kept in the log.
+
+To check every chain, run:
+
+```sh
+docker compose exec api python -m standingproof.audit verify
+```
+
+```text
+deployment: 4 entries, chain intact
+tenant default: 412 entries, chain intact
+```
+
+A broken chain names the first bad entry on standard error, and the command exits 1.
+
+The database enforces three things itself, whoever is writing:
+
+- An entry cannot be changed or deleted. The running services have no right to, and a trigger
+  refuses an `UPDATE` or `DELETE` from the owner too.
+- A new entry must be the next number of its chain, link to the last entry's hash, and carry
+  a time within a minute of the database's clock. So no entry can be backdated, skipped ahead
+  or forked.
+- A tenant can write and lock only its own chain.
+
+To also stop an entry being forged by someone who can run SQL as the application, set
+`SP_AUDIT_KEY` (32 characters or more, from your secret store). Entries are then signed with
+a key the database never sees, and a forged one fails `verify`. With `SP_ENVIRONMENT=prod`
+the key is required and a process without it does not start.
+
+Set the key before the first entry, give the same value to every service and to any shell
+you run `python -m standingproof.limits` from, and never change it. An entry written without
+the key, or under another one, is reported as broken by `verify` for good: it looks the same
+as a forgery, and nothing can be removed from the log.
+
+What a sound chain does not prove:
+
+- Without `SP_AUDIT_KEY`, who wrote an entry. The chain then shows that entries were not
+  altered or removed, and SQL run as the application could add a false one.
+- Who a person is. Until sign-in exists, every request is recorded under `SP_DEV_REVIEWER`.
+- That the owner of the database did not rebuild a whole chain, cut one short, or empty it
+  with `TRUNCATE` (the trigger covers rows, not `TRUNCATE`). An emptied chain verifies as "0
+  entries". To cover this, keep the output of `python -m standingproof.audit head` somewhere
+  the database's owner cannot reach. An earlier head must still be an entry of the later
+  chain.
+
+A tenant that has audit entries cannot be deleted: the log would have to go with it, and the
+log does not allow deletion. Removing a tenant is a deliberate act by the database's owner.
+
+## Spend ceiling and stop switch
+
+Before every model call the worker checks two things, in code:
+
+| Check | Where it lives | When it refuses |
+|---|---|---|
+| Stop switch | A row in Postgres, per tenant and for the deployment | The call is not made. A question in progress goes to a reviewer with the reason; a question not yet started waits and goes on after `resume`. No live check runs either |
+| Daily ceiling (UTC) | A counter in Redis, per tenant and for the deployment | The call is not made and the question goes to a reviewer with the reason |
+
+The defaults are `SP_DAILY_LIMIT_USD=20` for the deployment and `SP_TENANT_DAILY_LIMIT_USD=10`
+for each tenant. An operator changes them, and the switch, with:
+
+```sh
+docker compose exec api python -m standingproof.limits show
+docker compose exec api python -m standingproof.limits stop --by YOUR_NAME
+docker compose exec api python -m standingproof.limits resume --by YOUR_NAME
+docker compose exec api python -m standingproof.limits daily --by YOUR_NAME --usd 5 --tenant default
+```
+
+A tenant cannot change its own switch or ceiling: the application's role may only read them.
+
+Limits you should know:
+
+- A call is counted as `SP_CALL_RESERVE_USD` (40 cents: the most one call can cost with the
+  default models) until it returns, then as what it cost. A call that fails or is cancelled
+  stays counted in full, because what the provider charged for it is not known. If you choose
+  a dearer model or a longer reply, raise the reservation to match, or one call can take the
+  day over the ceiling.
+- The other side of counting failed calls in full: a provider outage uses up the day's ceiling
+  at 40 cents a failed call, although a refused call costs nothing. Questions then go to a
+  reviewer until the next day or until an operator raises the ceiling.
+- If Redis cannot be reached, no model call is made. If Redis loses its data during the day,
+  the day's count starts again from zero.
+- The ceiling covers the worker's model calls. `python -m evals run` and
+  `python -m standingproof.agent` have their own ceilings and are not counted here.
+- `--by` is a name you type. Until sign-in exists it is not proof of who ran the command.
+- While the switch is on, a webhook delivery waits and is read after `resume`. A question whose
+  draft was ready when the ceiling or the switch stopped its checker goes to a reviewer as
+  "not checked", not with the ceiling as its reason.
+- The counter uses two Redis keys in one script, so it needs a single Redis, not a cluster.
 
 ## Where the model key lives
 

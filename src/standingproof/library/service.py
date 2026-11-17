@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from standingproof.audit import Entry, record
 from standingproof.config import Settings
 from standingproof.library.chunking import TooManyChunksError, chunk_markdown
 from standingproof.library.embedding import Embedder
@@ -92,6 +93,16 @@ async def create_answer(
         LibraryAnswerEmbedding(
             answer_id=answer.id, model=embedder.spec.name, tenant_id=tenant_id, embedding=vector
         )
+    )
+    text_hash = hashlib.sha256(f"{new.question}\n{new.answer}".encode()).hexdigest()
+    await record(
+        session,
+        tenant_id,
+        Entry(
+            action="library.answer.add",
+            subject=f"answer:{answer.id}",
+            details={"expires_on": new.expires_on.isoformat(), "text_sha256": text_hash},
+        ),
     )
     await session.commit()
     return answer
@@ -214,6 +225,15 @@ async def ingest_policy(
             chunk_id=row.id, model=embedder.spec.name, tenant_id=tenant_id, embedding=vector
         )
         for row, vector in zip(rows, vectors, strict=True)
+    )
+    await record(
+        session,
+        tenant_id,
+        Entry(
+            action="library.policy.add",
+            subject=f"policy:{doc.id}",
+            details={"sha256": doc.sha256, "chunks": len(rows)},
+        ),
     )
     await session.commit()
     return IngestedPolicy(doc, created=True)

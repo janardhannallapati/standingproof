@@ -59,6 +59,9 @@ class HandoffReason(StrEnum):
     OUTPUT_TRUNCATED = "output_truncated"
     UNEXPECTED_STOP = "unexpected_stop"
     MODEL_ERROR = "model_error"
+    # Our own rules, not the model's doing: the day's spend ceiling, and the stop switch.
+    DAILY_LIMIT = "daily_limit"
+    STOPPED = "stopped"
 
 
 class AgentResult(BaseModel):

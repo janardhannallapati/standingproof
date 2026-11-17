@@ -10,6 +10,7 @@ tables that hold a customer's documents and files. See SECURITY.md.
 import uuid
 from typing import Any
 
+from pydantic import SecretBytes
 from sqlalchemy import event, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import (
@@ -28,6 +29,11 @@ STATE_ROLE = "standingproof_state"
 ROLES = {"app": APP_ROLE, "system": SYSTEM_ROLE, "state": STATE_ROLE}
 
 _TENANT = "tenant_id"
+# Who a session acts for, for the audit log. Set beside the tenant; absent means "system".
+ACTOR = "actor"
+# The key audit entries are signed with, when there is one. It stays in the process: it is
+# never sent to the database, so nobody who can only run SQL can sign an entry.
+AUDIT_KEY = "audit_key"
 
 
 class UnsafeRoleError(RuntimeError):
@@ -141,16 +147,25 @@ def _refuse_unsafe_role(engine: AsyncEngine, role: str) -> None:
 class Database:
     """The two pools a running process uses, and the sessions it may open on them."""
 
-    def __init__(self, *, app_url: str, system_url: str) -> None:
+    def __init__(self, *, app_url: str, system_url: str, audit_key: bytes | None = None) -> None:
         self.app_engine = build_engine(app_url)
         self._system_engine = build_engine(system_url)
         _refuse_unsafe_role(self.app_engine, APP_ROLE)
         _refuse_unsafe_role(self._system_engine, SYSTEM_ROLE)
-        self._system = build_session_factory(self._system_engine)
+        # Wrapped, so that printing a session factory (in a traceback, a debugger, a log
+        # line somebody adds) shows asterisks and not the key.
+        self._audit_key = None if audit_key is None else SecretBytes(audit_key)
+        self._system = build_session_factory(self._system_engine, **{AUDIT_KEY: self._audit_key})
 
-    def tenant(self, tenant_id: uuid.UUID) -> async_sessionmaker[AsyncSession]:
-        """Sessions that see and change one tenant's rows, whatever the query says."""
-        return build_session_factory(self.app_engine, **{_TENANT: tenant_id})
+    def tenant(
+        self, tenant_id: uuid.UUID, *, actor: str | None = None
+    ) -> async_sessionmaker[AsyncSession]:
+        """Sessions that see and change one tenant's rows, whatever the query says.
+
+        `actor` is the person the session acts for, recorded with what they decide."""
+        return build_session_factory(
+            self.app_engine, **{_TENANT: tenant_id, ACTOR: actor, AUDIT_KEY: self._audit_key}
+        )
 
     @property
     def across_tenants(self) -> async_sessionmaker[AsyncSession]:
@@ -165,4 +180,14 @@ class Database:
 
 
 def build_database(settings: Settings) -> Database:
-    return Database(app_url=settings.role_url("app"), system_url=settings.role_url("system"))
+    key = settings.audit_key
+    if key is None and settings.environment == "prod":
+        # Every process that writes an audit entry must sign it with the same key. One
+        # that ran without it would add an entry that never verifies, and nothing can be
+        # removed from the log afterwards.
+        raise ValueError("SP_AUDIT_KEY must be set in production")
+    return Database(
+        app_url=settings.role_url("app"),
+        system_url=settings.role_url("system"),
+        audit_key=None if key is None else key.get_secret_value().encode(),
+    )

@@ -13,7 +13,11 @@ class Settings(BaseSettings):
     tracebacks and repr(). Call .get_secret_value() only at the point of use.
     """
 
-    model_config = SettingsConfigDict(env_prefix="SP_", env_file=".env", extra="ignore")
+    # hide_input_in_errors: a value that fails validation is not quoted in the error. Most
+    # values here are credentials, and a startup error goes to a log.
+    model_config = SettingsConfigDict(
+        env_prefix="SP_", env_file=".env", extra="ignore", hide_input_in_errors=True
+    )
 
     database_url: SecretStr = SecretStr(
         "postgresql+asyncpg://standingproof:standingproof@localhost:5432/standingproof"
@@ -101,6 +105,23 @@ class Settings(BaseSettings):
     # How many of each the watcher handles in one pass.
     drift_batch: int = 20
 
+    # Signs audit entries (see SECURITY.md, "Audit log"). With it, an entry cannot be forged
+    # by someone who can run SQL but cannot read this value. Without it the log still shows
+    # that entries were not altered or removed. Set it once and keep it: entries written
+    # under one key do not verify under another. At least 32 characters.
+    audit_key: SecretStr | None = Field(default=None, min_length=32)
+
+    # The most the model may cost in one day (UTC), for the whole deployment and for any
+    # one tenant. Checked before every model call; over it, the call is not made and the
+    # question goes to a person. `python -m standingproof.limits` sets other values.
+    daily_limit_usd: float = 20.0
+    tenant_daily_limit_usd: float = 10.0
+    # What one model call is counted as until it returns and its real cost replaces this.
+    # Sized to the most one call can cost with the default models (a full 16,000-token
+    # reply from the drafting model, and a large prompt), so that a call in flight is
+    # never counted as less than it may turn out to be. Raise it with a dearer model.
+    call_reserve_usd: float = Field(default=0.40, gt=0)
+
     # Running a questionnaire. A run stops starting questions once it has spent its ceiling.
     run_cost_limit_usd: float = 5.0
     # How many questions one worker works on at once (the provider's rate limit is shared).
@@ -140,6 +161,7 @@ class Settings(BaseSettings):
         "github_token",
         "voyage_api_key",
         "github_webhook_secret",
+        "audit_key",
         "app_database_url",
         "system_database_url",
         "state_database_url",

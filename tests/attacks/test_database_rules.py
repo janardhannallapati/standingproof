@@ -134,6 +134,13 @@ def test_every_tenant_table_has_a_forced_policy(wf: Db, table: str) -> None:
         reason = refused(wf, nobody_special, f"SELECT 1 FROM {table}")  # noqa: S608
         assert "permission denied" in reason
         return
+    if table == "limits":
+        # Read-only for a tenant: its own row and the deployment's. Tested in test_limits.py.
+        [(command, using)] = [
+            (cmd, qual) for name, _, cmd, qual, _ in found if name == "own_or_deployment"
+        ]
+        assert command == "SELECT" and "tenant_id IS NULL" in using and "app.tenant_id" in using
+        return
     assert ("tenant_only", [APP_ROLE]) in policies
     # The name is not the rule. What the policy says is checked too: it covers every
     # command, and compares the row's tenant with the one the transaction named.

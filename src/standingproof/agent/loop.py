@@ -94,9 +94,9 @@ async def run_agent(
 
         try:
             turn = await model.complete(system=SYSTEM_PROMPT, messages=messages, tools=tools)
-        except ModelCallError:
+        except ModelCallError as error:
             # A provider outage is not a reason to guess. The question goes to a person.
-            return stop(HandoffReason.MODEL_ERROR)
+            return stop(getattr(error, "reason", HandoffReason.MODEL_ERROR))
         steps += 1
         total = add_usage(total, turn.usage)
         spent += cost_usd(turn.model, turn.usage)

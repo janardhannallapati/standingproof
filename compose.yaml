@@ -9,6 +9,9 @@ x-app-env: &app_env
   SP_SYSTEM_DATABASE_URL: postgresql+asyncpg://standingproof_system:standingproof_system@postgres:5432/standingproof
   SP_STATE_DATABASE_URL: postgresql+asyncpg://standingproof_state:standingproof_state@postgres:5432/standingproof
   SP_REDIS_URL: redis://redis:6379/0
+  # Signs audit entries (see SECURITY.md). Every service that writes one needs the same
+  # value. Unset: the log is still hash-chained, but an entry could be forged with SQL.
+  SP_AUDIT_KEY: ${SP_AUDIT_KEY:-}
   SP_ENVIRONMENT: dev
   # The default embedding model runs inside the container. To try a hosted one, set both
   # of these in your shell or .env before `docker compose up` (see the README).

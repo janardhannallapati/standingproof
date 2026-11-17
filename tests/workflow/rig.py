@@ -13,6 +13,7 @@ from redis.asyncio import Redis
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.types import AnswerDraft, ModelTurn
 from standingproof.config import Settings
+from standingproof.limits.guard import Guard
 from standingproof.workflow.graph import build_graph
 from standingproof.workflow.queue import Job, JobQueue
 from standingproof.workflow.worker import Worker, WorkerDeps
@@ -92,6 +93,7 @@ class Rig:
                 checker=checker,
                 embedder=FakeEmbedder(),
                 backends=backends or no_backends(),
+                guard=Guard(self.redis, db.database, self.settings),
             ),
         )
         db.run(self.queue.ensure_group())

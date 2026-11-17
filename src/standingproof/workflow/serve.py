@@ -15,6 +15,7 @@ from standingproof.checks.service import build_backends
 from standingproof.config import Settings
 from standingproof.db import build_database
 from standingproof.library.embedding import Embedder, build_embedder
+from standingproof.limits.guard import Guard
 from standingproof.workflow.checkpoint import open_checkpointer
 from standingproof.workflow.events import publish_changed
 from standingproof.workflow.graph import build_graph
@@ -68,6 +69,7 @@ async def serve(
                     embedder=embedder,
                     backends=backends,
                     saver=saver,
+                    guard=Guard(redis, database, settings),
                     announce=lambda run_id: publish_changed(redis, run_id),
                 ),
             )

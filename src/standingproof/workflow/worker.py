@@ -26,6 +26,8 @@ from standingproof.config import Settings
 from standingproof.db import Database
 from standingproof.library.embedding import Embedder
 from standingproof.library.tools import build_library_registry
+from standingproof.limits import switch
+from standingproof.limits.guard import Guard, GuardedChecker, GuardedModel
 from standingproof.models import Tenant
 from standingproof.workflow import leases, results, runs
 from standingproof.workflow import sweep as sweeping
@@ -63,6 +65,9 @@ class WorkerDeps:
     announce: Callable[[uuid.UUID], Awaitable[None]] | None = None
     # The second reader of each draft. Absent: drafts are not checked.
     checker: CheckerClient | None = None
+    # The stop switch and the day's spend ceiling, in front of every model call. Absent
+    # only in tests of other things.
+    guard: Guard | None = None
 
 
 class Worker:
@@ -89,8 +94,15 @@ class Worker:
                     session, tenant_id=lease.tenant_id, question=question
                 )
 
+        model: ModelClient = deps.model
+        checker = deps.checker
+        if deps.guard is not None:
+            model = GuardedModel(model, deps.guard, lease.tenant_id)
+            if checker is not None:
+                checker = GuardedChecker(checker, deps.guard, lease.tenant_id)
+
         return QuestionContext(
-            model=deps.model,
+            model=model,
             registry=registry,
             limits=Limits(
                 max_steps=settings.run_max_steps,
@@ -98,7 +110,7 @@ class Worker:
                 max_seconds=settings.run_max_seconds,
             ),
             find_exact=find_exact,
-            checker=deps.checker,
+            checker=checker,
         )
 
     async def _announce(self, run_id: uuid.UUID) -> None:
@@ -168,6 +180,10 @@ class Worker:
         if tenant_id is None:
             return
         async with self._deps.database.tenant(tenant_id)() as session:
+            if (await switch.read(session, tenant_id, self._settings)).stopped:
+                # Not started, and not given up: it waits, and goes on when work resumes.
+                await leases.wait(session, item_id, seconds=self._settings.requeue_seconds)
+                return
             lease = await leases.take_lease(
                 session,
                 item_id=item_id,

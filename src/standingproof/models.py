@@ -576,3 +576,65 @@ class WebhookDelivery(Base):
     handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # looked | ignored:<reason>
     outcome: Mapped[str | None] = mapped_column(String(60))
+
+
+class AuditEntry(Base):
+    """One entry of a tenant's audit chain (or the deployment's, when tenant_id is NULL).
+    Append-only, by grant and by trigger. See standingproof.audit.chain."""
+
+    __tablename__ = "audit_log"
+    __table_args__ = (
+        # NULLS NOT DISTINCT: the deployment's chain has one entry per number too.
+        UniqueConstraint(
+            "tenant_id", "seq", name="uq_audit_log_seq", postgresql_nulls_not_distinct=True
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    # No ON DELETE CASCADE: a tenant with a record cannot be deleted from under it.
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tenants.id"))
+    # 1, 2, 3... within the chain, with no gaps.
+    seq: Mapped[int] = mapped_column(BigInteger)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    actor: Mapped[str] = mapped_column(String(200))
+    action: Mapped[str] = mapped_column(String(60))
+    subject: Mapped[str] = mapped_column(String(300))
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    hash: Mapped[str] = mapped_column(String(64))
+
+
+class AuditHead(Base):
+    """One row per audit chain, there to be locked: whoever holds it writes next. A row
+    and not a named lock, so that the policies decide who may take it."""
+
+    __tablename__ = "audit_heads"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", name="uq_audit_heads_tenant", postgresql_nulls_not_distinct=True
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tenants.id"))
+
+
+class Limit(Base):
+    """A stop switch and a daily spend ceiling: one row per tenant that has its own, and one
+    with tenant_id NULL for the deployment. Changed by an operator, read before every model
+    call and every look. See standingproof.limits."""
+
+    __tablename__ = "limits"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_limits_tenant", postgresql_nulls_not_distinct=True),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE")
+    )
+    stopped: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
+    # None: the ceiling in the settings applies.
+    daily_limit_usd: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    changed_by: Mapped[str] = mapped_column(String(200))
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)

@@ -14,12 +14,14 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.checks.authorize import authorize, valid_scope
 from standingproof.checks.aws import AWS_CHECKS, AwsReader
 from standingproof.checks.github import GITHUB_CHECKS, GitHubClient
 from standingproof.checks.outcome import CheckOutcome, not_configured, unavailable
 from standingproof.checks.registry import CHECKS, CheckDef
 from standingproof.config import Settings
+from standingproof.limits import switch
 from standingproof.models import Connection, DriftQueue, Evidence
 
 _SYSTEM_SCOPE_KIND = {"github": "org", "aws": "account"}
@@ -99,6 +101,12 @@ async def add_connection(
             .returning(Connection.id)
         )
     ).scalar_one_or_none()
+    if created is not None:
+        await record(
+            session,
+            tenant_id,
+            Entry(action="connection.add", subject=f"{system}:{scope}", details={}),
+        )
     await session.commit()
     # The unique constraint spans every tenant; this session sees only its own rows. So a
     # scope that could not be inserted and cannot be seen is held by another tenant. The
@@ -182,7 +190,11 @@ async def run_check(
     decision = authorize(check, scope, connections)
     now = utc_now()
 
-    if check is None or not decision.allowed:
+    if (await switch.read(session, tenant_id, settings)).stopped:
+        # The stop switch is on: nothing of ours reaches an outside system. Recorded like
+        # any other refusal, so "why is there no observation?" has an answer.
+        outcome = CheckOutcome("denied", "Not run: stopped.", reason="stopped")
+    elif check is None or not decision.allowed:
         outcome = CheckOutcome("denied", f"Not run: {decision.reason}.", reason=decision.reason)
     else:
         if check.system == "github":

@@ -15,6 +15,8 @@ const REASONS: Record<string, string> = {
   unexpected_stop: "The model stopped unexpectedly",
   model_error: "The model could not be called",
   model_unavailable: "The model provider was unavailable",
+  daily_limit: "Stopped: today's spend ceiling was reached",
+  stopped: "Stopped: an operator has paused this work",
   checker_disagrees: "The checker disagrees",
   not_checked: "Not checked",
   redraft_failed: "The redraft could not be made; the earlier draft is shown",

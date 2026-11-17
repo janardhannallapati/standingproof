@@ -376,6 +376,17 @@ rulesets is not read. Changes to policy documents and library answers do not reo
 anything yet. Nobody is notified outside the product: the runs list and the Changes page
 show it. Nothing alerts when the watcher itself is stopped.
 
+## Limits and the audit log
+
+Four controls sit in code, not in a prompt. Each is described in [SECURITY.md](SECURITY.md).
+
+| Control | What it does | Command |
+|---|---|---|
+| Tenant isolation | Postgres shows a session one tenant's rows, whatever the query says | none: it is always on |
+| Daily spend ceiling | Over it, no model call is made and the question goes to a reviewer | `python -m standingproof.limits show` |
+| Stop switch | No model call and no live check starts until an operator resumes | `python -m standingproof.limits stop --by YOUR_NAME` |
+| Audit log | Every decision, hash-chained and append-only | `python -m standingproof.audit verify` |
+
 ## When something fails
 
 | Symptom | Cause | Resolution |
@@ -387,6 +398,8 @@ show it. Nothing alerts when the watcher itself is stopped.
 | A check answers `not_configured` or `unavailable` | No credential is set, or the system refused, timed out or hid the setting. The `reason` says which | Set the credential or its permission ([SECURITY.md](SECURITY.md)) and run the check again |
 | A decision answers 409 | Someone else decided first, or a redraft arrived, so your `version` is old | Read the question again and decide on the new version |
 | `POST /runs/RUN_ID/file` answers 409 | A question is undecided, or was reopened by a changed setting | Decide it (`keep` for a reopened one), then ask again |
+| A question needs review with "today's spend ceiling was reached" | The tenant or the deployment has spent its daily ceiling | Wait for the next day (UTC), or raise it: `python -m standingproof.limits daily --by YOUR_NAME --usd 20` ([SECURITY.md](SECURITY.md)) |
+| Questions stay queued and nothing is drafted | The stop switch is on | `python -m standingproof.limits show`, then `resume --by YOUR_NAME` |
 | `POST /webhooks/github` answers 404 | `SP_GITHUB_WEBHOOK_SECRET` is not set | Set it to the secret you gave GitHub and restart |
 
 ## How it is measured

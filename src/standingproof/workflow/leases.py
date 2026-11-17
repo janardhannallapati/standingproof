@@ -81,6 +81,16 @@ async def _close_unstarted(session: AsyncSession, item_id: uuid.UUID, reason: st
     )
 
 
+async def wait(session: AsyncSession, item_id: uuid.UUID, *, seconds: float) -> None:
+    """Leave a question as it is and have the sweep offer it again later. Commits."""
+    await session.execute(
+        update(RunQuestion)
+        .where(RunQuestion.id == item_id, RunQuestion.status.in_((ITEM_QUEUED, ITEM_RUNNING)))
+        .values(enqueue_after=in_seconds(seconds))
+    )
+    await session.commit()
+
+
 async def tenant_of(session: AsyncSession, item_id: uuid.UUID) -> uuid.UUID | None:
     """Whose question a job names. Asked across tenants: a job carries only the id."""
     return (

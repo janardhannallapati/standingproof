@@ -13,6 +13,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.models import (
     ITEM_NOT_STARTED,
     ITEM_OPEN,
@@ -127,6 +128,15 @@ async def start_run(
     else:
         run.status = RUN_FINISHED
         run.finished_at = NOW
+    await record(
+        session,
+        tenant_id,
+        Entry(
+            action="run.start",
+            subject=f"run:{run.id}",
+            details={"questionnaire_id": str(questionnaire_id), "questions": len(questions)},
+        ),
+    )
     await session.commit()
     await session.refresh(run)
     return StartedRun(run=run, created=True, item_ids=item_ids)
@@ -146,6 +156,9 @@ async def cancel_run(session: AsyncSession, *, tenant_id: uuid.UUID, run_id: uui
             update(RunQuestion)
             .where(RunQuestion.run_id == run_id, RunQuestion.status == ITEM_QUEUED)
             .values(status=ITEM_NOT_STARTED, reason=REASON_CANCELLED, finished_at=NOW)
+        )
+        await record(
+            session, tenant_id, Entry(action="run.cancel", subject=f"run:{run_id}", details={})
         )
     await session.commit()
     return True
