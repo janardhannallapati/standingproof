@@ -269,7 +269,7 @@ async def watched(session: AsyncSession, tenant_id: uuid.UUID) -> list[Watched]:
                 Evidence.check_name == check_name,
                 Evidence.scope == scope,
             )
-            .order_by(Evidence.observed_at.desc())
+            .order_by(Evidence.seq.desc())
             .limit(1)
         )
         last = (await session.execute(looks)).one()

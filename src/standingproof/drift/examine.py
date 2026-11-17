@@ -40,7 +40,7 @@ async def _newest_two(session: AsyncSession, of: Evidence) -> list[Evidence]:
             Evidence.scope == of.scope,
             Evidence.status == "observed",
         )
-        .order_by(Evidence.observed_at.desc(), Evidence.id.desc())
+        .order_by(Evidence.seq.desc())
         .limit(2)
     )
     return list(rows.scalars())

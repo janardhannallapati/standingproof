@@ -66,7 +66,7 @@ class Watcher:
                     Evidence.check_name == setting.check_name,
                     Evidence.scope == setting.scope,
                 )
-                .order_by(Evidence.observed_at.desc())
+                .order_by(Evidence.seq.desc())
                 .limit(1)
             )
         ).scalar_one_or_none()

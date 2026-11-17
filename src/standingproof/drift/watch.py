@@ -69,7 +69,7 @@ async def rest_on(
             func.row_number()
             .over(
                 partition_by=(Evidence.check_name, Evidence.scope),
-                order_by=(Evidence.observed_at.desc(), Evidence.id),
+                order_by=Evidence.seq.desc(),
             )
             .label("newest"),
         )
@@ -118,7 +118,7 @@ async def queue_newer(session: AsyncSession, run_question_id: uuid.UUID) -> None
                     Evidence.scope == link.scope,
                     Evidence.status == "observed",
                 )
-                .order_by(Evidence.observed_at.desc(), Evidence.id.desc())
+                .order_by(Evidence.seq.desc())
                 .limit(1)
             )
         ).scalar_one_or_none()
@@ -172,7 +172,7 @@ async def due(
             Evidence.check_name == watched.c.check_name,
             Evidence.scope == watched.c.scope,
         )
-        .order_by(Evidence.observed_at.desc())
+        .order_by(Evidence.seq.desc())
         .limit(1)
         .lateral()
     )

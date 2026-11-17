@@ -1,6 +1,7 @@
 """A new observation of a setting, compared with the answers that rest on it."""
 
 import asyncio
+import datetime as dt
 import uuid
 
 import pytest
@@ -74,6 +75,21 @@ def test_an_approved_answer_is_reopened_when_its_setting_reads_differently(wf: D
     ]
     assert rests_on(wf, item) == [(CHECK, SCOPE, now)]
     assert queued(wf) == 0
+
+
+def test_a_later_look_wins_when_the_clock_went_back(wf: Db) -> None:
+    owner, item, first = approved_answer(wf)
+    # The machine's clock was stepped back between the two looks, so the later look
+    # carries the earlier time. It is still the newest reading of the setting.
+    earlier = dt.datetime.now(dt.UTC) - dt.timedelta(seconds=5)
+    now = observe(wf, owner, OPEN, at=earlier)
+
+    examine_all(wf)
+
+    assert item_row(wf, item).review == "pending"
+    [event] = events(wf)
+    assert (event.evidence_id, event.previous_evidence_id) == (now, first)
+    assert rests_on(wf, item) == [(CHECK, SCOPE, now)]
 
 
 def test_the_same_reading_reopens_nothing_and_records_no_event(wf: Db) -> None:

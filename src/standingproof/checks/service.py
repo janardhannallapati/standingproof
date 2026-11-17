@@ -138,7 +138,7 @@ async def _fresh(
             Evidence.status == "observed",
             Evidence.observed_at > not_before,
         )
-        .order_by(Evidence.observed_at.desc())
+        .order_by(Evidence.seq.desc())
         .limit(1)
     )
     return rows.scalar_one_or_none()
