@@ -18,14 +18,15 @@ from standingproof.models import (
     Tenant,
 )
 from standingproof.workflow.runs import StartedRun, start_run
-from tests.conftest import Db
+from tests.conftest import EMPTY_THE_DATABASE, Db
 
 
 async def _truncate(database_url: str) -> None:
     engine = build_engine(database_url)
     try:
         async with engine.begin() as conn:
-            await conn.execute(text("TRUNCATE tenants CASCADE"))
+            for statement in EMPTY_THE_DATABASE:
+                await conn.execute(text(statement))
     finally:
         await engine.dispose()
 

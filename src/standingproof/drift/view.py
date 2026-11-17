@@ -179,8 +179,11 @@ async def changes_page(
         (
             await session.execute(
                 select(DriftEvent)
+                .join(Evidence, Evidence.id == DriftEvent.evidence_id)
                 .where(DriftEvent.tenant_id == tenant_id)
-                .order_by(DriftEvent.detected_at.desc(), DriftEvent.id)
+                # By the order the observations were stored in, not by `detected_at`: a
+                # clock that is stepped back would list an older change above a newer one.
+                .order_by(Evidence.seq.desc())
                 .limit(limit)
             )
         ).scalars()

@@ -539,3 +539,22 @@ def test_production_refuses_to_run_without_an_audit_key_and_does_not_print_a_sho
     with pytest.raises(ValidationError) as short:
         settings_for(url, audit_key="too-short-to-be-a-key")
     assert "too-short-to-be-a-key" not in str(short.value)
+
+
+@pytest.mark.parametrize(
+    "statement",
+    ["TRUNCATE audit_log", "TRUNCATE audit_heads", "TRUNCATE tenants CASCADE"],
+)
+def test_the_owner_cannot_empty_the_log_by_accident(wf: Db, statement: str) -> None:
+    owner, _, _ = approved_answer(wf)
+
+    async def attempt() -> str:
+        async with wf.sessions() as session:
+            with pytest.raises(DBAPIError) as refused:
+                await session.execute(text(statement))
+            return str(refused.value.orig)
+
+    # A maintenance script that empties the tenants would otherwise take the record with
+    # it, and an emptied chain verifies as "0 entries, chain intact".
+    assert "append-only" in wf.run(attempt())
+    assert checked(wf, owner) == (2, None)

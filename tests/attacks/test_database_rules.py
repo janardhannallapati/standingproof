@@ -192,13 +192,18 @@ def test_a_row_cannot_be_written_for_or_moved_to_another_tenant(wf: Db) -> None:
     )
 
     assert "row-level security" in refused(wf, as_us, library_answer, t=theirs)
-    assert "row-level security" in refused(
+    # The tenant of a row cannot be changed at all: there is no right to update that column.
+    assert "permission denied" in refused(
         wf, as_us, "UPDATE questionnaires SET tenant_id = :t", t=theirs
     )
     # Their rows are not refused but simply not there: nothing to update, nothing to delete.
     assert rows(wf, as_us, "UPDATE runs SET status = 'cancelled' RETURNING tenant_id") == [(ours,)]
-    assert rows(wf, as_us, "DELETE FROM evidence WHERE tenant_id = :t RETURNING id", t=theirs) == []
-    assert count(wf, wf.sessions, "evidence", theirs) == 1
+    assert (
+        rows(wf, as_us, "DELETE FROM questions WHERE tenant_id = :t RETURNING id", t=theirs) == []
+    )
+    assert count(wf, wf.sessions, "questions", theirs) == 1
+    # And where the application never deletes, it has no right to.
+    assert "permission denied" in refused(wf, as_us, "DELETE FROM evidence")
     # With no tenant named, an insert is refused too.
     nobody = build_session_factory(wf.database.app_engine)
     assert "row-level security" in refused(wf, nobody, library_answer, t=ours)
@@ -327,3 +332,56 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
     ):
         reason = refused(wf, system, sql)
         assert "permission denied" in reason or "row-level security" in reason, sql
+
+
+# The three tables the application deletes rows from. On these it holds DELETE, which also
+# permits a table lock; see SECURITY.md for what that leaves open.
+MAY_DELETE = {"answer_evidence", "drift_queue", "questions"}
+LOCK_MODES = ("SHARE", "SHARE ROW EXCLUSIVE", "EXCLUSIVE", "ACCESS EXCLUSIVE")
+
+
+@pytest.mark.parametrize("table", [t for t in APP_TABLES if t not in MAY_DELETE])
+def test_a_tenant_cannot_lock_a_whole_table_and_make_every_tenant_wait(wf: Db, table: str) -> None:
+    ours, _ = two_tenants(wf)
+
+    for mode in LOCK_MODES:
+        reason = refused(wf, wf.database.tenant(ours), f"LOCK TABLE {table} IN {mode} MODE")
+        assert "permission denied" in reason, (table, mode)
+
+
+@pytest.mark.parametrize("table", APP_TABLES)
+def test_the_app_role_updates_columns_never_a_whole_table_and_never_the_tenant(
+    wf: Db, table: str
+) -> None:
+    columns = [column.name for column in Base.metadata.tables[table].columns]
+    [(whole, deletes)] = rows(
+        wf,
+        wf.sessions,
+        "SELECT has_table_privilege(:role, :t, 'UPDATE'), has_table_privilege(:role, :t, 'DELETE')",
+        role=APP_ROLE,
+        t=table,
+    )
+    may_update = {
+        name
+        for name in columns
+        if rows(
+            wf,
+            wf.sessions,
+            "SELECT has_column_privilege(:role, :t, :c, 'UPDATE')",
+            role=APP_ROLE,
+            t=table,
+            c=name,
+        )[0][0]
+    }
+
+    assert whole is False
+    assert deletes is (table in MAY_DELETE)
+    if table in ("audit_log", "limits"):
+        # Append-only, and read-only: nothing here is the app's to change.
+        assert may_update == set()
+    elif table == "audit_heads":
+        assert may_update == {"id"}
+    else:
+        # Every column a migration added, so that a new one is not forgotten. Never the
+        # tenant: a row does not change hands.
+        assert may_update == set(columns) - {"tenant_id"}
