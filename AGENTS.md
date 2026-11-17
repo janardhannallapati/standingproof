@@ -109,7 +109,7 @@ live system settings, and reopens them when those settings drift.
   nothing else: `status` is the agent's, `final_answer` is a person's. Only
   `drift/examine.py` reopens, one setting per transaction under its advisory lock.
 - An observation and its `drift_queue` row are written in one transaction, and the row is
-  deleted in the transaction that examines its setting. Do not examine from inside
+  removed (`drop_from_drift_queue`) in the transaction that examines its setting. Do not examine from inside
   `run_check`, and do not queue outside it.
 - `drift_events` and `answer_reopenings` are append-only. `answer_evidence` is a pointer
   and is the only drift table updated in place. A webhook delivery is a wake-up, not a
@@ -191,10 +191,18 @@ live system settings, and reopens them when those settings drift.
 - The app role holds no `UPDATE` on the append-only tables (`APPEND_ONLY` in
   `alembic/versions/0015_narrower_rights.py`); a new table of that kind joins that list in
   its own migration and in `tests/attacks/test_database_rules.py`.
-- The app role holds `UPDATE` column by column (never on `tenant_id`) and `DELETE` on
-  `questions`, `answer_evidence` and `drift_queue` only. A migration that adds a column to a
-  tenant table adds `GRANT UPDATE (column) ON table TO standingproof_app`. Never grant
-  `UPDATE` or `DELETE` on a whole table: either one also permits `LOCK TABLE`.
+- The app role holds `UPDATE` column by column (never on `tenant_id`) and `DELETE` on no
+  table. A migration that adds a column to a tenant table adds
+  `GRANT UPDATE (column) ON table TO standingproof_app`. Never grant `UPDATE` or `DELETE` on
+  a whole table: either one also permits `LOCK TABLE`.
+- Code that must remove a row calls a function owned by `standingproof_deleter`
+  (`alembic/versions/0017_delete_by_function.py`): `SECURITY DEFINER`, a fixed
+  `search_path`, static SQL with typed arguments, `EXECUTE` for the app role only, and a
+  policy for the deleter with the tenant rule. Never make a running role a member of it.
+- A migration statement that reads or changes rows of a tenant table, or creates an SQL
+  function over one, must work for an owner that is not a superuser: lift `FORCE ROW LEVEL
+  SECURITY` for that statement and restore it. `tests/test_migrations.py` runs every
+  migration as such an owner.
 - To empty a throwaway database in a test, use `EMPTY_THE_DATABASE` from `evals/world.py`.
   A plain `TRUNCATE tenants CASCADE` is refused, on purpose.
 - A list shown "newest first" is ordered by a sequence (`evidence.seq`), not by a timestamp.

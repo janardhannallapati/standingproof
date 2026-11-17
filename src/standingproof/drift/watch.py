@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import delete, func, select, true
+from sqlalchemy import func, select, true
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,9 +58,8 @@ async def rest_on(
     Replaces what was recorded before, so a redraft rests on what the new draft cites.
     Does not commit: the caller saves the draft in the same transaction.
     """
-    await session.execute(
-        delete(AnswerEvidence).where(AnswerEvidence.run_question_id == run_question_id)
-    )
+    # Through a function: the app role holds DELETE on no table (migration 0017).
+    await session.execute(select(func.forget_answer_evidence(run_question_id)))
     ids = _evidence_ids(citations)
     if not ids:
         return

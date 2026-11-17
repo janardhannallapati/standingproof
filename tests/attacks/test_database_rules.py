@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from standingproof.db import APP_ROLE, STATE_ROLE, SYSTEM_ROLE, build_engine, build_session_factory
 from standingproof.models import Base
 from tests.conftest import Db, settings_for
-from tests.drift.rig import approved_answer
+from tests.drift.rig import OPEN, approved_answer, observe
 from tests.workflow.seed import wf
 
 __all__ = ["wf"]
@@ -196,14 +196,12 @@ def test_a_row_cannot_be_written_for_or_moved_to_another_tenant(wf: Db) -> None:
     assert "permission denied" in refused(
         wf, as_us, "UPDATE questionnaires SET tenant_id = :t", t=theirs
     )
-    # Their rows are not refused but simply not there: nothing to update, nothing to delete.
+    # Their rows are not refused but simply not there: nothing to update.
     assert rows(wf, as_us, "UPDATE runs SET status = 'cancelled' RETURNING tenant_id") == [(ours,)]
-    assert (
-        rows(wf, as_us, "DELETE FROM questions WHERE tenant_id = :t RETURNING id", t=theirs) == []
-    )
+    # And it deletes from no table at all, its own rows included.
+    for table in ("questions", "evidence"):
+        assert "permission denied" in refused(wf, as_us, f"DELETE FROM {table}")  # noqa: S608
     assert count(wf, wf.sessions, "questions", theirs) == 1
-    # And where the application never deletes, it has no right to.
-    assert "permission denied" in refused(wf, as_us, "DELETE FROM evidence")
     # Nor to choose where an observation stands in the order: the database numbers it.
     forged = (
         "INSERT INTO evidence (tenant_id, check_name, scope, status, facts, raw_result, "
@@ -353,9 +351,6 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
         assert "permission denied" in reason or "row-level security" in reason, sql
 
 
-# The three tables the application deletes rows from. On these it holds DELETE, which also
-# permits a table lock; see SECURITY.md for what that leaves open.
-MAY_DELETE = {"answer_evidence", "drift_queue", "questions"}
 LOCK_MODES = (
     "SHARE UPDATE EXCLUSIVE",
     "SHARE",
@@ -375,7 +370,7 @@ APPEND_ONLY = {
 }
 
 
-@pytest.mark.parametrize("table", [t for t in APP_TABLES if t not in MAY_DELETE])
+@pytest.mark.parametrize("table", APP_TABLES)
 def test_a_tenant_cannot_lock_a_whole_table_and_make_every_tenant_wait(wf: Db, table: str) -> None:
     ours, _ = two_tenants(wf)
 
@@ -410,7 +405,9 @@ def test_the_app_role_updates_columns_never_a_whole_table_and_never_the_tenant(
     }
 
     assert whole is False
-    assert deletes is (table in MAY_DELETE)
+    # DELETE on a table also permits LOCK TABLE. Where rows must go, a function owned by
+    # another role removes them (migration 0017); the app role may only call it.
+    assert deletes is False
     if table in ("audit_log", "limits") or table in APPEND_ONLY:
         # Append-only, and read-only: nothing here is the app's to change.
         assert may_update == set()
@@ -420,3 +417,151 @@ def test_the_app_role_updates_columns_never_a_whole_table_and_never_the_tenant(
         # Every column a migration added, so that a new one is not forgotten. Never the
         # tenant: a row does not change hands.
         assert may_update == set(columns) - {"tenant_id"}
+
+
+# Where rows must be removed, the app role calls a function and holds no DELETE (0017).
+DELETER_ROLE = "standingproof_deleter"
+DELETE_FUNCTIONS = {
+    "forget_answer_evidence": ("answer_evidence", "run_question_id"),
+    "drop_from_drift_queue": ("drift_queue", "evidence_id"),
+}
+
+
+@pytest.mark.parametrize("function", sorted(DELETE_FUNCTIONS))
+def test_a_delete_function_removes_our_row_and_never_another_tenants(wf: Db, function: str) -> None:
+    table, column = DELETE_FUNCTIONS[function]
+    ours, theirs = two_tenants(wf)
+    for tenant in (ours, theirs):
+        # A look nobody has compared yet, so each tenant has a row waiting in the queue.
+        observe(wf, tenant, OPEN)
+    as_us = wf.database.tenant(ours)
+    # The names come from the constants above.
+    key = f"SELECT {column} FROM {table} WHERE tenant_id = :t LIMIT 1"  # noqa: S608
+    [(mine,)] = rows(wf, wf.sessions, key, t=ours)
+    [(not_mine,)] = rows(wf, wf.sessions, key, t=theirs)
+    before = count(wf, wf.sessions, table, theirs)
+    call = f"SELECT {function}(:id)"
+
+    async def call_and_commit(target: uuid.UUID) -> None:
+        async with as_us() as session:
+            await session.execute(text(call), {"id": target})
+            await session.commit()
+
+    wf.run(call_and_commit(not_mine))
+    assert count(wf, wf.sessions, table, theirs) == before
+
+    wf.run(call_and_commit(mine))
+    gone = f"SELECT count(*) FROM {table} WHERE {column} = :id"  # noqa: S608
+    assert rows(wf, wf.sessions, gone, id=mine) == [(0,)]
+    assert count(wf, wf.sessions, table, theirs) == before
+    # Asking is all the app role can do: the statement itself is still refused.
+    assert "permission denied" in refused(wf, as_us, f"DELETE FROM {table}")  # noqa: S608
+
+
+@pytest.mark.parametrize("function", sorted(DELETE_FUNCTIONS))
+def test_only_the_app_role_may_call_a_delete_function(wf: Db, function: str) -> None:
+    signature = f"public.{function}(uuid)"
+    [(app, system, state, acl)] = rows(
+        wf,
+        wf.sessions,
+        "SELECT has_function_privilege(:app, :f, 'EXECUTE'), "
+        "has_function_privilege(:system, :f, 'EXECUTE'), "
+        "has_function_privilege(:state, :f, 'EXECUTE'), "
+        "(SELECT proacl::text FROM pg_proc WHERE oid = CAST(:f AS regprocedure))",
+        app=APP_ROLE,
+        system=SYSTEM_ROLE,
+        state=STATE_ROLE,
+        f=signature,
+    )
+
+    assert (app, system, state) == (True, False, False)
+    # An entry that starts with "=" is a right given to everyone.
+    assert not any(entry.startswith("=") for entry in acl.strip("{}").split(","))
+
+
+@pytest.mark.parametrize("function", sorted(DELETE_FUNCTIONS))
+def test_a_delete_function_cannot_be_led_to_another_object(wf: Db, function: str) -> None:
+    table, _ = DELETE_FUNCTIONS[function]
+    [(definer, config, body, owner)] = rows(
+        wf,
+        wf.sessions,
+        "SELECT prosecdef, proconfig, prosrc, pg_get_userbyid(proowner) FROM pg_proc "
+        "WHERE oid = CAST(:f AS regprocedure)",
+        f=f"public.{function}(uuid)",
+    )
+
+    assert (definer, owner) == (True, DELETER_ROLE)
+    # A fixed path, with nothing on it a caller can create in, and the table named in full.
+    assert config == ["search_path=pg_catalog, pg_temp"]
+    assert body.split()[:4] == ["DELETE", "FROM", "public." + table, "WHERE"]
+
+
+def test_the_deleting_role_cannot_sign_in_and_holds_nothing_else(wf: Db) -> None:
+    [(login, unsafe, owned_tables, creates, members, memberships)] = rows(
+        wf,
+        wf.sessions,
+        """
+        SELECT rolcanlogin,
+               rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication,
+               (SELECT count(*) FROM pg_tables WHERE tableowner = :role),
+               has_schema_privilege(:role, 'public', 'CREATE'),
+               (SELECT count(*) FROM pg_auth_members WHERE roleid = r.oid
+                  AND (set_option OR inherit_option)),
+               (SELECT count(*) FROM pg_auth_members WHERE member = r.oid)
+        FROM pg_roles r WHERE rolname = :role
+        """,
+        role=DELETER_ROLE,
+    )
+    assert (login, unsafe, owned_tables, creates) == (False, False, 0, False)
+    # No role may act as it or inherits from it, and it is in no other role. (The role that
+    # created it keeps the right to administer it, as with every role it creates.)
+    assert (members, memberships) == (0, 0)
+
+    may_delete = {table for table, _ in DELETE_FUNCTIONS.values()}
+    every_table = [table.name for table in Base.metadata.sorted_tables]
+    held: dict[str, set[str]] = {}
+    for table in every_table:
+        for right in (
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "TRUNCATE",
+            "REFERENCES",
+            "TRIGGER",
+            "MAINTAIN",
+        ):
+            [(has,)] = rows(
+                wf,
+                wf.sessions,
+                "SELECT has_table_privilege(:role, :t, :right)",
+                role=DELETER_ROLE,
+                t=table,
+                right=right,
+            )
+            if has:
+                held.setdefault(table, set()).add(right)
+    assert held == {table: {"DELETE"} for table in may_delete}
+
+    # It reads only what its two statements name: the key and the tenant.
+    for table, key in DELETE_FUNCTIONS.values():
+        readable = {
+            column.name
+            for column in Base.metadata.tables[table].columns
+            if rows(
+                wf,
+                wf.sessions,
+                "SELECT has_column_privilege(:role, :t, :c, 'SELECT')",
+                role=DELETER_ROLE,
+                t=table,
+                c=column.name,
+            )[0][0]
+        }
+        assert readable == {key, "tenant_id"}
+    owned = rows(
+        wf,
+        wf.sessions,
+        "SELECT proname FROM pg_proc WHERE pg_get_userbyid(proowner) = :role ORDER BY 1",
+        role=DELETER_ROLE,
+    )
+    assert [name for (name,) in owned] == sorted(DELETE_FUNCTIONS)

@@ -191,6 +191,33 @@ def test_a_mapping_parses_the_stored_file(api: TestClient) -> None:
     assert [(q["cell"], q["text"]) for q in items] == [("B2", "Is MFA enforced?")]
 
 
+def test_a_questionnaire_waiting_for_its_columns_has_no_questions_to_replace(
+    api: TestClient,
+) -> None:
+    # Why a mapping never deletes: the application has no right to delete a question, and
+    # there is none to remove before the chosen columns are parsed.
+    content = xlsx({"Sheet A": [["Topic", "Details"], ["Access", "Is MFA enforced?"]]})
+    created = upload(api, content).json()
+    url = f"/questionnaires/{created['id']}"
+
+    assert api.get(f"{url}/questions").json()["items"] == []
+    refused = api.put(
+        f"{url}/mapping", json={"sheet": "Nope", "header_row": 1, "question_column": "B"}
+    )
+    assert refused.status_code == 422
+    assert api.get(f"{url}/questions").json()["items"] == []
+
+    mapped = api.put(
+        f"{url}/mapping", json={"sheet": "Sheet A", "header_row": 1, "question_column": "B"}
+    )
+    again = api.put(
+        f"{url}/mapping", json={"sheet": "Sheet A", "header_row": 1, "question_column": "A"}
+    )
+
+    assert (mapped.status_code, again.status_code) == (200, 409)
+    assert len(api.get(f"{url}/questions").json()["items"]) == 1
+
+
 def test_a_mapping_that_does_not_fit_the_file_is_422(api: TestClient) -> None:
     content = xlsx({"Sheet A": [["Topic", "Details"], ["Access", "Is MFA enforced?"]]})
     created = upload(api, content).json()

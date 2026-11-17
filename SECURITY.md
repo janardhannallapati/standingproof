@@ -74,6 +74,7 @@ The services sign in as roles that own nothing. Only the `migrate` service has t
 | `standingproof_app` (`SP_APP_DATABASE_URL`) | API, worker, watcher, for one tenant at a time | Read and write customer tables, one tenant's rows per transaction |
 | `standingproof_system` (`SP_SYSTEM_DATABASE_URL`) | Finding work: which question is due, which setting to look at, which tenant a webhook is for | Read where and when across tenants (ids, statuses, queue and lease times), and move a question's next queueing time. No right on the library, uploaded or filled files, questions, decisions, a drafted or approved answer, or what an observation saw |
 | `standingproof_state` (`SP_STATE_DATABASE_URL`) | The worker's saved workflow state | Schema `workflow` only |
+| `standingproof_deleter` (no login) | Nobody signs in as it. It owns the two functions the application calls to remove a row | `DELETE` on `answer_evidence` and `drift_queue`, one tenant's rows per call |
 
 A process refuses a database connection whose role is a superuser, owns a table, or is exempt
 from row-level security. Setting every URL to the owner's login therefore fails at the first
@@ -92,12 +93,10 @@ python -m standingproof.roles
 Limits you should know:
 
 - The app role cannot lock a whole table and make every tenant wait: it holds `UPDATE` on
-  columns, not tables, and cannot change a row's tenant at all. On the tables that are
-  written once (observations, decisions, checks of drafts, files made and sent, changes seen)
-  it holds no `UPDATE` of any kind. Three tables are the
-  exception, because the application deletes rows from them and `DELETE` also permits a
-  table lock: `questions`, `answer_evidence` and `drift_queue`. SQL injected as the app role
-  could lock those. That is a loss of availability, not of data.
+  columns, not tables, `DELETE` on no table, and cannot change a row's tenant at all. On the
+  tables that are written once (observations, decisions, checks of drafts, files made and
+  sent, changes seen) it holds no `UPDATE` of any kind. Where the application must remove a
+  row, it calls a function that removes that tenant's row and nothing else.
 - The rules guard against a query that forgets its tenant filter. They do not guard against
   injected SQL: a statement that runs as the app role can name another tenant itself. No
   value from a request reaches that setting, and queries are parameterised.
