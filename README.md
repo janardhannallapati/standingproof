@@ -376,37 +376,51 @@ times, and code grades every run:
 - **wrong**: marked ready, and the wording is not supported. This is the failure a customer
   would see with nobody having looked.
 
-**The checker set** is 48 hand-written drafts: 16 sound, 32 with one planted defect (a wider
+**The checker set** is 52 hand-written drafts: 17 sound, 35 with one planted defect (a wider
 scope than the source, a stronger word, an added detail, a wrong number, a contradiction
 with an observed setting, half an answer, a planted instruction).
 
-The first full run, on 2026-11-16, with nothing tuned afterwards:
+Two full runs so far. The first, on 2026-11-16, was left as it came out. It showed three
+faults, which were then fixed, and the second run on 2026-11-17 measured the fixes. The
+second run is therefore not a first look: the prompts were changed after reading the first.
 
-| | Count |
-|---|---|
-| Drafter cases ready and wrong in any of 3 runs | 0 of 32 |
-| Drafter cases right in most of 3 runs | 21 of 32 |
-| Planted defects the checker agreed with in any run | 0 of 32 |
-| Sound drafts the checker objected to in most runs | 1 of 16 |
+| | First run | Second run |
+|---|---|---|
+| Drafter cases ready and wrong in any of 3 runs | 0 of 32 | 0 of 32 |
+| Drafter cases right in most of 3 runs | 21 of 32 | 29 of 32 |
+| Planted defects the checker agreed with in any run | 0 of 32 | 0 of 35 |
+| Sound drafts the checker objected to in most runs | 1 of 16 | 0 of 17 |
 
 Ten of the cases have an approved library answer that the live setting contradicts. With
-the live check, no run of those was ready and wrong: 9 runs were right and 21 went to a
-person. With the check tool taken away, the same ten were ready and wrong 10 times out of
-10: the agent repeated the library, and the checker, shown only the library, agreed.
+the live check, no run of those was ready and wrong in either run: in the second, 21 runs
+were right and 9 went to a person. With the check tool taken away, the same ten were ready
+and wrong 10 times out of 10, both times: the agent repeated the library, and the checker,
+shown only the library, agreed.
 
-What the run shows that is not good, left as it came out:
+What the first run showed, and what was done:
 
-- When the library and the live setting disagree, the drafter states the setting and cites
-  it, and the checker still objects in most runs, pointing at the stale library answer.
-  The answer reaches a person, which is safe, but the objection is aimed at the wrong text.
-- When a look is rate limited the drafter tries the same look again, and the loop's
-  repeated-call rule stops the run. Safe, and not what a retry should do.
-- The checker objects to a draft that says "we have no approved statement about" the part
-  it cannot answer.
-- 11 of 32 cases are not right by majority. Every one of those went to a person.
+- When the library and the live setting disagreed, the drafter stated the setting and
+  cited it, and the checker still objected in 21 of 30 runs, pointing at the stale library
+  answer. The checker is now told, by a mark set in code, which source is an observation,
+  and that a document set aside for an observation of the same setting does not contradict
+  the draft.
+- When a look was rate limited the drafter tried the same look again, and the loop's
+  repeated-call rule stopped the run. A look that observes nothing now says not to repeat
+  it; all three runs of that case now end as "no approved source".
+- The checker objected to a draft that says "we have no approved statement about" the part
+  it cannot answer. This was left alone on purpose: such a draft should reach a person.
+  The objection did not recur in the second run, which is chance, not a fix.
 
-These are small sets written by the author of the system, about one company. 21 of 32 has
-a 95% interval of 48% to 80%; 32 of 32 defects caught has one of 89% to 100%. The full
+What the second run shows that is not good:
+
+- 3 of 32 cases are not right by majority; every run of those went to a person. In two,
+  the drafter adds a detail the observation's sentence does not give ("0 approving
+  reviews" for an unprotected branch), and the checker objects. In the third, the question
+  asks about contractors and the library covers employees.
+- One case had to be corrected after the run: its pattern rejected a true answer.
+
+These are small sets written by the author of the system, about one company. 29 of 32 has
+a 95% interval of 76% to 97%; 35 of 35 defects caught has one of 90% to 100%. The full
 tables, every miss by name and the comparison with a cheaper check model are in
 [`evals/REPORT.md`](evals/REPORT.md).
 
