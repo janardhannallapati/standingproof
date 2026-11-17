@@ -1,6 +1,7 @@
 """The audit chain: written with the action it records, and broken visibly by any change."""
 
 import asyncio
+import hashlib
 import io
 import uuid
 from typing import Any
@@ -122,6 +123,12 @@ def test_requests_are_recorded_under_the_person_who_made_them(api: TestClient, d
         "file.sent",
     ]
     assert [row.seq for row in found] == list(range(1, len(found) + 1))
+    # The customer's name is not in the log, plainly or as a hash someone could guess.
+    sent = next(row for row in found if row.action == "file.sent")
+    assert set(sent.details) == {"run_id", "sent_file_id", "answers"}
+    guessable = hashlib.sha256(b"acme corp").hexdigest()
+    assert "Acme" not in str([tuple(row) for row in found])
+    assert guessable not in str([tuple(row) for row in found])
     assert checked(db, found[0].tenant_id) == (len(found), None)
 
 

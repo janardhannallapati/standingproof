@@ -113,7 +113,7 @@ it. Changing, removing or reordering one entry breaks every hash after it.
 
 Recorded: a review decision (with a hash of the approved wording, never the wording), a
 connection added, a library answer or policy added, a run started or cancelled, a file made, a
-file recorded as sent (with a hash of the customer's name), an answer reopened by a changed
+file recorded as sent (by the id of its record, not the customer's name), an answer reopened by a changed
 setting, and every change to the stop switch or a spend ceiling. Each tenant has its own
 chain; operator actions go in the deployment's. No customer text is kept in the log.
 

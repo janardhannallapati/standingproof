@@ -201,8 +201,9 @@ live system settings, and reopens them when those settings drift.
 - "Newest observation" means highest `evidence.seq`, never latest `observed_at`.
 - An action a person or an operator decides is recorded with `audit.record(session, ...)`
   before its own `commit()`, never after and never in a second transaction. `details` holds
-  strings, integers, booleans and nulls only; put a hash of customer text there, never the text
-  (a name counts as text). A batch records all its entries in one `record()` call.
+  strings, integers, booleans and nulls only; put a hash of customer text there, never the text.
+  For anything short enough to guess (a name, an email address) put the id of its record, not
+  a hash: a hash of a guessable value can be undone. A batch records all its entries in one `record()` call.
 - Never use an advisory lock (`pg_advisory_*`) for something a tenant must not be able to
   block: any role can take one by name. Lock a row the policies govern.
 - Never require one timestamp to be later than another for correctness. The clock is stepped
