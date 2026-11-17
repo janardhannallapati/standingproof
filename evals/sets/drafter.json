@@ -533,7 +533,7 @@
    "expect": {
     "outcome": "answered",
     "must": [
-     "do not expire|does not expire|no expir|never expire|not expire"
+     "do not expire|does not expire|no expir|never expire|not expire|not set to expire"
     ],
     "must_not": [
      "\\b90\\b"

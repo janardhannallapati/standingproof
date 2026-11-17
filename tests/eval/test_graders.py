@@ -31,6 +31,16 @@ def test_a_ready_answer_that_states_what_the_world_reads_is_right() -> None:
     assert (graded.grade, graded.ready, graded.looked, graded.reasons) == ("right", True, True, ())
 
 
+def test_a_true_answer_in_words_the_second_run_used_is_right() -> None:
+    # The second full run graded this wording wrong. It states what the world reads; the
+    # case's pattern had not thought of "not set to expire".
+    said = "No. Passwords must be at least 14 characters, but passwords are not set to expire."
+    look = looked("aws.password_policy", "111122223333")
+    run = drafted("b-password-no-expiry", said, [EVIDENCE], tool_uses=[look])
+
+    assert grade_draft(DRAFTER["b-password-no-expiry"], run).grade == "right"
+
+
 def test_a_ready_answer_that_repeats_the_library_against_the_world_is_wrong() -> None:
     graded = grade_draft(
         DRAFTER["b-reviews-two-vs-one"], drafted("b-reviews-two-vs-one", TWO, [LIBRARY])
