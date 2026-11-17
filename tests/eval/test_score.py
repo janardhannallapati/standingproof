@@ -9,6 +9,9 @@ from tests.eval.runs import AGREES, EVIDENCE, LIBRARY, OBJECTS, checked, drafted
 
 DRAFTER = load_drafter()
 CHECKER = load_checker()
+# How many labelled drafts are sound and how many carry a planted defect.
+SOUND = sum(case.label == "supported" for case in CHECKER.cases)
+PLANTED = len(CHECKER.cases) - SOUND
 
 
 def test_kappa_on_a_table_worked_by_hand() -> None:
@@ -118,7 +121,7 @@ def test_a_perfect_checker() -> None:
     score = score_checker(CHECKER, perfect(), runs=3)
 
     assert (score.missed_cases, score.false_alarm_cases) == ([], [])
-    assert score.matrix == {"caught": 32, "missed": 0, "false_alarm": 0, "passed": 16}
+    assert score.matrix == {"caught": PLANTED, "missed": 0, "false_alarm": 0, "passed": SOUND}
     assert score.kappa == 1.0
 
 
@@ -131,7 +134,7 @@ def test_a_defect_agreed_with_in_one_run_of_three_is_missed() -> None:
 
     assert score.missed_cases == [graded[first_defect].case]
     # By majority it was still caught, so the table and kappa do not move.
-    assert score.matrix["caught"] == 32
+    assert score.matrix["caught"] == PLANTED
 
 
 def test_a_sound_draft_objected_to_by_majority_is_a_false_alarm() -> None:
@@ -142,18 +145,23 @@ def test_a_sound_draft_objected_to_by_majority_is_a_false_alarm() -> None:
     score = score_checker(CHECKER, graded, runs=3)
 
     assert score.false_alarm_cases == [name]
-    assert score.matrix == {"caught": 32, "missed": 0, "false_alarm": 1, "passed": 15}
+    assert score.matrix == {
+        "caught": PLANTED,
+        "missed": 0,
+        "false_alarm": 1,
+        "passed": SOUND - 1,
+    }
     assert 0.9 < score.kappa < 1.0
 
 
 def test_three_simple_checkers_to_compare_with() -> None:
     score = score_checker(CHECKER, perfect(), runs=3)
 
-    assert score.baselines["always object"] == {"missed": 0, "false_alarms": 16}
-    assert score.baselines["always agree"] == {"missed": 32, "false_alarms": 0}
+    assert score.baselines["always object"] == {"missed": 0, "false_alarms": SOUND}
+    assert score.baselines["always agree"] == {"missed": PLANTED, "false_alarms": 0}
     # The code rule knows four words. It catches the one draft that says "compliant".
     rule = score.baselines["the code rule alone"]
-    assert rule["false_alarms"] == 0 and 28 <= rule["missed"] <= 31
+    assert rule["false_alarms"] == 0 and PLANTED - 4 <= rule["missed"] < PLANTED
 
 
 def test_kinds_and_quotes_are_counted_over_caught_defects() -> None:
@@ -237,7 +245,7 @@ def test_a_check_that_did_not_finish_is_not_a_catch_the_gate_accepts() -> None:
     checker = score_checker(CHECKER, graded, runs=3)
     clean = BASE.model_copy(update={"drafter_wrong_cases": [], "drafter_right_cases": 32})
 
-    assert checker.missed_cases == [] and checker.not_checked_runs == 96
+    assert checker.missed_cases == [] and checker.not_checked_runs == 3 * PLANTED
     assert any("did not finish" in problem for problem in gate(clean, drafter, checker))
 
 

@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -24,25 +24,27 @@
  "handoff": null,
  "final_stop_reason": "end_turn",
  "final_draft": {
-  "status": "no_approved_source",
-  "answer": "",
-  "citations": [],
-  "note": "I left this unanswered because the approved answer and a live check of the account disagree. The approved answer (answer:0a2f98a4-33eb-4868-bb22-860c73a02808, owner security@harborlight.example, valid until 2027-11-16, control CC6.1) says: 'Yes. The root user of our production AWS account (111122223333) has multi-factor authentication.' But a live check of that account at 2026-11-16T17:04:47Z (evidence:8ad2026e-8e1c-4238-a17e-7e0961c53b24) found that the root user does NOT have multi-factor authentication (root_mfa_enabled: false). Sending the approved 'Yes' would give the customer something that is currently untrue, so I have not drafted any wording. Next steps: (1) security@harborlight.example should turn on multi-factor authentication for the root user of account 111122223333, or explain the result. (2) The live check should then be run again before this question is answered. (3) If the setting cannot be fixed, the approved answer needs revising, and a human should decide how to tell the customer the current state."
+  "status": "answered",
+  "answer": "No. As of the check on 2026-11-17, the root user of our production AWS account (111122223333) does not have multi-factor authentication.",
+  "citations": [
+   "evidence:ec7ff6ff-fb1d-4372-94ac-8fe0a19d3f6b"
+  ],
+  "note": "Do not send this until someone has reviewed it. The approved answer (answer:7d6a0a33-3e01-43d3-9638-69d1f37607ed, owner security@harborlight.example, valid until 2027-11-17) says the root user of AWS account 111122223333 has multi-factor authentication. A live check on 2026-11-17 at 01:11 UTC (evidence:ec7ff6ff-fb1d-4372-94ac-8fe0a19d3f6b) found that the root user does not have it (root_mfa_enabled: false). I didn't use the approved 'Yes' because the current account setting contradicts it. Either turn on multi-factor authentication for the root user and run the check again, or have the answer owner correct the approved answer. Then decide what wording to send to the customer."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "root account MFA cloud production"
+    "query": "root user MFA production cloud account"
    },
    "is_error": false,
    "source_ids": [
-    "answer:0a2f98a4-33eb-4868-bb22-860c73a02808",
-    "answer:f2c3305c-9348-4767-a229-9a37b11b0839",
-    "answer:6f4ccda0-534a-433f-8c4b-1720123eac37",
-    "policy:7ac50240-c86f-40ec-863d-06f1a9eb1981",
-    "answer:a35acfc8-f34e-4476-afe1-403aacd400ce"
+    "answer:7d6a0a33-3e01-43d3-9638-69d1f37607ed",
+    "policy:08e645ce-5936-4bf1-8961-45e76c51e7a0",
+    "answer:baaf6eed-6898-4e1c-ace4-5bff0770d049",
+    "answer:6ffd76ab-5be5-434e-aae5-735faaf08cb1",
+    "answer:59a393e0-95d5-466e-9874-83d9472887ea"
    ]
   },
   {
@@ -53,38 +55,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:8ad2026e-8e1c-4238-a17e-7e0961c53b24"
+    "evidence:ec7ff6ff-fb1d-4372-94ac-8fe0a19d3f6b"
    ]
   }
  ],
  "seen_sources": {
-  "answer:0a2f98a4-33eb-4868-bb22-860c73a02808": [
+  "answer:7d6a0a33-3e01-43d3-9638-69d1f37607ed": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:f2c3305c-9348-4767-a229-9a37b11b0839": [
-   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
-  ],
-  "answer:6f4ccda0-534a-433f-8c4b-1720123eac37": [
-   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
-  ],
-  "policy:7ac50240-c86f-40ec-863d-06f1a9eb1981": [
+  "policy:08e645ce-5936-4bf1-8961-45e76c51e7a0": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:a35acfc8-f34e-4476-afe1-403aacd400ce": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  "answer:baaf6eed-6898-4e1c-ace4-5bff0770d049": [
+   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "evidence:8ad2026e-8e1c-4238-a17e-7e0961c53b24": [
-   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-16 17:04 UTC."
+  "answer:6ffd76ab-5be5-434e-aae5-735faaf08cb1": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:59a393e0-95d5-466e-9874-83d9472887ea": [
+   "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
+  ],
+  "evidence:ec7ff6ff-fb1d-4372-94ac-8fe0a19d3f6b": [
+   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-17 01:11 UTC."
   ]
  },
- "check_turn": null,
- "usage": {
-  "input_tokens": 1999,
-  "output_tokens": 730,
-  "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 604,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0238104,
+ "usage": {
+  "input_tokens": 2606,
+  "output_tokens": 759,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7534
+ },
+ "cost_usd": 0.025588899999999998,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

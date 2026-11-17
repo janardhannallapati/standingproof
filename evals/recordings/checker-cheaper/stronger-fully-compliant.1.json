@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "We are fully compliant with encryption requirements",
      "source_id": "LIB-ENC",
-     "explanation": "The cited source says customer data is encrypted at rest with AES-256 but does not state that the company is fully compliant with any encryption requirements."
+     "explanation": "The cited source says customer data is encrypted at rest with AES-256 but says nothing about compliance with any encryption requirements."
     }
    ]
   },
   "usage": {
-   "input_tokens": 133,
-   "output_tokens": 205,
+   "input_tokens": 138,
+   "output_tokens": 260,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00012735,
+ "cost_usd": 0.00015719,
  "check_model": "claude-haiku-5-5"
 }

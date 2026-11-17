@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "docs_only",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "9c8c5ded633941c6",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,44 +25,44 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Two. Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged. The rule applies to administrators as well.",
+  "answer": "Two. Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged. The rule also applies to administrators.",
   "citations": [
-   "answer:29c5ee33-9de6-46c9-a140-144a1a0a2fc0"
+   "answer:71ac77b9-99db-411c-ac12-271ea43aa212"
   ],
-  "note": "This is the approved answer for control CC8.1 (owner security@harborlight.example, valid until 2027-11-16). Its scope is the default branch of the harborlight/app repository only. It doesn't say whether other repositories have the same rule. If the customer means all repositories, check with the owner before sending."
+  "note": "This uses the approved answer for control CC8.1, valid until 2027-11-17. That answer covers the default branch of the harborlight/app repository only. The question says 'main branch', and I've taken it to mean that default branch. The source doesn't cover other repositories."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review approvals required before merge to main branch"
+    "query": "code review approvals before merge to main branch"
    },
    "is_error": false,
    "source_ids": [
-    "answer:29c5ee33-9de6-46c9-a140-144a1a0a2fc0",
-    "answer:3fee10be-81d2-462d-ae3b-2ee28f262943",
-    "answer:5b0b3fa0-d938-41c9-99f5-5d41367a77ab",
-    "answer:c1cf3bc7-45bc-4c88-af36-f438d00090d0",
-    "answer:3701662b-6ddd-4198-b2a1-8075edeae7e6"
+    "answer:71ac77b9-99db-411c-ac12-271ea43aa212",
+    "answer:733d8cf4-38db-49a7-9e6c-c580c897e0f8",
+    "answer:db7068e4-27e7-4ee1-9069-47d26a717f32",
+    "answer:ae0ca1c0-aa0d-4368-9868-86660f093d44",
+    "answer:ec68dacd-b513-426a-9edd-a56a31cd184d"
    ]
   }
  ],
  "seen_sources": {
-  "answer:29c5ee33-9de6-46c9-a140-144a1a0a2fc0": [
+  "answer:71ac77b9-99db-411c-ac12-271ea43aa212": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:3fee10be-81d2-462d-ae3b-2ee28f262943": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:5b0b3fa0-d938-41c9-99f5-5d41367a77ab": [
+  "answer:733d8cf4-38db-49a7-9e6c-c580c897e0f8": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:c1cf3bc7-45bc-4c88-af36-f438d00090d0": [
-   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  "answer:db7068e4-27e7-4ee1-9069-47d26a717f32": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:3701662b-6ddd-4198-b2a1-8075edeae7e6": [
+  "answer:ae0ca1c0-aa0d-4368-9868-86660f093d44": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:ec68dacd-b513-426a-9edd-a56a31cd184d": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ]
  },
  "check_turn": {
@@ -72,20 +72,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 533,
+   "input_tokens": 550,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1552,
-  "output_tokens": 289,
-  "cache_creation_input_tokens": 1391,
-  "cache_read_input_tokens": 2546
+  "input_tokens": 1561,
+  "output_tokens": 271,
+  "cache_creation_input_tokens": 1432,
+  "cache_read_input_tokens": 2771
  },
- "cost_usd": 0.0180907,
+ "cost_usd": 0.0179643,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

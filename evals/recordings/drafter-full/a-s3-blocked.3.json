@@ -4,7 +4,7 @@
  "run": 3,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,10 +27,10 @@
   "status": "answered",
   "answer": "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide.",
   "citations": [
-   "answer:8163d1a3-522a-48a0-b7b5-51ca0a72f801",
-   "evidence:169f4e1e-12aa-4dbe-98b6-822fd4710ce5"
+   "answer:31d80c86-81b5-4c5c-9de6-99a592b55844",
+   "evidence:70bf120a-5438-44bd-a8d9-b2ab53f8cfc5"
   ],
-  "note": "The approved answer (control CC6.6, owner security@harborlight.example, valid until 2027-11-16) matches this question. I also checked the live setting at 2026-11-16T17:09:37Z. Account 111122223333 had account-level public access fully blocked: all four settings (block public ACLs, ignore public ACLs, block public policy and restrict public buckets) were on. This is only one account. If the customer means storage in other AWS accounts, those haven't been checked."
+  "note": "The answer uses the approved wording from security@harborlight.example (control CC6.6, valid until 2027-11-17). A read-only check of the live setting on 2026-11-17 at 01:15 UTC confirmed it. AWS account 111122223333 had all four S3 public access block settings turned on account-wide: blocking public ACLs, ignoring public ACLs, blocking public policies and restricting public buckets. The approved answer and the check only cover account 111122223333. If the company has other AWS accounts, nothing here shows whether the same block applies to them."
  },
  "steps": 3,
  "tool_uses": [
@@ -41,11 +41,11 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:8163d1a3-522a-48a0-b7b5-51ca0a72f801",
-    "policy:20b1885b-10d6-4e6b-a67d-8d04583e6a90",
-    "answer:c1e0901e-b56f-4774-9c2e-03b21bccccfe",
-    "answer:392e822b-c6ce-4014-8585-101909ebfff7",
-    "answer:df30dc74-2a29-4d77-9cd0-5c2b673cd39b"
+    "answer:31d80c86-81b5-4c5c-9de6-99a592b55844",
+    "policy:8b7ff1f4-599f-421d-8a33-5a8aba93a4fc",
+    "answer:fd4774bd-e733-4f04-a1ac-8af814a4a3fc",
+    "answer:6308bf38-46d3-409e-9c9e-4a0646904350",
+    "answer:ec70722d-1c5f-42e8-ac4b-79fa0ab66cdc"
    ]
   },
   {
@@ -56,28 +56,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:169f4e1e-12aa-4dbe-98b6-822fd4710ce5"
+    "evidence:70bf120a-5438-44bd-a8d9-b2ab53f8cfc5"
    ]
   }
  ],
  "seen_sources": {
-  "answer:8163d1a3-522a-48a0-b7b5-51ca0a72f801": [
+  "answer:31d80c86-81b5-4c5c-9de6-99a592b55844": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ],
-  "policy:20b1885b-10d6-4e6b-a67d-8d04583e6a90": [
+  "policy:8b7ff1f4-599f-421d-8a33-5a8aba93a4fc": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:c1e0901e-b56f-4774-9c2e-03b21bccccfe": [
+  "answer:fd4774bd-e733-4f04-a1ac-8af814a4a3fc": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:392e822b-c6ce-4014-8585-101909ebfff7": [
-   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
-  ],
-  "answer:df30dc74-2a29-4d77-9cd0-5c2b673cd39b": [
+  "answer:6308bf38-46d3-409e-9c9e-4a0646904350": [
    "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "evidence:169f4e1e-12aa-4dbe-98b6-822fd4710ce5": [
-   "AWS account 111122223333 blocks all public access to S3 buckets account-wide. Observed 2026-11-16 17:09 UTC."
+  "answer:ec70722d-1c5f-42e8-ac4b-79fa0ab66cdc": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "evidence:70bf120a-5438-44bd-a8d9-b2ab53f8cfc5": [
+   "AWS account 111122223333 blocks all public access to S3 buckets account-wide. Observed 2026-11-17 01:15 UTC."
   ]
  },
  "check_turn": {
@@ -87,20 +87,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 562,
+   "input_tokens": 598,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2615,
-  "output_tokens": 442,
+  "input_tokens": 2660,
+  "output_tokens": 470,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7227
+  "cache_read_input_tokens": 7534
  },
- "cost_usd": 0.0193259,
+ "cost_usd": 0.0200369,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

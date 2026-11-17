@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "No. On the default branch (main) of harborlight/app, a change needs two approving reviews before it can be merged, but repository administrators are currently exempt from that rule.",
+  "answer": "No. A live check of the harborlight/app repository on 2026-11-17 found that its default branch (main) is protected and needs 2 approving reviews before a change can be merged. However, the rule does not apply to administrators.",
   "citations": [
-   "evidence:81d47ed0-29e2-4ada-a519-ee4fc9b2c9b9"
+   "evidence:5ba5836f-5bd9-462a-959a-d3fea85c48e7"
   ],
-  "note": "The approved answer and the live setting disagree. Approved answer answer:9c54b96c-eb58-4415-bd26-115fa00e1458 (CC8.1, owner security@harborlight.example, valid until 2027-11-16) says the two-review rule also applies to administrators. A live check on 2026-11-16T17:04:03Z (evidence:81d47ed0-29e2-4ada-a519-ee4fc9b2c9b9) found that branch main is protected and needs 2 approving reviews, but applies_to_administrators is false. I based the answer on the live setting and did not use the approved wording, because that wording would overstate the control. The owner should either turn on enforcement for administrators or correct the approved answer before this goes to the customer."
+  "note": "Please review before sending: the approved answer and the live setting disagree. The approved answer (answer:73d86ae5-2cee-4fa3-8e65-80e898d3b7e7, CC8.1, owner security@harborlight.example, valid until 2027-11-17) says the two-review rule applies to administrators too. The live check of the branch protection settings (observed 2026-11-17T01:10:46Z) found that it does not apply to administrators. The draft follows the live check, so it does not repeat a claim the current setting contradicts. The control owner should either change the setting so it applies to administrators, or correct the approved answer, before this goes to the customer."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "branch protection code review required administrators"
+    "query": "branch protection code review requirement administrators"
    },
    "is_error": false,
    "source_ids": [
-    "answer:9c54b96c-eb58-4415-bd26-115fa00e1458",
-    "answer:2622550f-ae21-4108-972c-d2b8185e8d47",
-    "answer:0b291500-a617-49e8-ad8c-68cbf4529ec7",
-    "answer:54947384-f14d-461f-ad0b-ea3e09a5032d",
-    "answer:7cb36f32-1371-4399-9fef-78158952d7ea"
+    "answer:73d86ae5-2cee-4fa3-8e65-80e898d3b7e7",
+    "answer:fb399760-002c-430e-be2f-cd1b90e63e53",
+    "answer:254d0406-2935-4ae5-9660-66318717635c",
+    "answer:af98b700-fd28-4967-8609-727c8daaa0f4",
+    "answer:567ca60e-3278-4d17-b22b-8f82b50ec531"
    ]
   },
   {
@@ -55,58 +55,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:81d47ed0-29e2-4ada-a519-ee4fc9b2c9b9"
+    "evidence:5ba5836f-5bd9-462a-959a-d3fea85c48e7"
    ]
   }
  ],
  "seen_sources": {
-  "answer:9c54b96c-eb58-4415-bd26-115fa00e1458": [
+  "answer:73d86ae5-2cee-4fa3-8e65-80e898d3b7e7": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:2622550f-ae21-4108-972c-d2b8185e8d47": [
+  "answer:fb399760-002c-430e-be2f-cd1b90e63e53": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:0b291500-a617-49e8-ad8c-68cbf4529ec7": [
+  "answer:254d0406-2935-4ae5-9660-66318717635c": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "answer:54947384-f14d-461f-ad0b-ea3e09a5032d": [
+  "answer:af98b700-fd28-4967-8609-727c8daaa0f4": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:7cb36f32-1371-4399-9fef-78158952d7ea": [
+  "answer:567ca60e-3278-4d17-b22b-8f82b50ec531": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "evidence:81d47ed0-29e2-4ada-a519-ee4fc9b2c9b9": [
-   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule does not apply to administrators. Observed 2026-11-16 17:04 UTC."
+  "evidence:5ba5836f-5bd9-462a-959a-d3fea85c48e7": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule does not apply to administrators. Observed 2026-11-17 01:10 UTC."
   ]
  },
  "check_turn": {
   "stop_reason": "end_turn",
   "verdict": {
-   "verdict": "not_supported",
-   "findings": [
-    {
-     "kind": "contradicted",
-     "quote": "repository administrators are currently exempt from that rule",
-     "source_id": "answer:9c54b96c-eb58-4415-bd26-115fa00e1458",
-     "explanation": "This source says the two-review rule applies to administrators as well, conflicting with the draft's claim that they are exempt."
-    }
-   ]
+   "verdict": "supported",
+   "findings": []
   },
   "usage": {
-   "input_tokens": 630,
-   "output_tokens": 127,
+   "input_tokens": 674,
+   "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1961,
-  "output_tokens": 661,
+  "input_tokens": 2003,
+  "output_tokens": 614,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5203
+  "cache_read_input_tokens": 5469
  },
- "cost_usd": 0.019459099999999997,
+ "cost_usd": 0.0197239,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

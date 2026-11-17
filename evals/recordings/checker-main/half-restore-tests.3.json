@@ -4,9 +4,9 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "not_answered",
      "quote": "",
      "source_id": "",
-     "explanation": "The question also asks how often backup restores are tested, and the draft neither gives a restore-testing frequency nor says it cannot answer."
+     "explanation": "The question also asks how often restores are tested, and the draft neither gives a restore-test frequency nor says it cannot answer."
     }
    ]
   },
   "usage": {
-   "input_tokens": 109,
-   "output_tokens": 90,
+   "input_tokens": 114,
+   "output_tokens": 87,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0012335,
+ "cost_usd": 0.0012319000000000002,
  "check_model": "claude-sonnet-5-5"
 }

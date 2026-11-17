@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "half-says-no-statement-when-a-source-has-one",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "b155a0c77fb83498",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "0b916b13610f9b72"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "We have no approved statement about sharing the full report",
+     "source_id": "LIB-PEN-SHARE",
+     "explanation": "The draft says there is no approved statement on sharing the full report, but source LIB-PEN-SHARE is an approved document stating that the full report is not shared with customers and a summary letter is available under NDA."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 192,
+   "output_tokens": 548,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 0.00030659,
+ "check_model": "claude-haiku-5-5"
+}

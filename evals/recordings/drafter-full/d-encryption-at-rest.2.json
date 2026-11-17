@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,32 +25,36 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Customer data is encrypted at rest using AES-256, with keys managed by our cloud provider's key management service.",
+  "answer": "Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service.",
   "citations": [
-   "answer:05688df3-e036-4b4c-98f3-41ada5e161b1"
+   "answer:155281e3-fcb9-4535-974b-e397d58ddb56"
   ],
-  "note": "This uses the approved answer for encryption at rest (control CC6.7, owner security@harborlight.example, valid until 2027-11-16). That answer does not say which storage services it covers (for example databases, object storage, disks or backups), and it doesn't describe key rotation or the cipher mode. If the customer wants that detail, ask the owner. I did not run any live checks on the configuration."
+  "note": "I used the approved answer for control CC6.7 as written. It is valid until 2027-11-17 and owned by security@harborlight.example. It doesn't name the storage types or services covered, how keys are rotated, or which cloud KMS is used, so the answer doesn't either. I didn't run a live check. The EBS default-encryption check only shows whether new disks are encrypted, not the algorithm, and it would need an AWS account ID I wasn't given."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "encryption at rest customer data algorithm"
+    "query": "encryption at rest of customer data algorithm"
    },
    "is_error": false,
    "source_ids": [
-    "answer:05688df3-e036-4b4c-98f3-41ada5e161b1",
-    "answer:16516237-0eaa-4b21-b16f-36e6d2a59a2c"
+    "answer:155281e3-fcb9-4535-974b-e397d58ddb56",
+    "answer:ac4f45e7-e2d8-4241-b841-36956e0deeca",
+    "policy:ddeb7d57-7c51-4f3a-a933-cf8c90f06d60"
    ]
   }
  ],
  "seen_sources": {
-  "answer:05688df3-e036-4b4c-98f3-41ada5e161b1": [
+  "answer:155281e3-fcb9-4535-974b-e397d58ddb56": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:16516237-0eaa-4b21-b16f-36e6d2a59a2c": [
+  "answer:ac4f45e7-e2d8-4241-b841-36956e0deeca": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "policy:ddeb7d57-7c51-4f3a-a933-cf8c90f06d60": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ]
  },
  "check_turn": {
@@ -60,20 +64,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 250,
+   "input_tokens": 339,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 812,
-  "output_tokens": 294,
+  "input_tokens": 1009,
+  "output_tokens": 316,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5203
+  "cache_read_input_tokens": 5469
  },
- "cost_usd": 0.0093731,
+ "cost_usd": 0.010457900000000001,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

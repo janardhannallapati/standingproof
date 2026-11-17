@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,10 +27,10 @@
   "status": "answered",
   "answer": "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider.",
   "citations": [
-   "answer:13c1aa65-ed35-408d-9df6-d7d9a8ed752e",
-   "policy:488b979e-a475-411c-8713-b42a7f10de2f"
+   "answer:ddc96392-23a4-429d-a101-cabeabca1af2",
+   "policy:5ab073f4-13d4-4655-9e5b-e427bea7a5d8"
   ],
-  "note": "This reuses the approved answer word for word (control CC6.2, owner security@harborlight.example, valid until 2027-11-16). Section 4.3 of the Access Control Policy also gives the 24-hour limit. I didn't check this live because none of the available checks covers removing leavers' access."
+  "note": "This uses the approved answer for control CC6.2 word for word. It is owned by security@harborlight.example and valid until 2027-11-17. Access Control Policy section 4.3 (Leavers) backs it up: access is removed within 24 hours of a person's last working day. No live setting check covers offboarding, so this is the documented commitment and has not been checked against actual practice."
  },
  "steps": 2,
  "tool_uses": [
@@ -41,28 +41,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:488b979e-a475-411c-8713-b42a7f10de2f",
-    "answer:13c1aa65-ed35-408d-9df6-d7d9a8ed752e",
-    "policy:9be3d2dd-a63a-4d9b-9b7d-291495dd0cd4",
-    "answer:b2450366-987c-43b6-b2c8-08ab667f13a3",
-    "answer:569cb671-6743-4da0-8932-6623167785fd"
+    "policy:5ab073f4-13d4-4655-9e5b-e427bea7a5d8",
+    "policy:fecc3c7f-6f93-4eb4-819a-f052c61be1d9",
+    "answer:ddc96392-23a4-429d-a101-cabeabca1af2",
+    "answer:5ea96361-90b9-43f1-9b54-120140956677",
+    "answer:6d2e7163-b699-4a37-84e1-8ea76abc8d0a"
    ]
   }
  ],
  "seen_sources": {
-  "policy:488b979e-a475-411c-8713-b42a7f10de2f": [
+  "policy:5ab073f4-13d4-4655-9e5b-e427bea7a5d8": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "answer:13c1aa65-ed35-408d-9df6-d7d9a8ed752e": [
-   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
-  ],
-  "policy:9be3d2dd-a63a-4d9b-9b7d-291495dd0cd4": [
+  "policy:fecc3c7f-6f93-4eb4-819a-f052c61be1d9": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:b2450366-987c-43b6-b2c8-08ab667f13a3": [
+  "answer:ddc96392-23a4-429d-a101-cabeabca1af2": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
+  ],
+  "answer:5ea96361-90b9-43f1-9b54-120140956677": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:569cb671-6743-4da0-8932-6623167785fd": [
+  "answer:6d2e7163-b699-4a37-84e1-8ea76abc8d0a": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ]
  },
@@ -73,20 +73,20 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 447,
+   "input_tokens": 475,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1331,
-  "output_tokens": 289,
+  "input_tokens": 1362,
+  "output_tokens": 316,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5203
+  "cache_read_input_tokens": 5469
  },
- "cost_usd": 0.0109551,
+ "cost_usd": 0.011597900000000001,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

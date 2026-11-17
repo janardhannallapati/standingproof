@@ -7,6 +7,10 @@ from pydantic import BaseModel, ValidationError
 
 from standingproof.agent.types import ToolCall
 
+# The start of the id of what a look at a live setting returned. Only `checks/tools.py`
+# makes such an id, so it tells an observation from a document that says it is one.
+OBSERVED_PREFIX = "evidence:"
+
 
 @dataclass(frozen=True)
 class ToolOutcome:

@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "No. As of a live check on 16 November 2026, the default branch (main) of harborlight/app is protected, and a change needs two approving reviews before it can be merged. However, this rule does not currently apply to repository administrators.",
+  "answer": "No. When we checked on 2026-11-17, the default branch (main) of harborlight/app was protected and needed two approving reviews before a change could be merged. However, this rule did not apply to repository administrators.",
   "citations": [
-   "evidence:4c098c97-b88a-4ee3-80a3-0c21bc65e8e7"
+   "evidence:2c6ad4cd-d5c7-4e5c-8c92-972953a3e283"
   ],
-  "note": "The approved answer and the live setting disagree. Approved answer answer:38e71b49-4801-4545-ab64-63c8933c905e (owner security@harborlight.example, valid until 2027-11-16) says the two-review rule 'applies to administrators as well'. The live check (evidence:4c098c97-b88a-4ee3-80a3-0c21bc65e8e7, observed 2026-11-16T16:58:39Z) shows applies_to_administrators = false. I based the answer on what the live check saw and did not reuse the approved wording on administrators. Before sending, the owner should either turn on the rule for administrators in GitHub and re-run the check, or correct the approved answer. The approved answer is also used for the general code-review question, so it would currently overstate the control there too."
+  "note": "Our approved answer and the live setting disagree. The approved answer (answer:f0d17f99-363d-49b1-ae5b-f5725d6859da, owner security@harborlight.example, valid until 2027-11-17) says the review rule on harborlight/app applies to administrators too. A live check on 2026-11-17 (evidence:2c6ad4cd-d5c7-4e5c-8c92-972953a3e283) found it does not. I answered from the live setting rather than repeat a claim it contradicts. The owner should either turn on enforcement for administrators or correct the approved answer. If the setting is changed, update this answer before sending it."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "branch protection code review requirement administrators"
+    "query": "branch protection review requirement applies to administrators"
    },
    "is_error": false,
    "source_ids": [
-    "answer:38e71b49-4801-4545-ab64-63c8933c905e",
-    "answer:397ebc19-54d1-45ba-8dbf-3f0bb69b62c5",
-    "answer:cc5ad333-181b-48b7-8d02-752a8fafee40",
-    "answer:c349ebda-c725-44e1-87d6-5ec32e4e89a0",
-    "answer:a781fd8e-73bf-4aa9-b084-a443dc496a9a"
+    "answer:f0d17f99-363d-49b1-ae5b-f5725d6859da",
+    "answer:e219f4d9-40fa-4ec3-a6cb-73d49114312e",
+    "answer:3d7d2ea6-6ea9-47bf-83bf-777254f9e8ef",
+    "answer:d8985a22-c0c7-4e27-8a00-d5d207e54876",
+    "policy:8a3390b9-1016-429d-84d6-288e9517494b"
    ]
   },
   {
@@ -55,58 +55,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:4c098c97-b88a-4ee3-80a3-0c21bc65e8e7"
+    "evidence:2c6ad4cd-d5c7-4e5c-8c92-972953a3e283"
    ]
   }
  ],
  "seen_sources": {
-  "answer:38e71b49-4801-4545-ab64-63c8933c905e": [
+  "answer:f0d17f99-363d-49b1-ae5b-f5725d6859da": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:397ebc19-54d1-45ba-8dbf-3f0bb69b62c5": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:cc5ad333-181b-48b7-8d02-752a8fafee40": [
+  "answer:e219f4d9-40fa-4ec3-a6cb-73d49114312e": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "answer:c349ebda-c725-44e1-87d6-5ec32e4e89a0": [
+  "answer:3d7d2ea6-6ea9-47bf-83bf-777254f9e8ef": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:d8985a22-c0c7-4e27-8a00-d5d207e54876": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:a781fd8e-73bf-4aa9-b084-a443dc496a9a": [
-   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  "policy:8a3390b9-1016-429d-84d6-288e9517494b": [
+   "Access is removed within 24 hours of a person's last working day."
   ],
-  "evidence:4c098c97-b88a-4ee3-80a3-0c21bc65e8e7": [
-   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule does not apply to administrators. Observed 2026-11-16 16:58 UTC."
+  "evidence:2c6ad4cd-d5c7-4e5c-8c92-972953a3e283": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule does not apply to administrators. Observed 2026-11-17 01:05 UTC."
   ]
  },
  "check_turn": {
   "stop_reason": "end_turn",
   "verdict": {
-   "verdict": "not_supported",
-   "findings": [
-    {
-     "kind": "contradicted",
-     "quote": "this rule does not currently apply to repository administrators",
-     "source_id": "answer:38e71b49-4801-4545-ab64-63c8933c905e",
-     "explanation": "This source says the two-review rule applies to administrators as well, which conflicts with the draft's claim that it does not."
-    }
-   ]
+   "verdict": "supported",
+   "findings": []
   },
   "usage": {
-   "input_tokens": 654,
-   "output_tokens": 124,
+   "input_tokens": 670,
+   "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1993,
-  "output_tokens": 759,
+  "input_tokens": 1974,
+  "output_tokens": 581,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5203
+  "cache_read_input_tokens": 5469
  },
- "cost_usd": 0.0215291,
+ "cost_usd": 0.018955899999999998,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

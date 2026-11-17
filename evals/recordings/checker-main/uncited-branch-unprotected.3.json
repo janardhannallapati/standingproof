@@ -4,13 +4,13 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "299c40de6c21eea0"
+  "case": "e3360fecc1ed9e8c"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,26 +19,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "Yes.",
-     "source_id": "EV-BP0",
-     "explanation": "EV-BP0 records that branch main of harborlight/app was observed as not protected, which conflicts with the claim that branch protection is enforced, and an observed setting outweighs policy."
-    },
-    {
-     "kind": "contradicted",
      "quote": "Changes to the default branch require a pull request with two approving reviews.",
-     "source_id": "EV-BP0",
-     "explanation": "The observed unprotected state of main means the pull request and two-review requirement is not technically enforced, despite what the policy POL-SDLC states."
+     "source_id": "evidence:EV-BP0",
+     "explanation": "The observed source shows branch main of harborlight/app is not protected, which conflicts with the draft's claim that pull requests with two approving reviews are required; the observation outweighs the policy document for the same repository."
     }
    ]
   },
   "usage": {
-   "input_tokens": 167,
-   "output_tokens": 217,
+   "input_tokens": 182,
+   "output_tokens": 144,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0026195,
+ "cost_usd": 0.0019379,
  "check_model": "claude-sonnet-5-5"
 }

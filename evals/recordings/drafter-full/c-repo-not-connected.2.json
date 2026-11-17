@@ -4,7 +4,7 @@
  "run": 2,
  "variant": "full",
  "fingerprint": {
-  "drafter.prompt": "a0453615581c5705",
+  "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
   "drafter.request": "7c9cfc621d8db44c",
@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or live result for this, so I left the answer blank. I searched twice ('branch protection default branch code review' and 'pull request approval required before merge'). Neither search found an approved answer or policy text about branch protection or code review before merge. The second search only returned unrelated entries on MFA and vulnerability scanning. I also tried the live branch-protection check on partnerco/widgets, but it couldn't run because that scope isn't connected. The repo is under 'partnerco', which doesn't look like our own GitHub organisation. A reviewer should confirm whether the customer meant a repository we own. If they did, run the branch-protection check on our repository, or ask the security owner for an approved answer. If partnerco/widgets belongs to a third party, we can't answer for its settings."
+  "note": "I couldn't find anything that answers whether branch protection is on for the default branch of partnerco/widgets. Two searches of the approved answers and policy text found nothing on branch protection or merge approvals. The only result was about vulnerability scanning, which doesn't apply. I also tried a live check on partnerco/widgets, but that repository isn't connected (error: scope_not_connected), so its settings couldn't be seen. The repo name also suggests it may belong to a different organisation, not to us. Someone should confirm who owns partnerco/widgets. If it's ours, it needs to be connected so the live check can run, or someone needs to write and approve an answer on branch protection."
  },
  "steps": 3,
  "tool_uses": [
@@ -51,35 +51,27 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "pull request approval required before merge"
+    "query": "pull request approval before merge"
    },
    "is_error": false,
    "source_ids": [
-    "answer:c061acaf-f49f-42fd-b763-9530bb20aa8c",
-    "policy:eedc4b7e-f860-4f62-80ba-788ef1b39018",
-    "answer:f803d890-6610-4750-9efc-f29f19aa0c86"
+    "answer:d9b1ecfb-5deb-4d56-84ef-ae2cfab4df77"
    ]
   }
  ],
  "seen_sources": {
-  "answer:c061acaf-f49f-42fd-b763-9530bb20aa8c": [
-   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
-  ],
-  "policy:eedc4b7e-f860-4f62-80ba-788ef1b39018": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "answer:f803d890-6610-4750-9efc-f29f19aa0c86": [
+  "answer:d9b1ecfb-5deb-4d56-84ef-ae2cfab4df77": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1337,
-  "output_tokens": 501,
+  "input_tokens": 1082,
+  "output_tokens": 452,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6072
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.016582399999999997,
+ "cost_usd": 0.014607,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5"
 }

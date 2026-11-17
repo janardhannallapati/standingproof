@@ -4,13 +4,13 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "f4d6ef24f22393c3"
+  "case": "bf624a1358aff142"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +20,19 @@
     {
      "kind": "contradicted",
      "quote": "two approving reviews",
-     "source_id": "EV-BP1",
-     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, not two, as recorded on 2026-11-10."
+     "source_id": "evidence:EV-BP1",
+     "explanation": "The observed branch protection setting on main of harborlight/app requires 1 approving review, not two, and an observed source outweighs the policy document about the same setting."
     }
    ]
   },
   "usage": {
-   "input_tokens": 194,
-   "output_tokens": 101,
+   "input_tokens": 209,
+   "output_tokens": 113,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 8.145e-05,
+ "cost_usd": 9.079e-05,
  "check_model": "claude-haiku-5-5"
 }

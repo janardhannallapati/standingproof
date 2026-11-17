@@ -4,13 +4,13 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "5732579518be38f1",
+  "checker.prompt": "69b29b2a0aa5f1b6",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "58becc9cfe65933b",
+  "checker.request": "b155a0c77fb83498",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "e9fb42aae0f87814"
+  "case": "acc94d22e4346364"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +20,19 @@
     {
      "kind": "contradicted",
      "quote": "requires two-factor sign-in for all of its members",
-     "source_id": "EV-2FA-OFF",
-     "explanation": "The observed setting recorded on 2026-11-10 shows harborlight does not require two-factor sign-in for its members, which outweighs the policy statement in LIB-2FA."
+     "source_id": "evidence:EV-2FA-OFF",
+     "explanation": "The observed source shows the harborlight organisation does not require two-factor sign-in for its members, which outweighs the document the draft cites."
     }
    ]
   },
   "usage": {
-   "input_tokens": 206,
-   "output_tokens": 130,
+   "input_tokens": 221,
+   "output_tokens": 119,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1155
+   "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0018275,
+ "cost_usd": 0.0017659000000000002,
  "check_model": "claude-sonnet-5-5"
 }

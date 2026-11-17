@@ -31,6 +31,28 @@ def test_a_ready_answer_that_states_what_the_world_reads_is_right() -> None:
     assert (graded.grade, graded.ready, graded.looked, graded.reasons) == ("right", True, True, ())
 
 
+@pytest.mark.parametrize(
+    ("said", "grade"),
+    [
+        # Wordings the second full run produced. Each states what the world reads; the
+        # case's first pattern listed phrases and had thought of neither.
+        ("Passwords must be at least 14 characters, but are not set to expire.", "right"),
+        ("IAM user passwords do not currently expire. No maximum age is set.", "right"),
+        ("The policy sets no maximum password age.", "right"),
+        # A refusal of something else, then the library's stale claim.
+        ("No change here. Passwords expire after 90 days.", "wrong"),
+        ("Not to worry: passwords expire regularly.", "wrong"),
+    ],
+)
+def test_no_expiry_is_recognised_by_what_is_denied_not_by_a_list_of_phrases(
+    said: str, grade: str
+) -> None:
+    look = looked("aws.password_policy", "111122223333")
+    run = drafted("b-password-no-expiry", said, [EVIDENCE], tool_uses=[look])
+
+    assert grade_draft(DRAFTER["b-password-no-expiry"], run).grade == grade
+
+
 def test_a_ready_answer_that_repeats_the_library_against_the_world_is_wrong() -> None:
     graded = grade_draft(
         DRAFTER["b-reviews-two-vs-one"], drafted("b-reviews-two-vs-one", TWO, [LIBRARY])
