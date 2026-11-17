@@ -315,7 +315,9 @@ def test_a_recording_that_holds_something_shaped_like_a_key_is_not_written(tmp_p
 @pytest.mark.parametrize(
     "text",
     [
-        "ASIAIOSFODNN7EXAMPLE",
+        # A made-up temporary key id: the example key from AWS's documentation with the
+        # other prefix. Joined here so that a scanner of this repository does not match it.
+        "ASIA" + "IOSFODNN7EXAMPLE",
         "postgresql+asyncpg://app:hunter2@db:5432/x",
         "pa-abcdefghijklmnopqrstuv",
     ],
