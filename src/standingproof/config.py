@@ -107,7 +107,10 @@ class Settings(BaseSettings):
     daily_limit_usd: float = 20.0
     tenant_daily_limit_usd: float = 10.0
     # What one model call is counted as until it returns and its real cost replaces this.
-    call_reserve_usd: float = 0.10
+    # Sized to the most one call can cost with the default models (a full 16,000-token
+    # reply from the drafting model, and a large prompt), so that a call in flight is
+    # never counted as less than it may turn out to be. Raise it with a dearer model.
+    call_reserve_usd: float = 0.40
 
     # Running a questionnaire. A run stops starting questions once it has spent its ceiling.
     run_cost_limit_usd: float = 5.0

@@ -159,9 +159,14 @@ A tenant cannot change its own switch or ceiling: the application's role may onl
 
 Limits you should know:
 
-- A call is counted as `SP_CALL_RESERVE_USD` (10 cents) until it returns, then as what it cost.
-  Calls that start together cannot all see the same room, but one call that costs more than
-  its reservation can take the day slightly over the ceiling.
+- A call is counted as `SP_CALL_RESERVE_USD` (40 cents: the most one call can cost with the
+  default models) until it returns, then as what it cost. A call that fails or is cancelled
+  stays counted in full, because what the provider charged for it is not known. If you choose
+  a dearer model or a longer reply, raise the reservation to match, or one call can take the
+  day over the ceiling.
+- The other side of counting failed calls in full: a provider outage uses up the day's ceiling
+  at 40 cents a failed call, although a refused call costs nothing. Questions then go to a
+  reviewer until the next day or until an operator raises the ceiling.
 - If Redis cannot be reached, no model call is made. If Redis loses its data during the day,
   the day's count starts again from zero.
 - The ceiling covers the worker's model calls. `python -m evals run` and

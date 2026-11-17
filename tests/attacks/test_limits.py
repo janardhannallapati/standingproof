@@ -121,12 +121,15 @@ def test_the_deployments_ceiling_counts_every_tenant(wf: Db, redis_url: str) -> 
     assert refusal(wf, guarding, theirs) is None
 
 
-def test_a_failed_call_is_not_counted_and_a_new_day_starts_at_zero(wf: Db, redis_url: str) -> None:
+def test_a_failed_call_stays_counted_in_full_and_a_new_day_starts_at_zero(
+    wf: Db, redis_url: str
+) -> None:
     owner = tenant(wf)
     day = [a_day()]
     redis = Redis.from_url(redis_url)
     wf.closing(redis.aclose)
-    guarding = Guard(redis, wf.database, settings_for(wf.url), today=lambda: day[0])
+    settings = settings_for(wf.url, call_reserve_usd=0.10)
+    guarding = Guard(redis, wf.database, settings, today=lambda: day[0])
 
     async def fails() -> Any:
         raise ModelCallError("rate limited", retryable=True)
@@ -139,8 +142,9 @@ def test_a_failed_call_is_not_counted_and_a_new_day_starts_at_zero(wf: Db, redis
         await guarding.reserve(owner)
 
     wf.run(call())
-    # The failed call's reservation was given back; the second one's is still held.
-    assert wf.run(guarding.spent_today(owner))[0] == Decimal("0.10")
+    # What a failed call cost is not known, so its whole reservation stays counted, beside
+    # the second one's.
+    assert wf.run(guarding.spent_today(owner))[0] == Decimal("0.20")
     day[0] += dt.timedelta(days=1)
     assert wf.run(guarding.spent_today(owner)) == (Decimal(0), Decimal(0))
 

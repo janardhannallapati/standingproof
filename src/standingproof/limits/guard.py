@@ -109,7 +109,7 @@ class Guard:
         return Reservation(keys, micro)
 
     async def settle(self, reservation: Reservation, actual_usd: float) -> None:
-        """Replace what was set aside with what the call cost (nothing, if it failed)."""
+        """Replace what was set aside with what the call cost."""
         difference = _micro(actual_usd) - reservation.micro
         if difference == 0:
             return
@@ -137,13 +137,11 @@ class GuardedModel:
 
     async def complete(self, **request: Any) -> ModelTurn:
         reservation = await self._guard.reserve(self._tenant_id)
-        cost = 0.0
-        try:
-            turn = await self._inner.complete(**request)
-            cost = cost_usd(turn.model, turn.usage)
-            return turn
-        finally:
-            await self._guard.settle(reservation, cost)
+        # Settled only when the call returns. If it fails or is cancelled we cannot know
+        # what the provider charged, so the whole reservation stays counted.
+        turn = await self._inner.complete(**request)
+        await self._guard.settle(reservation, cost_usd(turn.model, turn.usage))
+        return turn
 
 
 class GuardedChecker:
@@ -154,10 +152,6 @@ class GuardedChecker:
 
     async def check(self, **request: Any) -> CheckTurn:
         reservation = await self._guard.reserve(self._tenant_id)
-        cost = 0.0
-        try:
-            turn: CheckTurn = await self._inner.check(**request)
-            cost = cost_usd(turn.model, turn.usage)
-            return turn
-        finally:
-            await self._guard.settle(reservation, cost)
+        turn: CheckTurn = await self._inner.check(**request)
+        await self._guard.settle(reservation, cost_usd(turn.model, turn.usage))
+        return turn
