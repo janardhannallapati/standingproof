@@ -91,6 +91,23 @@ def upgrade() -> None:
     for table in MAY_DELETE:
         op.execute(f"GRANT DELETE ON {table} TO {APP}")
 
+    # An observation's place in the order is the database's to give. INSERT on the whole
+    # table would let a statement name `seq` itself (OVERRIDING SYSTEM VALUE), and drift
+    # picks the newest look by that number. INSERT column by column, without `seq`.
+    op.execute(f"REVOKE INSERT ON evidence FROM {APP}")
+    op.execute(
+        """
+        DO $$
+        DECLARE columns text;
+        BEGIN
+          SELECT string_agg(format('%I', column_name), ', ') INTO columns
+          FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'evidence' AND column_name <> 'seq';
+          EXECUTE format('GRANT INSERT (%s) ON evidence TO standingproof_app', columns);
+        END $$
+        """
+    )
+
     for table in ("audit_log", "audit_heads"):
         op.execute(
             f"CREATE TRIGGER {table}_no_truncate BEFORE TRUNCATE ON {table} "
@@ -101,5 +118,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     for table in ("audit_log", "audit_heads"):
         op.execute(f"DROP TRIGGER {table}_no_truncate ON {table}")
+    op.execute(f"GRANT INSERT ON evidence TO {APP}")
     for table in TENANT_TABLES:
         op.execute(f"GRANT UPDATE, DELETE ON {table} TO {APP}")

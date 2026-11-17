@@ -576,7 +576,7 @@ class WebhookDelivery(Base):
     # Its place among deliveries and observations, from the sequence that numbers
     # `evidence.seq`. "Was it looked at after this arrived?" compares these, not two clocks.
     seq: Mapped[int] = mapped_column(
-        BigInteger, server_default=text("nextval(pg_get_serial_sequence('evidence', 'seq'))")
+        BigInteger, server_default=text("nextval(pg_get_serial_sequence('public.evidence', 'seq'))")
     )
     handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # looked | ignored:<reason>

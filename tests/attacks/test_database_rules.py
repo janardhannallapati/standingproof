@@ -204,6 +204,14 @@ def test_a_row_cannot_be_written_for_or_moved_to_another_tenant(wf: Db) -> None:
     assert count(wf, wf.sessions, "questions", theirs) == 1
     # And where the application never deletes, it has no right to.
     assert "permission denied" in refused(wf, as_us, "DELETE FROM evidence")
+    # Nor to choose where an observation stands in the order: the database numbers it.
+    forged = (
+        "INSERT INTO evidence (tenant_id, check_name, scope, status, facts, raw_result, "
+        "statement, observed_at, seq) OVERRIDING SYSTEM VALUE "
+        "VALUES (:t, 'github.branch_protection', 'acme/app', 'observed', '{}', '{}', 's', "
+        "now(), 9000000000)"
+    )
+    assert "permission denied" in refused(wf, as_us, forged, t=ours)
     # Nor to renumber or rewrite what was seen and decided, even for its own tenant.
     for sql in (
         "UPDATE evidence SET seq = DEFAULT",
@@ -263,7 +271,8 @@ def test_no_reference_can_be_moved_to_another_tenants_row(wf: Db) -> None:
             reason = refused(wf, as_us, move, id=target[0][0])
             # Refused by the policy, or (on an append-only table) because nothing there
             # may be updated at all.
-            assert "row-level security" in reason or "permission denied" in reason, (table, column)
+            expected = "permission denied" if table in APPEND_ONLY else "row-level security"
+            assert expected in reason, (table, column)
             tried += 1
 
     assert tried >= 7

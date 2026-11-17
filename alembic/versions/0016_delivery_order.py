@@ -29,25 +29,26 @@ def upgrade() -> None:
     # numbered after every look made so far, so it gets a look of its own: the safe side.
     op.execute("UPDATE webhook_deliveries SET seq = 0 WHERE handled_at IS NOT NULL")
     op.execute(
-        "UPDATE webhook_deliveries SET seq = nextval(pg_get_serial_sequence('evidence', 'seq')) "
+        "UPDATE webhook_deliveries "
+        "SET seq = nextval(pg_get_serial_sequence('public.evidence', 'seq')) "
         "WHERE handled_at IS NULL"
     )
     op.execute(
         "ALTER TABLE webhook_deliveries ALTER COLUMN seq "
-        "SET DEFAULT nextval(pg_get_serial_sequence('evidence', 'seq'))"
+        "SET DEFAULT nextval(pg_get_serial_sequence('public.evidence', 'seq'))"
     )
     op.alter_column("webhook_deliveries", "seq", nullable=False)
     # USAGE lets the role that stores deliveries take the next number. It cannot set the
     # sequence back (that needs UPDATE on it).
     op.execute(
         "DO $$ BEGIN EXECUTE format('GRANT USAGE ON SEQUENCE %s TO "
-        f"{SYSTEM}', pg_get_serial_sequence('evidence', 'seq')); END $$"
+        f"{SYSTEM}', pg_get_serial_sequence('public.evidence', 'seq')); END $$"
     )
 
 
 def downgrade() -> None:
     op.execute(
         "DO $$ BEGIN EXECUTE format('REVOKE USAGE ON SEQUENCE %s FROM "
-        f"{SYSTEM}', pg_get_serial_sequence('evidence', 'seq')); END $$"
+        f"{SYSTEM}', pg_get_serial_sequence('public.evidence', 'seq')); END $$"
     )
     op.drop_column("webhook_deliveries", "seq")
