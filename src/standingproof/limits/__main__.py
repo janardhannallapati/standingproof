@@ -19,6 +19,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 from sqlalchemy import select
 
 from standingproof.config import Settings, get_settings
@@ -50,10 +51,15 @@ async def show(database: Database, guard: Guard, settings: Settings) -> list[str
     for name, tenant_id in tenants:
         async with database.tenant(tenant_id)() as session:
             state = await switch.read(session, tenant_id, settings)
-        spent, everyone = await guard.spent_today(tenant_id)
+        try:
+            spent, everyone = await guard.spent_today(tenant_id)
+            counted = f"${spent:.2f}"
+        except (RedisError, OSError):
+            # The switch is still worth showing when the counter cannot be read.
+            counted, everyone = "unknown (the counter cannot be reached)", Decimal("NaN")
         lines.append(
             f"tenant {name}: {'STOPPED' if state.stopped else 'running'}, "
-            f"${spent:.2f} of ${state.tenant_daily_usd:.2f} today"
+            f"{counted} of ${state.tenant_daily_usd:.2f} today"
         )
         deployment = state.deployment_daily_usd
     if tenants:
@@ -78,6 +84,13 @@ async def run(
     return 0
 
 
+def _name(text: str) -> str:
+    name = text.strip()
+    if not 0 < len(name) <= 200:
+        raise argparse.ArgumentTypeError("a name of 1 to 200 characters")
+    return name
+
+
 def _usd(text: str) -> Decimal:
     try:
         value = Decimal(text)
@@ -94,7 +107,7 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("show", help="the switch, the ceilings and today's spend")
     for name in ("stop", "resume", "daily"):
         command = commands.add_parser(name)
-        command.add_argument("--by", required=True, help="your name, for the audit log")
+        command.add_argument("--by", required=True, type=_name, help="your name, for the audit log")
         command.add_argument("--tenant", help="a tenant's name; without it, the deployment")
         if name == "daily":
             amount = command.add_mutually_exclusive_group(required=True)

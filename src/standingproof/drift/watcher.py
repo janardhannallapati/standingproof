@@ -21,7 +21,8 @@ from standingproof.config import Settings
 from standingproof.db import Database
 from standingproof.drift import deliveries
 from standingproof.drift.examine import examine_pending
-from standingproof.drift.watch import Setting, due, is_watched
+from standingproof.drift.watch import STOPPED, Setting, due, is_watched
+from standingproof.limits import switch
 from standingproof.models import Evidence, WebhookDelivery
 
 log = logging.getLogger(__name__)
@@ -42,6 +43,10 @@ class Watcher:
     def __init__(self, deps: WatcherDeps) -> None:
         self._deps = deps
         self._settings = deps.settings
+
+    async def _stopped(self, tenant_id: uuid.UUID) -> bool:
+        async with self._deps.database.tenant(tenant_id)() as session:
+            return (await switch.read(session, tenant_id, self._settings)).stopped
 
     async def _look(self, setting: Setting, trigger: str) -> None:
         # As the tenant whose setting it is: what is seen is that tenant's to keep.
@@ -67,6 +72,7 @@ class Watcher:
                     Evidence.tenant_id == setting.tenant_id,
                     Evidence.check_name == setting.check_name,
                     Evidence.scope == setting.scope,
+                    Evidence.reason.is_distinct_from(STOPPED),
                 )
                 .order_by(Evidence.seq.desc())
                 .limit(1)
@@ -87,7 +93,14 @@ class Watcher:
                     continue
                 setting = Setting(delivery.tenant_id, delivery.check_name, delivery.scope)
                 by_setting.setdefault(setting, []).append(delivery)
+            stopped: dict[uuid.UUID, bool] = {}
             for setting, group in by_setting.items():
+                if setting.tenant_id not in stopped:
+                    stopped[setting.tenant_id] = await self._stopped(setting.tenant_id)
+                if stopped[setting.tenant_id]:
+                    # Nothing is looked at while stopped. The deliveries stay waiting, so
+                    # the change they announce is read as soon as work resumes.
+                    continue
                 outcome = "looked"
                 # Up to when waiting deliveries count as dealt with by this decision.
                 upto = now
@@ -138,8 +151,12 @@ class Watcher:
                 retry=dt.timedelta(seconds=self._settings.recheck_retry_seconds),
                 limit=self._settings.drift_batch,
             )
+        stopped: dict[uuid.UUID, bool] = {}
         for setting in settings:
-            await self._look(setting, "schedule")
+            if setting.tenant_id not in stopped:
+                stopped[setting.tenant_id] = await self._stopped(setting.tenant_id)
+            if not stopped[setting.tenant_id]:
+                await self._look(setting, "schedule")
 
     async def tick(self) -> None:
         """One pass: answer deliveries, look at what is due, compare what was seen."""

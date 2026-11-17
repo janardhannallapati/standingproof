@@ -142,7 +142,13 @@ async def record_sent(
             Entry(
                 action="file.sent",
                 subject=f"file:{file_id}",
-                details={"run_id": str(run_id), "customer": name, "answers": len(answers)},
+                # A hash of the customer's name: the log can show which record it was
+                # without keeping the name for ever.
+                details={
+                    "run_id": str(run_id),
+                    "customer_sha256": hashlib.sha256(name.lower().encode()).hexdigest(),
+                    "answers": len(answers),
+                },
                 actor=sent_by,
             ),
         )

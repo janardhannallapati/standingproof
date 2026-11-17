@@ -60,6 +60,68 @@ def upgrade() -> None:
         "FOR EACH ROW EXECUTE FUNCTION audit_log_is_append_only()"
     )
 
+    # The database itself checks that an entry is the next one, now. Without this, whoever
+    # could run SQL as a tenant could add an entry far ahead (and no honest entry could
+    # ever follow), fork or skip a number, or date one in another year. What it cannot
+    # check is the hash, whose spelling is the application's: `verify` does that.
+    op.execute(
+        """
+        CREATE FUNCTION audit_log_must_follow() RETURNS trigger LANGUAGE plpgsql AS $$
+        DECLARE
+          last_seq bigint := 0;
+          last_hash text := repeat('0', 64);
+        BEGIN
+          SELECT seq, hash INTO last_seq, last_hash FROM audit_log
+          WHERE tenant_id IS NOT DISTINCT FROM NEW.tenant_id ORDER BY seq DESC LIMIT 1;
+          IF NOT FOUND THEN
+            last_seq := 0; last_hash := repeat('0', 64);
+          END IF;
+          IF NEW.seq <> last_seq + 1 OR NEW.prev_hash <> last_hash THEN
+            RAISE EXCEPTION 'audit_log: an entry must follow the last one of its chain';
+          END IF;
+          -- Near the database's clock. Not "after the entry before it": a clock is stepped
+          -- back now and then, and an honest entry must not be refused for that. The
+          -- order of entries is `seq`, never the time.
+          IF NEW.at NOT BETWEEN clock_timestamp() - interval '1 minute'
+                            AND clock_timestamp() + interval '1 minute' THEN
+            RAISE EXCEPTION 'audit_log: the time of an entry must be now';
+          END IF;
+          RETURN NEW;
+        END $$
+        """
+    )
+    op.execute(
+        "CREATE TRIGGER audit_log_follows BEFORE INSERT ON audit_log "
+        "FOR EACH ROW EXECUTE FUNCTION audit_log_must_follow()"
+    )
+
+    # One row per chain, there to be locked by whoever writes next (see audit/chain.py).
+    op.create_table(
+        "audit_heads",
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column("tenant_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("tenants.id")),
+        sa.UniqueConstraint(
+            "tenant_id", name="uq_audit_heads_tenant", postgresql_nulls_not_distinct=True
+        ),
+    )
+    op.execute("ALTER TABLE audit_heads ENABLE ROW LEVEL SECURITY")
+    op.execute("ALTER TABLE audit_heads FORCE ROW LEVEL SECURITY")
+    # UPDATE is what lets a role take a row lock; there is no column worth changing.
+    op.execute(f"GRANT SELECT, INSERT, UPDATE ON audit_heads TO {APP}, {SYSTEM}")
+    op.execute(
+        f"CREATE POLICY tenant_only ON audit_heads TO {APP} "
+        f"USING (tenant_id = {TENANT}) WITH CHECK (tenant_id = {TENANT})"
+    )
+    op.execute(
+        f"CREATE POLICY deployment_only ON audit_heads TO {SYSTEM} "
+        "USING (tenant_id IS NULL) WITH CHECK (tenant_id IS NULL)"
+    )
+
     op.execute("ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE audit_log FORCE ROW LEVEL SECURITY")
     # A tenant reads and extends its own chain.
@@ -77,5 +139,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_table("audit_heads")
     op.drop_table("audit_log")
     op.execute("DROP FUNCTION audit_log_is_append_only()")
+    op.execute("DROP FUNCTION audit_log_must_follow()")

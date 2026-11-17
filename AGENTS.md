@@ -201,7 +201,12 @@ live system settings, and reopens them when those settings drift.
 - "Newest observation" means highest `evidence.seq`, never latest `observed_at`.
 - An action a person or an operator decides is recorded with `audit.record(session, ...)`
   before its own `commit()`, never after and never in a second transaction. `details` holds
-  strings, integers, booleans and nulls only; put a hash of customer text there, never the text.
+  strings, integers, booleans and nulls only; put a hash of customer text there, never the text
+  (a name counts as text). A batch records all its entries in one `record()` call.
+- Never use an advisory lock (`pg_advisory_*`) for something a tenant must not be able to
+  block: any role can take one by name. Lock a row the policies govern.
+- Never require one timestamp to be later than another for correctness. The clock is stepped
+  back now and then; order is a sequence.
 - Never give a running role `UPDATE` or `DELETE` on `audit_log`, and never write to `limits`
   as the app role: a tenant must not be able to lift its own ceiling.
 - Every model call in the worker goes through `limits.guard` (`GuardedModel`,

@@ -65,7 +65,9 @@ async def _apply(
     # For `keep`: the review state to put back, and the wording that was on the screen.
     restore: str | None = None,
     shown: str | None = None,
-) -> None:
+) -> Entry:
+    """Apply one decision to one question. Returns the audit entry for the caller to
+    record, so that a batch takes the chain once and not once per question."""
     session.add(
         ReviewDecision(
             tenant_id=item.tenant_id,
@@ -91,24 +93,20 @@ async def _apply(
     item.final_answer = final_answer
     item.version += 1
     item.reviewed_at = _NOW
-    await record(
-        session,
-        item.tenant_id,
-        Entry(
-            action=f"review.{decision}",
-            subject=f"run_question:{item.id}",
-            # The wording's hash, not the wording: enough to prove which text was approved.
-            details={
-                "batch": batch,
-                "wording_sha256": None
-                if final_answer is None
-                else hashlib.sha256(final_answer.encode()).hexdigest(),
-            },
-            actor=reviewer,
-        ),
-    )
     # Whatever was decided, a person has now looked at the change.
     item.reopened_at = None
+    return Entry(
+        action=f"review.{decision}",
+        subject=f"run_question:{item.id}",
+        # The wording's hash, not the wording: enough to prove which text was approved.
+        details={
+            "batch": batch,
+            "wording_sha256": None
+            if final_answer is None
+            else hashlib.sha256(final_answer.encode()).hexdigest(),
+        },
+        actor=reviewer,
+    )
 
 
 async def _review_before_reopening(session: AsyncSession, item: RunQuestion) -> str | None:
@@ -225,7 +223,7 @@ async def decide(
         item.finished_at = None
         item.enqueue_after = _NOW
 
-    await _apply(
+    entry = await _apply(
         session,
         item,
         decision=decision,
@@ -236,6 +234,7 @@ async def decide(
         restore=restore,
         shown=shown,
     )
+    await record(session, tenant_id, entry)
     await session.commit()
     await session.refresh(item)
     return Decided(item=item, warnings=warnings)
@@ -277,7 +276,7 @@ async def approve_ready(
         raise ReviewConflictError(
             f"{len(items)} questions are ready now, not {count}; look again before approving"
         )
-    for item in items:
+    approved = [
         await _apply(
             session,
             item,
@@ -287,5 +286,8 @@ async def approve_ready(
             reviewer=reviewer,
             batch=True,
         )
+        for item in items
+    ]
+    await record(session, tenant_id, *approved)
     await session.commit()
     return len(items)

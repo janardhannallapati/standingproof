@@ -113,9 +113,9 @@ it. Changing, removing or reordering one entry breaks every hash after it.
 
 Recorded: a review decision (with a hash of the approved wording, never the wording), a
 connection added, a library answer or policy added, a run started or cancelled, a file made, a
-file recorded as sent, an answer reopened by a changed setting, and every change to the stop
-switch or a spend ceiling. Each tenant has its own chain; operator actions go in the
-deployment's.
+file recorded as sent (with a hash of the customer's name), an answer reopened by a changed
+setting, and every change to the stop switch or a spend ceiling. Each tenant has its own
+chain; operator actions go in the deployment's. No customer text is kept in the log.
 
 To check every chain, run:
 
@@ -130,11 +130,33 @@ tenant default: 412 entries, chain intact
 
 A broken chain names the first bad entry on standard error, and the command exits 1.
 
-What a sound chain proves: nobody who could change single rows did. The running services can
-only add and read entries, and a trigger refuses an update or delete from anyone. What it
-does not prove: that the owner of the database did not rebuild a whole chain, or cut one
-short. To cover that, keep the output of `python -m standingproof.audit head` somewhere the
-database's owner cannot reach. An earlier head must still be an entry of the later chain.
+The database enforces three things itself, whoever is writing:
+
+- An entry cannot be changed or deleted. The running services have no right to, and a trigger
+  refuses an `UPDATE` or `DELETE` from the owner too.
+- A new entry must be the next number of its chain, link to the last entry's hash, and carry
+  a time within a minute of the database's clock. So no entry can be backdated, skipped ahead
+  or forked.
+- A tenant can write and lock only its own chain.
+
+To also stop an entry being forged by someone who can run SQL as the application, set
+`SP_AUDIT_KEY` (32 characters or more, from your secret store). Entries are then signed with
+a key the database never sees, and a forged one fails `verify`. Set it before the first entry
+and keep it: entries written under one key do not verify under another.
+
+What a sound chain does not prove:
+
+- Without `SP_AUDIT_KEY`, who wrote an entry. The chain then shows that entries were not
+  altered or removed, and SQL run as the application could add a false one.
+- Who a person is. Until sign-in exists, every request is recorded under `SP_DEV_REVIEWER`.
+- That the owner of the database did not rebuild a whole chain, cut one short, or empty it
+  with `TRUNCATE` (the trigger covers rows, not `TRUNCATE`). An emptied chain verifies as "0
+  entries". To cover this, keep the output of `python -m standingproof.audit head` somewhere
+  the database's owner cannot reach. An earlier head must still be an entry of the later
+  chain.
+
+A tenant that has audit entries cannot be deleted: the log would have to go with it, and the
+log does not allow deletion. Removing a tenant is a deliberate act by the database's owner.
 
 ## Spend ceiling and stop switch
 
@@ -172,6 +194,10 @@ Limits you should know:
 - The ceiling covers the worker's model calls. `python -m evals run` and
   `python -m standingproof.agent` have their own ceilings and are not counted here.
 - `--by` is a name you type. Until sign-in exists it is not proof of who ran the command.
+- While the switch is on, a webhook delivery waits and is read after `resume`. A question whose
+  draft was ready when the ceiling or the switch stopped its checker goes to a reviewer as
+  "not checked", not with the ceiling as its reason.
+- The counter uses two Redis keys in one script, so it needs a single Redis, not a cluster.
 
 ## Where the model key lives
 

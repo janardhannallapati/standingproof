@@ -11,16 +11,18 @@ cannot reach, and compare.
 
 import datetime as dt
 import hashlib
+import hmac
 import json
 import uuid
 from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from standingproof.db import ACTOR
-from standingproof.models import AuditEntry
+from standingproof.db import ACTOR, AUDIT_KEY
+from standingproof.models import AuditEntry, AuditHead
 
 GENESIS = "0" * 64
 # Values that Postgres JSONB gives back exactly as they went in. A float does not qualify
@@ -46,6 +48,8 @@ class Broken:
 
     seq: int
     reason: str
+    # How many entries of the chain do not verify, this one included.
+    bad: int = 1
 
 
 def _check_plain(value: object) -> None:
@@ -63,6 +67,7 @@ def _check_plain(value: object) -> None:
 
 def entry_hash(
     *,
+    key: bytes | None,
     previous: str,
     tenant_id: uuid.UUID | None,
     seq: int,
@@ -72,7 +77,12 @@ def entry_hash(
     subject: str,
     details: dict[str, Any],
 ) -> str:
-    """SHA-256 over the entry's content and the hash before it, in one fixed spelling."""
+    """A digest of the entry's content and of the hash before it, in one fixed spelling.
+
+    With a key it is an HMAC: whoever can only run SQL cannot compute it, so cannot add
+    an entry that verifies. With no key it is a plain SHA-256, which shows that entries
+    were not altered or removed and says nothing about who wrote them.
+    """
     body = json.dumps(
         [
             previous,
@@ -87,8 +97,10 @@ def entry_hash(
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
-    )
-    return hashlib.sha256(body.encode()).hexdigest()
+    ).encode()
+    if key is None:
+        return hashlib.sha256(body).hexdigest()
+    return hmac.new(key, body, hashlib.sha256).hexdigest()
 
 
 def _of(tenant_id: uuid.UUID | None) -> Any:
@@ -97,16 +109,37 @@ def _of(tenant_id: uuid.UUID | None) -> Any:
     )
 
 
-async def record(session: AsyncSession, tenant_id: uuid.UUID | None, *entries: Entry) -> None:
-    """Append entries to a chain. Does not commit: the caller's action commits with them.
+def _key(session: AsyncSession) -> bytes | None:
+    key = session.info.get(AUDIT_KEY)
+    return key if isinstance(key, bytes) else None
 
-    One writer per chain at a time, until the caller's transaction ends: each entry needs
-    the hash of the one before it, so two writers cannot both be next.
+
+async def _take_the_chain(session: AsyncSession, tenant_id: uuid.UUID | None) -> None:
+    """One writer per chain at a time, until the caller's transaction ends.
+
+    Each entry needs the hash of the one before it, so two writers cannot both be next.
+    The lock is a row, not a named (advisory) lock: a named lock can be taken by anyone
+    who knows the name, and one tenant could then hold another's chain. A row is governed
+    by the policies, so a tenant can lock its own chain and no other.
     """
+    await session.execute(
+        insert(AuditHead)
+        .values(tenant_id=tenant_id)
+        .on_conflict_do_nothing(constraint="uq_audit_heads_tenant")
+    )
+    head_of = (
+        AuditHead.tenant_id.is_(None) if tenant_id is None else AuditHead.tenant_id == tenant_id
+    )
+    await session.execute(select(AuditHead.id).where(head_of).with_for_update())
+
+
+async def record(session: AsyncSession, tenant_id: uuid.UUID | None, *entries: Entry) -> None:
+    """Append entries to a chain. Does not commit: the caller's action commits with them."""
+    if not entries:
+        return
     for entry in entries:
         _check_plain(entry.details)
-    key = f"audit:{tenant_id}"
-    await session.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(key, 0))))
+    await _take_the_chain(session, tenant_id)
     last = (
         await session.execute(
             select(AuditEntry.seq, AuditEntry.hash)
@@ -119,10 +152,13 @@ async def record(session: AsyncSession, tenant_id: uuid.UUID | None, *entries: E
     # The database's clock, read once: the time is part of what is hashed, so it must be
     # the value that is stored, to the microsecond.
     at = (await session.execute(select(func.clock_timestamp()))).scalar_one()
+    key = _key(session)
+    rows = []
     for entry in entries:
         seq += 1
         actor = entry.actor or str(session.info.get(ACTOR) or "system")
         digest = entry_hash(
+            key=key,
             previous=previous,
             tenant_id=tenant_id,
             seq=seq,
@@ -132,50 +168,72 @@ async def record(session: AsyncSession, tenant_id: uuid.UUID | None, *entries: E
             subject=entry.subject,
             details=entry.details,
         )
-        session.add(
-            AuditEntry(
-                tenant_id=tenant_id,
-                seq=seq,
-                at=at,
-                actor=actor,
-                action=entry.action,
-                subject=entry.subject,
-                details=entry.details,
-                prev_hash=previous,
-                hash=digest,
-            )
+        rows.append(
+            {
+                "tenant_id": tenant_id,
+                "seq": seq,
+                "at": at,
+                "actor": actor,
+                "action": entry.action,
+                "subject": entry.subject,
+                "details": entry.details,
+                "prev_hash": previous,
+                "hash": digest,
+            }
         )
         previous = digest
-    await session.flush()
+    # One at a time and in order: the database checks each against the one before it.
+    for row in rows:
+        await session.execute(insert(AuditEntry).values(**row))
 
 
-async def verify(session: AsyncSession, tenant_id: uuid.UUID | None) -> tuple[int, Broken | None]:
-    """Recompute a chain from its first entry. Returns how many entries were sound, and
-    where it first fails (None when all of it holds)."""
+_UNSET: Any = object()
+
+
+async def verify(
+    session: AsyncSession, tenant_id: uuid.UUID | None, *, key: bytes | None = _UNSET
+) -> tuple[int, Broken | None]:
+    """Recompute a chain from its first entry. Returns how many entries hold, and (when
+    not all do) the first that does not with how many do not.
+
+    It goes on past a bad entry, taking that entry's stored hash as the link to the next:
+    one bad entry is then reported as one, and the entries after it are still checked.
+    """
+    if key is _UNSET:
+        key = _key(session)
     rows = await session.stream_scalars(
         select(AuditEntry).where(_of(tenant_id)).order_by(AuditEntry.seq)
     )
-    sound, previous = 0, GENESIS
+    sound, bad, first, expected, previous = 0, 0, None, 1, GENESIS
     async for row in rows:
-        expected = sound + 1
+        reason = None
         if row.seq != expected:
-            return sound, Broken(expected, f"entry {expected} is missing (found {row.seq})")
-        if row.prev_hash != previous:
-            return sound, Broken(row.seq, "does not follow the entry before it")
-        digest = entry_hash(
-            previous=previous,
-            tenant_id=row.tenant_id,
-            seq=row.seq,
-            at=row.at,
-            actor=row.actor,
-            action=row.action,
-            subject=row.subject,
-            details=row.details,
-        )
-        if digest != row.hash:
-            return sound, Broken(row.seq, "its content does not match its hash")
-        sound, previous = row.seq, row.hash
-    return sound, None
+            reason = f"entry {expected} is missing (found {row.seq})"
+        elif row.prev_hash != previous:
+            reason = "does not follow the entry before it"
+        else:
+            digest = entry_hash(
+                key=key,
+                previous=previous,
+                tenant_id=row.tenant_id,
+                seq=row.seq,
+                at=row.at,
+                actor=row.actor,
+                action=row.action,
+                subject=row.subject,
+                details=row.details,
+            )
+            if digest != row.hash:
+                reason = "its content does not match its hash"
+        if reason is None:
+            sound += 1
+        else:
+            bad += 1
+            first = first or (expected if row.seq != expected else row.seq, reason)
+        expected, previous = row.seq + 1, row.hash
+    if first is None:
+        return sound, None
+    return sound, Broken(first[0], first[1], bad)
 
 
 async def head(session: AsyncSession, tenant_id: uuid.UUID | None) -> tuple[int, str]:

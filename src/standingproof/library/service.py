@@ -101,11 +101,7 @@ async def create_answer(
         Entry(
             action="library.answer.add",
             subject=f"answer:{answer.id}",
-            details={
-                "owner": new.owner,
-                "expires_on": new.expires_on.isoformat(),
-                "text_sha256": text_hash,
-            },
+            details={"expires_on": new.expires_on.isoformat(), "text_sha256": text_hash},
         ),
     )
     await session.commit()

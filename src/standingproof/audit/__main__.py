@@ -42,12 +42,23 @@ async def run(database: Database, command: str) -> int:
                 seq, digest = await head(session, tenant_id)
                 print(f"{label}: entry {seq}, hash {digest}")
                 continue
-            sound, problem = await verify(session, tenant_id)
+            try:
+                sound, problem = await verify(session, tenant_id)
+            except Exception as error:  # noqa: BLE001 - one unreadable chain must not hide the rest
+                broken += 1
+                print(
+                    f"{label}: BROKEN: could not be read ({type(error).__name__})", file=sys.stderr
+                )
+                continue
         if problem is None:
             print(f"{label}: {sound} entries, chain intact")
         else:
             broken += 1
-            print(f"{label}: BROKEN at entry {problem.seq}: {problem.reason}", file=sys.stderr)
+            print(
+                f"{label}: BROKEN at entry {problem.seq}: {problem.reason} "
+                f"({problem.bad} of {sound + problem.bad} entries do not verify)",
+                file=sys.stderr,
+            )
     return 1 if broken else 0
 
 

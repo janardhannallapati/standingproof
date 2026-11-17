@@ -30,6 +30,9 @@ ROLES = {"app": APP_ROLE, "system": SYSTEM_ROLE, "state": STATE_ROLE}
 _TENANT = "tenant_id"
 # Who a session acts for, for the audit log. Set beside the tenant; absent means "system".
 ACTOR = "actor"
+# The key audit entries are signed with, when there is one. It stays in the process: it is
+# never sent to the database, so nobody who can only run SQL can sign an entry.
+AUDIT_KEY = "audit_key"
 
 
 class UnsafeRoleError(RuntimeError):
@@ -143,12 +146,13 @@ def _refuse_unsafe_role(engine: AsyncEngine, role: str) -> None:
 class Database:
     """The two pools a running process uses, and the sessions it may open on them."""
 
-    def __init__(self, *, app_url: str, system_url: str) -> None:
+    def __init__(self, *, app_url: str, system_url: str, audit_key: bytes | None = None) -> None:
         self.app_engine = build_engine(app_url)
         self._system_engine = build_engine(system_url)
         _refuse_unsafe_role(self.app_engine, APP_ROLE)
         _refuse_unsafe_role(self._system_engine, SYSTEM_ROLE)
-        self._system = build_session_factory(self._system_engine)
+        self._audit_key = audit_key
+        self._system = build_session_factory(self._system_engine, **{AUDIT_KEY: audit_key})
 
     def tenant(
         self, tenant_id: uuid.UUID, *, actor: str | None = None
@@ -156,7 +160,9 @@ class Database:
         """Sessions that see and change one tenant's rows, whatever the query says.
 
         `actor` is the person the session acts for, recorded with what they decide."""
-        return build_session_factory(self.app_engine, **{_TENANT: tenant_id, ACTOR: actor})
+        return build_session_factory(
+            self.app_engine, **{_TENANT: tenant_id, ACTOR: actor, AUDIT_KEY: self._audit_key}
+        )
 
     @property
     def across_tenants(self) -> async_sessionmaker[AsyncSession]:
@@ -171,4 +177,9 @@ class Database:
 
 
 def build_database(settings: Settings) -> Database:
-    return Database(app_url=settings.role_url("app"), system_url=settings.role_url("system"))
+    key = settings.audit_key
+    return Database(
+        app_url=settings.role_url("app"),
+        system_url=settings.role_url("system"),
+        audit_key=None if key is None else key.get_secret_value().encode(),
+    )

@@ -60,7 +60,11 @@ def upgrade() -> None:
     )
     op.execute(f"GRANT SELECT, INSERT, UPDATE ON limits TO {SYSTEM}")
     op.execute(f"CREATE POLICY across_tenants ON limits TO {SYSTEM} USING (true) WITH CHECK (true)")
+    # Why a look saw nothing (a short code, such as "stopped"): the watcher must be able to
+    # tell a look the stop switch refused from one that was made.
+    op.execute(f"GRANT SELECT (reason) ON evidence TO {SYSTEM}")
 
 
 def downgrade() -> None:
+    op.execute(f"REVOKE SELECT (reason) ON evidence FROM {SYSTEM}")  # noqa: S608
     op.drop_table("limits")

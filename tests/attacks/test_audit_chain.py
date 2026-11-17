@@ -208,7 +208,10 @@ def test_verify_names_the_first_entry_that_was_tampered_with(
     try:
         sound, problem = checked(wf, owner)
 
-        assert problem is not None and (sound, problem.seq) == (where - 1, where)
+        # The first entry that fails is named. Entries that still hold are counted too,
+        # wherever they are: one bad entry does not hide the rest.
+        assert problem is not None and problem.seq == where
+        assert sound + problem.bad == len(entries(wf))
         assert why in problem.reason
         # The command says so, and fails.
         assert wf.run(audit_command(wf.database, "verify")) == 1
@@ -298,3 +301,169 @@ def test_details_that_would_not_read_back_the_same_are_refused(wf: Db) -> None:
 
     with pytest.raises(TypeError, match="float"):
         wf.run(go())
+
+
+def _as_tenant(db: Db, tenant_id: uuid.UUID, sql: str, **values: Any) -> str | None:
+    """Run SQL as the app role for one tenant. Returns the database's refusal, if any."""
+
+    async def go() -> str | None:
+        async with db.database.tenant(tenant_id)() as session:
+            try:
+                await session.execute(text(sql), values)
+                await session.commit()
+            except DBAPIError as error:
+                return str(error.orig)
+        return None
+
+    return db.run(go())
+
+
+FORGED = (
+    "INSERT INTO audit_log (tenant_id, seq, at, actor, action, subject, details, prev_hash, hash) "
+    "VALUES (:t, :seq, CAST(CAST(:at AS text) AS timestamptz), 'ceo@customer', "
+    "'review.approve', 'x', '{}', :prev, :hash)"
+)
+
+
+@pytest.mark.parametrize(
+    ("seq", "at", "prev", "why"),
+    [
+        # A number so high that no honest entry could ever follow it.
+        (9223372036854775807, "now", "last", "follow"),
+        # A gap, a fork of an entry that exists, and a wrong link.
+        (4, "now", "last", "follow"),
+        (2, "now", "last", "follow"),
+        (3, "now", "0" * 64, "follow"),
+        # Backdated, postdated, and a time no program can read back.
+        (3, "2020-01-01", "last", "time"),
+        (3, "2099-01-01", "last", "time"),
+        (3, "infinity", "last", "time"),
+    ],
+)
+def test_the_database_refuses_an_entry_that_does_not_follow_the_last_one_now(
+    wf: Db, seq: int, at: str, prev: str, why: str
+) -> None:
+    owner, _, _ = approved_answer(wf)
+    [(last,)] = wf.run(_scalar(wf, "SELECT hash FROM audit_log WHERE seq = 2"))
+    values = {"t": owner, "seq": seq, "at": at, "prev": last if prev == "last" else prev}
+
+    refused = _as_tenant(wf, owner, FORGED, hash="a" * 64, **values)
+
+    assert refused is not None and why in refused
+    # And honest work goes on.
+    note(wf, owner)
+    assert checked(wf, owner) == (3, None)
+
+
+def test_a_well_placed_entry_with_a_made_up_hash_is_found_and_the_rest_is_still_checked(
+    wf: Db, capsys: pytest.CaptureFixture[str]
+) -> None:
+    owner, _, _ = approved_answer(wf, "ours")
+    approved_answer(wf, "zzz-later")
+    [(last,)] = wf.run(
+        _scalar(wf, f"SELECT hash FROM audit_log WHERE seq = 2 AND tenant_id = '{owner}'")  # noqa: S608
+    )
+    # In the right place, at the right time, linked correctly: only its own hash is a lie.
+    assert _as_tenant(wf, owner, FORGED, t=owner, seq=3, at="now", prev=last, hash="a" * 64) is None
+    note(wf, owner, 2)
+
+    sound, problem = checked(wf, owner)
+
+    assert problem is not None and (problem.seq, problem.bad) == (3, 1)
+    assert sound == 4  # the two before it and the two after it hold
+    assert wf.run(audit_command(wf.database, "verify")) == 1
+    printed = capsys.readouterr()
+    assert "tenant ours: BROKEN at entry 3" in printed.err
+    # One tenant's broken chain does not stop the next one being checked.
+    assert "tenant zzz-later: 2 entries, chain intact" in printed.out
+
+
+def test_with_a_key_an_entry_cannot_be_forged_by_someone_who_can_only_run_sql(wf: Db) -> None:
+    owner, _, _ = approved_answer(wf)
+    [(last,)] = wf.run(_scalar(wf, "SELECT hash FROM audit_log WHERE seq = 2"))
+    at = wf.run(_scalar(wf, "SELECT clock_timestamp()"))[0][0]
+    # Everything an attacker with SQL knows: the content, the time, the hash before it.
+    forged = audit.chain.entry_hash(
+        key=None,
+        previous=last,
+        tenant_id=owner,
+        seq=3,
+        at=at,
+        actor="ceo@customer",
+        action="review.approve",
+        subject="x",
+        details={},
+    )
+    assert (
+        _as_tenant(wf, owner, FORGED, t=owner, seq=3, at=at.isoformat(), prev=last, hash=forged)
+        is None
+    )
+
+    async def verify_with(key: bytes | None) -> tuple[int, audit.Broken | None]:
+        async with wf.sessions() as session:
+            return await audit.verify(session, owner, key=key)
+
+    # With no key the forgery passes: the chain then shows that nothing was altered, not
+    # who wrote it. (The first two entries were written with no key, so they hold here.)
+    assert wf.run(verify_with(None)) == (3, None)
+    # With a key the database never sees, the same row does not verify.
+    _, problem = wf.run(verify_with(b"k" * 32))
+    assert problem is not None
+
+
+def test_holding_a_lock_as_one_tenant_does_not_block_another_or_the_operator(wf: Db) -> None:
+    ours, _, _ = approved_answer(wf, "ours")
+    theirs, _, _ = approved_answer(wf, "theirs")
+
+    async def go() -> None:
+        async with wf.database.tenant(ours)() as hostile:
+            # Every lock a tenant can take by name, and its own chain's row.
+            for name in (f"audit:{theirs}", "audit:None", f"audit:{ours}"):
+                await hostile.execute(
+                    text("SELECT pg_advisory_lock(hashtextextended(:name, 0))"), {"name": name}
+                )
+            await hostile.execute(text("SELECT * FROM audit_heads FOR UPDATE"))
+            async with asyncio.timeout(5):
+                async with wf.database.tenant(theirs)() as session:
+                    await audit.record(
+                        session, theirs, audit.Entry(action="test.note", subject="n", details={})
+                    )
+                    await session.commit()
+                async with wf.database.across_tenants() as session:
+                    from standingproof.limits import switch
+
+                    await switch.set_stopped(session, None, True, by="priya")
+
+    wf.run(go())
+
+    assert checked(wf, theirs) == (3, None)
+    assert checked(wf, None) == (1, None)
+
+
+def test_approving_three_hundred_at_once_takes_the_chain_once(
+    wf: Db, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    owner, _, _ = approved_answer(wf)
+    calls: list[int] = []
+    real = review.record
+
+    async def counting(session: Any, tenant_id: Any, *given: Any) -> None:
+        calls.append(len(given))
+        await real(session, tenant_id, *given)
+
+    monkeypatch.setattr(review, "record", counting)
+    owner_sql(
+        wf,
+        "UPDATE run_questions SET review = 'pending', status = 'ready', version = 1, "
+        "final_answer = NULL",
+    )
+
+    async def approve() -> int | None:
+        async with wf.database.tenant(owner)() as session:
+            return await review.approve_ready(
+                session, tenant_id=owner, run_id=run_id, count=1, reviewer="asha"
+            )
+
+    [(run_id,)] = wf.run(_scalar(wf, "SELECT id FROM runs"))
+    assert wf.run(approve()) == 1
+    assert calls == [1]  # one call for the batch, however many questions it holds

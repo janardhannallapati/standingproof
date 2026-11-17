@@ -604,6 +604,21 @@ class AuditEntry(Base):
     hash: Mapped[str] = mapped_column(String(64))
 
 
+class AuditHead(Base):
+    """One row per audit chain, there to be locked: whoever holds it writes next. A row
+    and not a named lock, so that the policies decide who may take it."""
+
+    __tablename__ = "audit_heads"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", name="uq_audit_heads_tenant", postgresql_nulls_not_distinct=True
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tenants.id"))
+
+
 class Limit(Base):
     """A stop switch and a daily spend ceiling: one row per tenant that has its own, and one
     with tenant_id NULL for the deployment. Changed by an operator, read before every model

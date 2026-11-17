@@ -23,6 +23,8 @@ from standingproof.models import (
 _PREFIX = "evidence:"
 # An answer a customer has, may get, or a reviewer is about to decide. A rejected,
 # expired or unanswered question says nothing that a changed setting could contradict.
+# The reason on a look that the stop switch refused (see checks/service.py).
+STOPPED = "stopped"
 LIVE_STATUSES = (ITEM_READY, ITEM_NEEDS_REVIEW)
 LIVE_REVIEWS = (REVIEW_PENDING, REVIEW_APPROVED, REVIEW_EDITED)
 
@@ -171,6 +173,8 @@ async def due(
             Evidence.tenant_id == watched.c.tenant_id,
             Evidence.check_name == watched.c.check_name,
             Evidence.scope == watched.c.scope,
+            # Refused by the stop switch: nothing was looked at, so it does not count.
+            Evidence.reason.is_distinct_from(STOPPED),
         )
         .order_by(Evidence.seq.desc())
         .limit(1)

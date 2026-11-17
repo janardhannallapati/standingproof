@@ -293,3 +293,54 @@ def test_a_tenant_cannot_change_its_own_switch_or_ceiling_or_see_anothers(wf: Db
 
     assert seen == [(ours,)]
     assert all("permission denied" in reason for reason in refused)
+
+
+def test_a_look_refused_while_stopped_does_not_put_the_setting_off_for_a_day(wf: Db) -> None:
+    from standingproof.drift.watch import due
+    from tests.drift.rig import approved_answer as answer_resting_on_a_setting
+
+    owner, _, _ = answer_resting_on_a_setting(wf)
+    settings = settings_for(wf.url, github_orgs="acme")
+    later = dt.datetime.now(dt.UTC) + dt.timedelta(days=2)
+
+    async def due_then() -> int:
+        async with wf.database.across_tenants() as session:
+            found = await due(
+                session,
+                now=later,
+                recheck=dt.timedelta(days=1),
+                retry=dt.timedelta(hours=1),
+                limit=10,
+            )
+            return len(found)
+
+    async def refused_look() -> tuple[str, str | None]:
+        async with wf.database.tenant(owner)() as session:
+            seen = await run_check(
+                session,
+                tenant_id=owner,
+                name="github.branch_protection",
+                scope="acme/app",
+                backends=no_backends(),
+                settings=settings,
+            )
+            return seen.status, seen.reason
+
+    assert wf.run(due_then()) == 1
+    operator(wf, owner, stopped=True)
+    assert wf.run(refused_look()) == ("denied", "stopped")
+    operator(wf, owner, stopped=False)
+
+    # The refusal was not a look. The setting is as due as it was before the stop.
+    assert wf.run(due_then()) == 1
+
+
+@pytest.mark.parametrize("by", ["", "   ", "x" * 201])
+def test_a_change_needs_a_name_that_fits_the_record(by: str) -> None:
+    with pytest.raises(SystemExit):
+        parser().parse_args(["stop", "--by", by])
+
+
+def test_a_reservation_of_nothing_is_refused_at_startup() -> None:
+    with pytest.raises(ValueError, match="call_reserve_usd"):
+        settings_for("postgresql+asyncpg://u:p@localhost/db", call_reserve_usd=0)
