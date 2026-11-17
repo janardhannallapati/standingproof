@@ -8,7 +8,7 @@ and when the process dies in the middle.
 
 import uuid
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -185,7 +185,9 @@ async def examine_next(session: AsyncSession) -> list[uuid.UUID] | None:
             )
             if item.run_id not in runs:
                 runs.append(item.run_id)
-    await session.execute(delete(DriftQueue).where(DriftQueue.evidence_id == queued.evidence_id))
+    # Removed by a function: the app role holds DELETE on no table (it would also be the
+    # right to lock the table). The function takes out this tenant's row and no other.
+    await session.execute(select(func.drop_from_drift_queue(queued.evidence_id)))
     await session.commit()
     return runs
 

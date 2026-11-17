@@ -45,7 +45,9 @@ def test_a_saved_draft_records_the_observation_it_cites(wf: Db) -> None:
 async def _redraft(db: Db, owner: uuid.UUID, item: uuid.UUID, citations: list[str]) -> None:
     from standingproof.drift.watch import rest_on
 
-    async with db.sessions() as session:
+    # As the application signs in: the function that clears the old links removes rows of
+    # the tenant the session acts for, and the owner's session acts for none.
+    async with db.database.tenant(owner)() as session:
         await rest_on(session, owner, item, citations)
         await session.commit()
 

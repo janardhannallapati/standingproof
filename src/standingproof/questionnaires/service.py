@@ -11,7 +11,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -222,12 +222,8 @@ async def apply_mapping(
             f"below row {mapping.header_row}"
         )
 
-    await session.execute(
-        delete(Question).where(
-            Question.tenant_id == questionnaire.tenant_id,
-            Question.questionnaire_id == questionnaire.id,
-        )
-    )
+    # Nothing to remove first: a questionnaire waits for its columns only when the parse
+    # found no question, and the status was checked under the row's lock just above.
     session.add_all(
         _rows(
             parsed.questions,

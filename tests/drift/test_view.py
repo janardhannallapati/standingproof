@@ -124,7 +124,8 @@ def test_only_the_setting_that_changed_is_shown_when_an_answer_rests_on_two(wf: 
 async def _also_cites(db: Db, owner: uuid.UUID, item: uuid.UUID, ids: list[uuid.UUID]) -> None:
     from standingproof.drift.watch import rest_on
 
-    async with db.sessions() as session:
+    # As the application signs in, so that the old links are this tenant's to clear.
+    async with db.database.tenant(owner)() as session:
         await rest_on(session, owner, item, [f"evidence:{each}" for each in ids])
         await session.commit()
 

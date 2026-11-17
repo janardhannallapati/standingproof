@@ -130,3 +130,81 @@ def test_draft_checks_exists_with_an_index_for_the_latest_check(migrated_postgre
         "checked_at",
     }
     assert "ix_draft_checks_question" in indexes
+
+
+def test_migrations_run_up_and_down_for_an_owner_who_is_not_a_superuser(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Its own server: roles belong to a server, and here the owner must be the one who
+    # creates them, as on a managed database where nobody is a superuser.
+    from sqlalchemy import make_url
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from testcontainers.community.postgres import PostgresContainer
+
+    async def as_superuser(url: str, *statements: str) -> None:
+        engine = create_async_engine(url, isolation_level="AUTOCOMMIT")
+        try:
+            async with engine.connect() as conn:
+                for sql in statements:
+                    await conn.execute(text(sql))
+        finally:
+            await engine.dispose()
+
+    with PostgresContainer("pgvector/pgvector:pg17", driver="asyncpg") as pg:
+        superuser = make_url(pg.get_connection_url())
+        asyncio.run(
+            as_superuser(
+                superuser.render_as_string(hide_password=False),
+                "CREATE ROLE plain_owner LOGIN CREATEROLE NOSUPERUSER PASSWORD 'made-up'",
+                "CREATE DATABASE plain OWNER plain_owner",
+            )
+        )
+        # An extension is the one thing such an owner is given by its provider.
+        asyncio.run(
+            as_superuser(
+                superuser.set(database="plain").render_as_string(hide_password=False),
+                "CREATE EXTENSION vector",
+            )
+        )
+        owner = superuser.set(
+            username="plain_owner",
+            password="made-up",  # noqa: S106 - a throwaway server's made-up login
+            database="plain",
+        )
+        owner_url = owner.render_as_string(hide_password=False)
+        monkeypatch.setenv("SP_DATABASE_URL", owner_url)
+        get_settings.cache_clear()
+        try:
+            command.upgrade(Config("alembic.ini"), "head")
+            command.downgrade(Config("alembic.ini"), "0016")
+            command.upgrade(Config("alembic.ini"), "head")
+            # A role of that name that someone could sign in as, or that is exempt from the
+            # policies, must not be handed the functions: the migration stops instead.
+            command.downgrade(Config("alembic.ini"), "0016")
+            for unsafe, safe in (("LOGIN", "NOLOGIN"), ("BYPASSRLS", "NOBYPASSRLS")):
+                admin = superuser.set(database="plain").render_as_string(hide_password=False)
+                asyncio.run(as_superuser(admin, f"ALTER ROLE standingproof_deleter {unsafe}"))
+                with pytest.raises(Exception, match="standingproof_deleter must be a role"):
+                    command.upgrade(Config("alembic.ini"), "head")
+                asyncio.run(as_superuser(admin, f"ALTER ROLE standingproof_deleter {safe}"))
+            command.upgrade(Config("alembic.ini"), "head")
+        finally:
+            get_settings.cache_clear()
+
+        owners = asyncio.run(
+            _fetch_column(
+                owner_url,
+                "SELECT pg_get_userbyid(proowner) FROM pg_proc "
+                "WHERE proname IN ('forget_answer_evidence', 'drop_from_drift_queue')",
+            )
+        )
+        can_act_as = asyncio.run(
+            _fetch_column(
+                owner_url,
+                "SELECT pg_has_role(current_user, 'standingproof_deleter', 'SET')::text",
+            )
+        )
+
+    assert owners == ["standingproof_deleter", "standingproof_deleter"]
+    # The hand-over is over: the owner can no longer act as the role that deletes.
+    assert can_act_as == ["false"]
