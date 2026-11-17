@@ -188,6 +188,13 @@ live system settings, and reopens them when those settings drift.
 - A provider failure that can pass (rate limit, outage) is retried later and ends as `failed`,
   never as "needs review". A person cannot fix a rate limit.
 - Log an exception's type, not its message, in the workflow: a message can carry customer text.
+- The app role holds `UPDATE` column by column (never on `tenant_id`) and `DELETE` on
+  `questions`, `answer_evidence` and `drift_queue` only. A migration that adds a column to a
+  tenant table adds `GRANT UPDATE (column) ON table TO standingproof_app`. Never grant
+  `UPDATE` or `DELETE` on a whole table: either one also permits `LOCK TABLE`.
+- To empty a throwaway database in a test, use `EMPTY_THE_DATABASE` from `evals/world.py`.
+  A plain `TRUNCATE tenants CASCADE` is refused, on purpose.
+- A list shown "newest first" is ordered by a sequence (`evidence.seq`), not by a timestamp.
 - A new table with a `tenant_id` needs, in its migration: `ENABLE` and `FORCE ROW LEVEL
   SECURITY`, the `tenant_only` policy for `standingproof_app`, and a grant to that role. Copy
   `alembic/versions/0012_tenant_isolation.py`. `tests/attacks/test_database_rules.py` fails
