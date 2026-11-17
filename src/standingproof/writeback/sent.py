@@ -49,7 +49,7 @@ async def list_sent(
             select(SentFile, FilledFile.key)
             .join(FilledFile, FilledFile.id == SentFile.filled_file_id)
             .where(SentFile.tenant_id == tenant_id, SentFile.run_id == run_id)
-            .order_by(SentFile.sent_at, SentFile.id)
+            .order_by(SentFile.seq)
         )
     ).all()
     waiting = {

@@ -84,7 +84,7 @@ async def _reopen(
     changes: list[Change],
 ) -> None:
     waiting = item.review == REVIEW_PENDING
-    await session.execute(
+    made = await session.execute(
         insert(AnswerReopening)
         .values(
             tenant_id=item.tenant_id,
@@ -96,7 +96,23 @@ async def _reopen(
             was_review=None if waiting else item.review,
         )
         .on_conflict_do_nothing(constraint="uq_answer_reopenings_once")
+        .returning(AnswerReopening.seq)
     )
+    seq = made.scalar_one_or_none()
+    if seq is None:
+        # This event reopened this answer before, in a wait that a decision has since
+        # closed (a redraft came to rest on the older observation again). That record
+        # stays where it is, and this wait starts after every reopening the answer has
+        # had, whichever setting each was about: nothing of an earlier wait, least of
+        # all the state "keep" would put back, belongs to this one.
+        seq = (
+            await session.execute(
+                select(func.max(AnswerReopening.seq)).where(
+                    AnswerReopening.tenant_id == item.tenant_id,
+                    AnswerReopening.run_question_id == item.id,
+                )
+            )
+        ).scalar_one() + 1
     await record(
         session,
         item.tenant_id,
@@ -112,6 +128,8 @@ async def _reopen(
     item.review = REVIEW_PENDING
     if item.reopened_at is None:
         item.reopened_at = func.now()
+        # Which reopenings belong to this wait: this one and every later one.
+        item.reopened_seq = seq
     # An open screen holds the old version; its decision is refused and it reloads.
     item.version += 1
     # From now on the answer is measured against what the reviewer is being shown.
@@ -127,7 +145,8 @@ async def examine_next(session: AsyncSession) -> list[uuid.UUID] | None:
         await session.execute(
             select(DriftQueue, Evidence)
             .join(Evidence, Evidence.id == DriftQueue.evidence_id)
-            .order_by(DriftQueue.queued_at, DriftQueue.evidence_id)
+            # The observation stored first, by its number.
+            .order_by(Evidence.seq)
             .limit(1)
             # Two examiners each take a different row.
             .with_for_update(of=DriftQueue, skip_locked=True)
@@ -202,8 +221,10 @@ async def examine_pending(database: Database, *, limit: int) -> list[uuid.UUID]:
     async with database.across_tenants() as session:
         waiting = await session.execute(
             select(DriftQueue.tenant_id)
+            .join(Evidence, Evidence.id == DriftQueue.evidence_id)
             .group_by(DriftQueue.tenant_id)
-            .order_by(func.min(DriftQueue.queued_at))
+            # The tenant whose oldest waiting observation was stored first.
+            .order_by(func.min(Evidence.seq))
         )
         tenants = [row[0] for row in waiting]
     runs: list[uuid.UUID] = []

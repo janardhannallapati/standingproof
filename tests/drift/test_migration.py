@@ -181,3 +181,143 @@ def test_existing_observations_keep_their_order_and_new_ones_come_after(
     assert [row[0] for row in rows] == [old, new, later]
     with pytest.raises(Exception, match="seq"):
         asyncio.run(_run(url, [("UPDATE evidence SET seq = 99 WHERE id = :id", {"id": old})]))
+
+
+def test_existing_decisions_and_reopenings_keep_their_order_and_a_waiting_answer_its_first(
+    migrated_postgres_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Migration 0018: `seq` follows the timestamps used until now, and an answer that is
+    waiting is given the number of its first reopening."""
+    url = migrated_postgres_url
+    asyncio.run(_run(url, [(statement, {}) for statement in EMPTY_THE_DATABASE]))
+    _alembic(url, monkeypatch, "downgrade", "0017")
+    names = ["t", "qn", "q", "run", "item", "e1", "e2", "e3", "d1", "d2", "d3"]
+    names += ["q2", "item2", "e4", "d4"]
+    ids = {name: uuid.uuid4() for name in names}
+    evidence = (
+        "INSERT INTO evidence (id, tenant_id, check_name, scope, status, facts, raw_result, "
+        "statement, observed_at) VALUES (:id, :t, 'github.branch_protection', 'acme/app', "
+        "'observed', '{}', '{}', 's', now())"
+    )
+    event = (
+        "INSERT INTO drift_events (id, tenant_id, check_name, scope, evidence_id, trigger) "
+        "VALUES (:id, :t, 'github.branch_protection', 'acme/app', :e, 'schedule')"
+    )
+    reopening = (
+        "INSERT INTO answer_reopenings (tenant_id, drift_event_id, run_question_id, "
+        "was_evidence_id, changes, was_review, reopened_at) VALUES (:t, :d, :item, :e, '[]', "
+        ":was, now() - make_interval(mins => :ago))"
+    )
+    decision = (
+        "INSERT INTO review_decisions (tenant_id, run_question_id, decision, decided_by, "
+        "comment, decided_at) VALUES (:t, :item, 'redraft', 'asha', :c, "
+        "now() - make_interval(mins => :ago))"
+    )
+    try:
+        asyncio.run(
+            _run(
+                url,
+                [
+                    ("INSERT INTO tenants (id, name) VALUES (:t, 'order')", ids),
+                    (
+                        "INSERT INTO questionnaires (id, tenant_id, filename, status, sha256) "
+                        "VALUES (:qn, :t, 'q.xlsx', 'parsed', 'x')",
+                        ids,
+                    ),
+                    (
+                        "INSERT INTO questions (id, tenant_id, questionnaire_id, position, "
+                        "sheet, cell, text) VALUES (:q, :t, :qn, 1, 'S', 'A1', 'q')",
+                        ids,
+                    ),
+                    (
+                        "INSERT INTO runs (id, tenant_id, questionnaire_id, status, max_cost_usd) "
+                        "VALUES (:run, :t, :qn, 'finished', 5)",
+                        ids,
+                    ),
+                    # Reopened 20 minutes ago, and waiting since.
+                    (
+                        "INSERT INTO run_questions (id, tenant_id, run_id, question_id, position, "
+                        "status, review, reopened_at) VALUES (:item, :t, :run, :q, 1, 'ready', "
+                        "'pending', now() - make_interval(mins => 20))",
+                        ids,
+                    ),
+                    (
+                        "INSERT INTO questions (id, tenant_id, questionnaire_id, position, "
+                        "sheet, cell, text) VALUES (:q2, :t, :qn, 2, 'S', 'A2', 'q')",
+                        ids,
+                    ),
+                    # Marked reopened a moment ago, and its only reopening is 50 minutes
+                    # old: by the rule used until now, none belongs to this wait.
+                    (
+                        "INSERT INTO run_questions (id, tenant_id, run_id, question_id, position, "
+                        "status, review, reopened_at) VALUES (:item2, :t, :run, :q2, 2, 'ready', "
+                        "'pending', now())",
+                        ids,
+                    ),
+                    *[(evidence, {**ids, "id": ids[e]}) for e in ("e1", "e2", "e3", "e4")],
+                    *[
+                        (event, {**ids, "id": ids[d], "e": ids[e]})
+                        for d, e in (("d1", "e1"), ("d2", "e2"), ("d3", "e3"), ("d4", "e4"))
+                    ],
+                    (
+                        reopening,
+                        {
+                            **ids,
+                            "item": ids["item2"],
+                            "d": ids["d4"],
+                            "e": ids["e4"],
+                            "was": "rejected",
+                            "ago": 50,
+                        },
+                    ),
+                    # Stored newest first, so physical order is not the answer. The oldest
+                    # belongs to an earlier wait that a decision closed.
+                    (reopening, {**ids, "d": ids["d3"], "e": ids["e3"], "was": None, "ago": 10}),
+                    (
+                        reopening,
+                        {**ids, "d": ids["d2"], "e": ids["e2"], "was": "edited", "ago": 20},
+                    ),
+                    (
+                        reopening,
+                        {**ids, "d": ids["d1"], "e": ids["e1"], "was": "approved", "ago": 90},
+                    ),
+                    (decision, {**ids, "c": "second", "ago": 30}),
+                    (decision, {**ids, "c": "first", "ago": 60}),
+                ],
+            )
+        )
+    finally:
+        _alembic(url, monkeypatch, "upgrade", "head")
+    # After the migration a decision with an earlier clock time still sorts last.
+    asyncio.run(_run(url, [(decision, {**ids, "c": "third", "ago": 600})]))
+
+    decisions = asyncio.run(_rows(url, "SELECT comment FROM review_decisions ORDER BY seq"))
+    reopenings = asyncio.run(
+        _rows(
+            url,
+            "SELECT was_review FROM answer_reopenings WHERE run_question_id = "  # noqa: S608
+            f"'{ids['item']}' ORDER BY seq",
+        )
+    )
+    first_of_this_wait = asyncio.run(
+        _rows(
+            url,
+            "SELECT r.was_review FROM run_questions q JOIN answer_reopenings r "
+            "ON r.run_question_id = q.id AND r.seq = q.reopened_seq",
+        )
+    )
+    belonging_to_no_wait = asyncio.run(
+        _rows(
+            url,
+            "SELECT count(*) FROM run_questions q JOIN answer_reopenings r "  # noqa: S608
+            "ON r.run_question_id = q.id AND r.seq >= q.reopened_seq "
+            f"WHERE q.id = '{ids['item2']}'",
+        )
+    )
+
+    assert [row[0] for row in decisions] == ["first", "second", "third"]
+    assert [row[0] for row in reopenings] == ["approved", "edited", None]
+    assert first_of_this_wait == [("edited",)]
+    # The wait with no reopening of its own starts after the one the question has had, so
+    # "keep" cannot restore a state from before the last decision.
+    assert belonging_to_no_wait == [(0,)]

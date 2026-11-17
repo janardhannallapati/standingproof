@@ -685,7 +685,7 @@
           "next_before": {
             "anyOf": [
               {
-                "format": "date-time",
+                "format": "uuid",
                 "type": "string"
               },
               {
@@ -2534,7 +2534,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "format": "date-time",
+                  "format": "uuid",
                   "type": "string"
                 },
                 {

@@ -70,8 +70,11 @@ class EvidenceOut(BaseModel):
 
 class EvidencePage(BaseModel):
     items: list[EvidenceOut]
-    # Pass as `before` to get older rows. Null on the last page.
-    next_before: dt.datetime | None
+    # Pass as `before` to get older rows. Null on the last page. The id of the last row
+    # shown, which stands for its place in the stored order: not a time (two looks can
+    # share one, and a clock can be stepped back) and not the number behind the order
+    # (one sequence counts every tenant's rows).
+    next_before: uuid.UUID | None
 
 
 @router.get("/checks")
@@ -148,7 +151,7 @@ async def list_evidence(
     tenant_id: TenantDep,
     check: Annotated[str | None, Query(max_length=100)] = None,
     scope: Annotated[str | None, Query(max_length=300)] = None,
-    before: dt.datetime | None = None,
+    before: uuid.UUID | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> EvidencePage:
     rows = await service.page_of_evidence(
@@ -157,7 +160,7 @@ async def list_evidence(
     page = rows[:limit]
     return EvidencePage(
         items=[EvidenceOut.model_validate(row) for row in page],
-        next_before=page[-1].observed_at if len(rows) > limit else None,
+        next_before=page[-1].id if len(rows) > limit else None,
     )
 
 

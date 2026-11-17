@@ -95,6 +95,7 @@ async def _apply(
     item.reviewed_at = _NOW
     # Whatever was decided, a person has now looked at the change.
     item.reopened_at = None
+    item.reopened_seq = None
     return Entry(
         action=f"review.{decision}",
         subject=f"run_question:{item.id}",
@@ -111,16 +112,17 @@ async def _apply(
 
 async def _review_before_reopening(session: AsyncSession, item: RunQuestion) -> str | None:
     """What the question's review state was when it was reopened: `approved`, `edited`,
-    or None for a draft nobody had decided. The first reopening since `reopened_at`."""
+    or None for a draft nobody had decided. The first reopening since the last decision,
+    by the number the database gave it."""
     return (
         await session.execute(
             select(AnswerReopening.was_review)
             .where(
                 AnswerReopening.tenant_id == item.tenant_id,
                 AnswerReopening.run_question_id == item.id,
-                AnswerReopening.reopened_at >= item.reopened_at,
+                AnswerReopening.seq >= item.reopened_seq,
             )
-            .order_by(AnswerReopening.reopened_at, AnswerReopening.id)
+            .order_by(AnswerReopening.seq)
             .limit(1)
         )
     ).scalar_one_or_none()

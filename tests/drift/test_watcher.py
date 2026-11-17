@@ -334,6 +334,32 @@ def test_a_delivery_about_a_setting_no_answer_rests_on_is_not_looked_at(wf: Db) 
     assert scene.outcomes() == ["ignored:not_watched"] * 5
 
 
+def test_waiting_deliveries_are_taken_in_the_order_they_arrived_whatever_their_times(
+    wf: Db,
+) -> None:
+    from tests.workflow.seed import sql
+
+    scene = Scene(wf)
+    scene.deliver(2)
+    first, second = sorted(all_rows(wf, WebhookDelivery), key=lambda row: row.seq)
+    # The first to arrive carries the later time.
+    sql(
+        wf,
+        "UPDATE webhook_deliveries SET received_at = now() + interval '1 minute' WHERE id = :id",
+        id=first.id,
+    )
+
+    async def next_one() -> list[uuid.UUID]:
+        async with wf.sessions() as session:
+            found = await deliveries.waiting(
+                session, before=utc_now() + dt.timedelta(hours=1), limit=1
+            )
+            return [row.id for row in found]
+
+    assert wf.run(next_one()) == [first.id]
+    assert second.received_at != first.received_at
+
+
 def test_a_delivery_stamped_earlier_than_the_last_look_still_gets_its_look(wf: Db) -> None:
     scene = Scene(wf)
     scene.github.reviews = None

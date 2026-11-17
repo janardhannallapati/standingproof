@@ -131,7 +131,8 @@ async def load(session: AsyncSession, tenant_id: uuid.UUID, run_id: uuid.UUID) -
             select(ReviewDecision)
             .join(RunQuestion, RunQuestion.id == ReviewDecision.run_question_id)
             .where(RunQuestion.run_id == run_id, ReviewDecision.tenant_id == tenant_id)
-            .order_by(ReviewDecision.decided_at, ReviewDecision.id)
+            # In stored order, so the last one kept below is the decision stored last.
+            .order_by(ReviewDecision.seq)
         )
     ).scalars()
     latest: dict[uuid.UUID, ReviewDecision] = {d.run_question_id: d for d in decisions}

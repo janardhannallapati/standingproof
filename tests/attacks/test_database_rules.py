@@ -565,3 +565,53 @@ def test_the_deleting_role_cannot_sign_in_and_holds_nothing_else(wf: Db) -> None
         role=DELETER_ROLE,
     )
     assert [name for (name,) in owned] == sorted(DELETE_FUNCTIONS)
+
+
+# Tables whose rows are numbered in the order stored (0011, 0018). "Latest" is the highest.
+NUMBERED = [
+    "answer_reopenings",
+    "draft_checks",
+    "evidence",
+    "filled_files",
+    "review_decisions",
+    "sent_files",
+]
+
+
+@pytest.mark.parametrize("table", NUMBERED)
+def test_a_tenant_cannot_choose_or_change_where_a_row_stands_in_the_order(
+    wf: Db, table: str
+) -> None:
+    columns = [column.name for column in Base.metadata.tables[table].columns]
+    [(identity, whole)] = rows(
+        wf,
+        wf.sessions,
+        "SELECT (SELECT attidentity::text FROM pg_attribute "
+        "WHERE attrelid = CAST(:t AS regclass) AND attname = 'seq'), "
+        "has_table_privilege(:role, :t, 'INSERT')",
+        role=APP_ROLE,
+        t=table,
+    )
+    may = {
+        right: {
+            name
+            for name in columns
+            if rows(
+                wf,
+                wf.sessions,
+                "SELECT has_column_privilege(:role, :t, :c, :right)",
+                role=APP_ROLE,
+                t=table,
+                c=name,
+                right=right,
+            )[0][0]
+        }
+        for right in ("INSERT", "UPDATE")
+    }
+
+    # The database numbers the row ("a": GENERATED ALWAYS). INSERT on the whole table would
+    # let a statement name `seq` itself with OVERRIDING SYSTEM VALUE.
+    assert (identity, whole) == ("a", False)
+    # Every other column, so that a column added later is not forgotten.
+    assert may["INSERT"] == set(columns) - {"seq"}
+    assert may["UPDATE"] == set()

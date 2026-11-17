@@ -241,6 +241,7 @@ async def expire_unreviewed(session: AsyncSession, *, keep_days: int) -> int:
             reviewed_at=NOW,
             # Closed: it waits for nobody, so nothing should count it as reopened.
             reopened_at=None,
+            reopened_seq=None,
         )
         .returning(RunQuestion.id)
     )

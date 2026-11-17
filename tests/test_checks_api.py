@@ -206,7 +206,11 @@ def test_evidence_is_listed_newest_first_filtered_and_paged(make_api: ClientFact
     first = api.get("/evidence", params={"check": "github.org_two_factor", "limit": 2}).json()
     second = api.get(
         "/evidence",
-        params={"check": "github.org_two_factor", "limit": 2, "before": first["next_before"]},
+        params={
+            "check": "github.org_two_factor",
+            "limit": 2,
+            "before": first["next_before"],
+        },
     ).json()
 
     assert [e["id"] for e in first["items"]] == ids[:0:-1]

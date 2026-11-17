@@ -13,6 +13,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Computed,
     Date,
     DateTime,
@@ -306,6 +307,12 @@ class RunQuestion(Base):
             "enqueue_after",
             postgresql_where=text("status IN ('queued', 'running')"),
         ),
+        # Reopened means both or neither. Code that set only the time would leave "keep"
+        # with no reopening to restore from.
+        CheckConstraint(
+            "(reopened_at IS NULL) = (reopened_seq IS NULL)",
+            name="ck_run_questions_reopened_together",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
@@ -347,6 +354,9 @@ class RunQuestion(Base):
     # Set when a live setting this answer rests on was seen to have changed, and cleared by
     # the next decision. Separate from `status` (the agent) and `review` (a person).
     reopened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The number (`answer_reopenings.seq`) of the first reopening since the last decision.
+    # Set and cleared with `reopened_at`; "since" is asked of this, never of two clocks.
+    reopened_seq: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class ReviewDecision(Base):
@@ -354,7 +364,7 @@ class ReviewDecision(Base):
     which wording, and when. The latest row for a question is its current decision."""
 
     __tablename__ = "review_decisions"
-    __table_args__ = (Index("ix_review_decisions_question", "run_question_id", "decided_at"),)
+    __table_args__ = (Index("ix_review_decisions_question", "run_question_id", "seq"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
@@ -373,6 +383,8 @@ class ReviewDecision(Base):
     batch: Mapped[bool] = mapped_column(Boolean, server_default=_FALSE)
     decided_by: Mapped[str] = mapped_column(String(200))
     decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # The order rows were stored in, from a database sequence: "latest" is the highest seq.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class DraftCheck(Base):
@@ -384,7 +396,7 @@ class DraftCheck(Base):
     """
 
     __tablename__ = "draft_checks"
-    __table_args__ = (Index("ix_draft_checks_question", "run_question_id", "checked_at"),)
+    __table_args__ = (Index("ix_draft_checks_question", "run_question_id", "seq"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
@@ -400,6 +412,8 @@ class DraftCheck(Base):
     model: Mapped[str | None] = mapped_column(String(100))
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), server_default=_ZERO)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # The order rows were stored in, from a database sequence: "latest" is the highest seq.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class FilledFile(Base):
@@ -426,6 +440,8 @@ class FilledFile(Base):
     writer_version: Mapped[int] = mapped_column(Integer)
     created_by: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # The order rows were stored in, from a database sequence: "latest" is the highest seq.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class SentFile(Base):
@@ -455,6 +471,8 @@ class SentFile(Base):
     answers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
     sent_by: Mapped[str] = mapped_column(String(200))
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # The order rows were stored in, from a database sequence: "latest" is the highest seq.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class AnswerEvidence(Base):
@@ -522,7 +540,7 @@ class AnswerReopening(Base):
     __tablename__ = "answer_reopenings"
     __table_args__ = (
         UniqueConstraint("drift_event_id", "run_question_id", name="uq_answer_reopenings_once"),
-        Index("ix_answer_reopenings_question", "run_question_id", "reopened_at"),
+        Index("ix_answer_reopenings_question", "run_question_id", "seq"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
@@ -543,6 +561,8 @@ class AnswerReopening(Base):
     # waiting when this event arrived.
     was_review: Mapped[str | None] = mapped_column(String(16))
     reopened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=_NOW)
+    # The order rows were stored in, from a database sequence: "latest" is the highest seq.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class WebhookDelivery(Base):

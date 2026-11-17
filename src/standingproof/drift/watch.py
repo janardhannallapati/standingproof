@@ -199,6 +199,8 @@ async def due(
     rows = await session.execute(
         select(watched, last.c.status, last.c.observed_at)
         .join(last, true())
+        # Longest since its last look first. A length of time, so the clock is the right
+        # measure: a wrong one changes whose turn comes first, never whether a look is made.
         .order_by(last.c.observed_at)
     )
     found = []

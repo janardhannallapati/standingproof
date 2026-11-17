@@ -205,7 +205,19 @@ live system settings, and reopens them when those settings drift.
   migration as such an owner.
 - To empty a throwaway database in a test, use `EMPTY_THE_DATABASE` from `evals/world.py`.
   A plain `TRUNCATE tenants CASCADE` is refused, on purpose.
-- A list shown "newest first" is ordered by a sequence (`evidence.seq`), not by a timestamp.
+- "Latest", "first" and "newest first" are asked of a sequence, never of a timestamp:
+  `seq` on `evidence`, `webhook_deliveries`, `review_decisions`, `draft_checks`,
+  `filled_files`, `sent_files` and `answer_reopenings`. A new append-only table gets a
+  `seq` identity column in its migration, and `INSERT` for the app role column by column
+  without it (whole-table `INSERT` lets a statement name `seq`). A column added to one of
+  these tables needs `GRANT INSERT (column)`; `tests/attacks/test_database_rules.py` fails
+  until it has it. A page is cut by `seq`, never by a time, and the cursor a client holds is
+  the last row's id: one sequence numbers every tenant's rows, so a `seq` shown to a client
+  tells it how busy the others are. Never put a `seq` in a response.
+- `run_questions.reopened_seq` is set and cleared with `reopened_at`. "The reopenings of
+  this wait" are those with `seq >= reopened_seq`.
+- `run_check` with `max_age` of zero always looks. It never asks the clock whether an
+  earlier observation is recent enough.
 - A new table with a `tenant_id` needs, in its migration: `ENABLE` and `FORCE ROW LEVEL
   SECURITY`, the `tenant_only` policy for `standingproof_app`, and a grant to that role. Copy
   `alembic/versions/0012_tenant_isolation.py`. `tests/attacks/test_database_rules.py` fails
