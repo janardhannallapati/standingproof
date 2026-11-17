@@ -1,0 +1,105 @@
+{
+ "kind": "drafter",
+ "case": "b-admins-exempt",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "05c693de9bf5102f"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "No. A live check on 2026-11-16 found that the default branch (main) of harborlight/app is protected and needs 2 approving reviews before a change can be merged. However, that rule is not applied to administrators.",
+  "citations": [
+   "evidence:c4fa9d06-16c8-4f10-b695-3f33da8357fc"
+  ],
+  "note": "The approved answer and the live setting disagree, so this needs review before it is sent. The approved answer (answer:3199784b-e9ea-4702-a373-76c96dce6cfb, owner security@harborlight.example, valid until 2027-11-16) says the two-review rule applies to administrators as well. The live check (evidence:c4fa9d06-16c8-4f10-b695-3f33da8357fc, observed 2026-11-16T17:10:24Z) shows applies_to_administrators = false. I left out the approved wording because it is contradicted by what is currently configured. The owner should decide which one is right: either enforce the rule for administrators on the main branch and re-run the check, or correct the approved answer. Until then, do not tell the customer that administrators are covered."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "branch protection code review required administrators"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:3199784b-e9ea-4702-a373-76c96dce6cfb",
+    "answer:4fe86fc7-463f-40c3-ac22-d046923040e8",
+    "answer:5d85b4f1-cf65-49ce-8436-80d5a4572e12",
+    "answer:b0fe3cfd-a6ed-4c19-bc9c-33fa0416e0c6",
+    "answer:ce8d5675-68ed-468c-a6d2-c08066e2b89a"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:c4fa9d06-16c8-4f10-b695-3f33da8357fc"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:3199784b-e9ea-4702-a373-76c96dce6cfb": [
+   "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
+  ],
+  "answer:4fe86fc7-463f-40c3-ac22-d046923040e8": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:5d85b4f1-cf65-49ce-8436-80d5a4572e12": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "answer:b0fe3cfd-a6ed-4c19-bc9c-33fa0416e0c6": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "answer:ce8d5675-68ed-468c-a6d2-c08066e2b89a": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  ],
+  "evidence:c4fa9d06-16c8-4f10-b695-3f33da8357fc": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule does not apply to administrators. Observed 2026-11-16 17:10 UTC."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 653,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1993,
+  "output_tokens": 596,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 5203
+ },
+ "cost_usd": 0.019331099999999997,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

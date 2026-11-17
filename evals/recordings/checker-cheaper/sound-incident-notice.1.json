@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sound-incident-notice",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "05328d04deee94d7"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question asks when customers are told about any security incident, but the draft only covers confirmed breaches of customer data and does not say when customers are told about other incidents."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 125,
+   "output_tokens": 452,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 0.00025005000000000003,
+ "check_model": "claude-haiku-5-5"
+}

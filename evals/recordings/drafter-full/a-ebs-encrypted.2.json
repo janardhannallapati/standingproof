@@ -1,0 +1,113 @@
+{
+ "kind": "drafter",
+ "case": "a-ebs-encrypted",
+ "run": 2,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "bed9f86d5893ff74"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default.",
+  "citations": [
+   "answer:2516ef6f-b1d1-43c5-8215-9a05f6d83b0f",
+   "evidence:e8cee277-2cad-4b73-87a1-e6aa5ca88190"
+  ],
+  "note": "A live check on 2026-11-16 at 17:03 UTC found that EBS default encryption is on for account 111122223333, but it only looked at region us-east-1. Default encryption is set separately in each AWS region, so other regions weren't checked. The approved answer (valid until 2027-11-16) says nothing about regions. Another approved answer calls 111122223333 our production AWS account, but the approved answer used here doesn't say 'production' itself."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "EBS disk encryption by default production account"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:2516ef6f-b1d1-43c5-8215-9a05f6d83b0f",
+    "answer:ba7a5e91-136e-465c-9836-e2c4459f5739",
+    "answer:e02e687e-7efc-4f84-a317-1a664f794b32",
+    "answer:a1c4bf94-3bc3-4c36-8b39-c932453893bd",
+    "policy:e2bb1ee1-f1dd-40fe-9aaf-7b148259d9e3"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "aws.ebs_default_encryption",
+    "scope": "111122223333"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:e8cee277-2cad-4b73-87a1-e6aa5ca88190"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:2516ef6f-b1d1-43c5-8215-9a05f6d83b0f": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:ba7a5e91-136e-465c-9836-e2c4459f5739": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "answer:e02e687e-7efc-4f84-a317-1a664f794b32": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "answer:a1c4bf94-3bc3-4c36-8b39-c932453893bd": [
+   "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
+  ],
+  "policy:e2bb1ee1-f1dd-40fe-9aaf-7b148259d9e3": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "evidence:e8cee277-2cad-4b73-87a1-e6aa5ca88190": [
+   "New EBS disks in AWS account 111122223333 are encrypted by default in us-east-1. Observed 2026-11-16 17:03 UTC."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "New EBS disks in our AWS account (111122223333) are encrypted by default.",
+     "source_id": "evidence:e8cee277-2cad-4b73-87a1-e6aa5ca88190",
+     "explanation": "The evidence shows default encryption observed only in us-east-1, but the draft states it for the whole account without limiting it to that region."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 560,
+   "output_tokens": 145,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 2581,
+  "output_tokens": 558,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7227
+ },
+ "cost_usd": 0.020243900000000002,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

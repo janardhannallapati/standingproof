@@ -1,0 +1,92 @@
+{
+ "kind": "drafter",
+ "case": "b-ebs-not-encrypted",
+ "run": 1,
+ "variant": "docs_only",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "9c8c5ded633941c6",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "fe579a0a35c87bdb"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default.",
+  "citations": [
+   "answer:327e5778-5f93-4c6b-8895-ea2159862d30",
+   "answer:060f9adb-0e3f-42c9-a24a-9ebdb97cb451"
+  ],
+  "note": "The answer uses the approved wording unchanged. That answer is owned by security@harborlight.example and is valid until 2027-11-16. It doesn't say the account is production, but a separate approved answer (MFA on the root user) calls AWS account 111122223333 'our production AWS account', so the two match. That second answer is cited only to show this. The source covers only EBS disks in AWS, not other cloud storage types or other accounts."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "cloud disk encryption by default production"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:327e5778-5f93-4c6b-8895-ea2159862d30",
+    "answer:a6d78ce3-b3f3-4f7a-8c50-66ab8125da6e",
+    "answer:060f9adb-0e3f-42c9-a24a-9ebdb97cb451",
+    "answer:ee5ece27-dec0-4c55-a2a7-3c1782d51ab5",
+    "answer:c38e6e8b-c0ef-4dde-8eb1-b1cfbc7d2628"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:327e5778-5f93-4c6b-8895-ea2159862d30": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:a6d78ce3-b3f3-4f7a-8c50-66ab8125da6e": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ],
+  "answer:060f9adb-0e3f-42c9-a24a-9ebdb97cb451": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "answer:ee5ece27-dec0-4c55-a2a7-3c1782d51ab5": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:c38e6e8b-c0ef-4dde-8eb1-b1cfbc7d2628": [
+   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 493,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1482,
+  "output_tokens": 399,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 3937
+ },
+ "cost_usd": 0.013413900000000001,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

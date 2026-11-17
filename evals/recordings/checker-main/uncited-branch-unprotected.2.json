@@ -1,0 +1,44 @@
+{
+ "kind": "checker",
+ "case": "uncited-branch-unprotected",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "299c40de6c21eea0"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "Yes.",
+     "source_id": "EV-BP0",
+     "explanation": "The observed setting shows branch main of harborlight/app is not protected, which conflicts with the claim that branch protection is enforced."
+    },
+    {
+     "kind": "contradicted",
+     "quote": "require a pull request with two approving reviews",
+     "source_id": "EV-BP0",
+     "explanation": "The observed state shows no branch protection on main, so the policy requirement of a pull request with two reviews is not shown to be enforced."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 167,
+   "output_tokens": 186,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0023095,
+ "check_model": "claude-sonnet-5-5"
+}

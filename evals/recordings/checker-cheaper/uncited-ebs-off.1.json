@@ -1,0 +1,44 @@
+{
+ "kind": "checker",
+ "case": "uncited-ebs-off",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "e2c7cbb5476e80c7"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "New EBS disks in our AWS account are encrypted by default.",
+     "source_id": "EV-EBS-OFF",
+     "explanation": "Source EV-EBS-OFF records an observed setting on 2026-11-10 showing new EBS disks in account 111122223333 are not encrypted by default in us-east-1, which conflicts with the draft's claim."
+    },
+    {
+     "kind": "unsupported",
+     "quote": "New EBS disks in our AWS account are encrypted by default.",
+     "source_id": "LIB-EBS",
+     "explanation": "Source LIB-EBS states the default for account 111122223333 generally, while the draft's scope is not limited to the account and region, and the observed setting in EV-EBS-OFF shows a different result in us-east-1."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 191,
+   "output_tokens": 273,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 0.00016715,
+ "check_model": "claude-haiku-5-5"
+}

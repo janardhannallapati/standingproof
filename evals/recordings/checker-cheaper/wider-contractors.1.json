@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "wider-contractors",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "76bb886c4595a2b4"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "and contractors",
+     "source_id": "LIB-MFA",
+     "explanation": "The cited source says MFA is required for employee accounts only and does not mention contractors."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 154,
+   "output_tokens": 85,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 6.945000000000001e-05,
+ "check_model": "claude-haiku-5-5"
+}

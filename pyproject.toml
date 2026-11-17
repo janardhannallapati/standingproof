@@ -68,7 +68,7 @@ select = ["E", "F", "I", "UP", "B", "S", "ASYNC"]
 
 [tool.mypy]
 strict = true
-files = ["src"]
+files = ["src", "evals"]
 
 # AWS's SDK ships no type information. Its replies are plain dicts, checked where they are read.
 [[tool.mypy.overrides]]

@@ -1,0 +1,75 @@
+{
+ "kind": "drafter",
+ "case": "e-iso-27001",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "f1cb8a3814542931"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches. They only returned unrelated entries: the access-control rule on second-factor sign-in, and the approved answer on the yearly independent penetration test. Neither says whether the company holds an ISO 27001 certificate. Because no source says we are certified, I haven't claimed it either way. Someone in compliance or security (for example security@harborlight.example) needs to confirm whether we hold ISO 27001 certification. If we do, they should add an approved answer with the certificate number, issuing body and validity dates."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "ISO 27001 certification certificate number"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:5bf1f9d2-be5e-4b2e-993b-433a71434baa"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "information security certification audit ISO SOC 2"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:5bf1f9d2-be5e-4b2e-993b-433a71434baa",
+    "answer:74b383cf-20ce-4865-98a2-b1254e902a11"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "policy:5bf1f9d2-be5e-4b2e-993b-433a71434baa": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:74b383cf-20ce-4865-98a2-b1254e902a11": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 1000,
+  "output_tokens": 373,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.0126744,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

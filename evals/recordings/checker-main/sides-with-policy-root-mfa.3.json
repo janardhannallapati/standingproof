@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sides-with-policy-root-mfa",
+ "run": 3,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "b718b186156171d2"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "The root user of our production AWS account has multi-factor authentication.",
+     "source_id": "EV-ROOT-OFF",
+     "explanation": "The observed record for AWS account 111122223333 (observed 2026-11-10) states the root user does not have multi-factor authentication, which outweighs the policy statement in LIB-ROOT."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 191,
+   "output_tokens": 141,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0019075,
+ "check_model": "claude-sonnet-5-5"
+}

@@ -1,0 +1,91 @@
+{
+ "kind": "drafter",
+ "case": "b-reviews-two-vs-one",
+ "run": 1,
+ "variant": "docs_only",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "9c8c5ded633941c6",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "6e20b55245bf80c9"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Two. Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged. The rule applies to administrators as well.",
+  "citations": [
+   "answer:e6e4adc0-5fa7-4501-acbf-f5f83f77ab22"
+  ],
+  "note": "This is a direct match to an approved answer (control CC8.1, owner security@harborlight.example, valid until 2027-11-16). The approved answer covers only the default branch of harborlight/app. It doesn't say whether other repositories follow the same two-review rule, so please check this before sending if the customer means all repositories."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "code review approvals required before merge to main branch"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:e6e4adc0-5fa7-4501-acbf-f5f83f77ab22",
+    "answer:7a42ece0-0249-45d2-a1b7-50893635c641",
+    "answer:79156597-3838-4735-a56a-921af5bd5245",
+    "answer:4a434245-ec23-4d83-8e71-46070d6e03e8",
+    "answer:f5f8b509-f22f-4afc-8652-f0181df3558a"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:e6e4adc0-5fa7-4501-acbf-f5f83f77ab22": [
+   "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
+  ],
+  "answer:7a42ece0-0249-45d2-a1b7-50893635c641": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
+  ],
+  "answer:79156597-3838-4735-a56a-921af5bd5245": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
+  ],
+  "answer:4a434245-ec23-4d83-8e71-46070d6e03e8": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:f5f8b509-f22f-4afc-8652-f0181df3558a": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 523,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1532,
+  "output_tokens": 295,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 3937
+ },
+ "cost_usd": 0.0114739,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "wider-every-repository",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "2af78217df7ea3ee"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "every repository in our GitHub organisation",
+     "source_id": "EV-BP1",
+     "explanation": "The source only records a branch protection rule on branch main of harborlight/app, not a rule covering every repository in the organisation."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 166,
+   "output_tokens": 104,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 8.015e-05,
+ "check_model": "claude-haiku-5-5"
+}

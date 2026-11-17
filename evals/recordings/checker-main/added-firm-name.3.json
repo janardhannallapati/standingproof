@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "added-firm-name",
+ "run": 3,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "a2873575c892b79f"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "Redwater Security",
+     "source_id": "LIB-PEN",
+     "explanation": "The source says only that an independent firm performs the test and does not name Redwater Security."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 134,
+   "output_tokens": 86,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0012435,
+ "check_model": "claude-sonnet-5-5"
+}

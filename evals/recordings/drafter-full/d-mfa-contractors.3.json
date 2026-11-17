@@ -1,0 +1,125 @@
+{
+ "kind": "drafter",
+ "case": "d-mfa-contractors",
+ "run": 3,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "6555285b468b2467"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes, for employees. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor. Our Access Control Policy also says that all workforce members must authenticate with a second factor.",
+  "citations": [
+   "answer:d9bdbda0-3756-48f3-9a51-48819b89bdd7",
+   "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800"
+  ],
+  "note": "This is only a partial match. The approved answer covers employees only and does not mention contractors. Access Control Policy section 4.2 requires a second factor for 'all workforce members', but none of the sources I found defines 'workforce member' or says whether it includes contractors. So I did not say directly that contractors are covered. A policy owner should confirm whether contractors count as workforce members before the answer is changed to name them. I also didn't run a live check, because none of the available checks covers sign-in to the identity provider. The GitHub organisation two-factor check covers GitHub only."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "multi-factor authentication required for employees and contractors"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:d9bdbda0-3756-48f3-9a51-48819b89bdd7",
+    "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800",
+    "policy:742b2599-2b84-4592-9e24-b9db9e5e1d4a",
+    "answer:64f3c700-f43c-42ab-8a7a-2e77c2cea62d",
+    "answer:63700f4e-20b8-4c72-b4c0-6972a9be35d7"
+   ]
+  },
+  {
+   "name": "get_policy_section",
+   "arguments": {
+    "source_id": "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800"
+   ]
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "workforce members definition contractors"
+   },
+   "is_error": false,
+   "source_ids": [
+    "policy:742b2599-2b84-4592-9e24-b9db9e5e1d4a",
+    "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800",
+    "answer:d9bdbda0-3756-48f3-9a51-48819b89bdd7"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:d9bdbda0-3756-48f3-9a51-48819b89bdd7": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor.",
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "policy:cfd15aff-ee7b-40cf-a5ed-fa0a340d8800": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "policy:742b2599-2b84-4592-9e24-b9db9e5e1d4a": [
+   "Every workforce member has a named account. Shared accounts are not permitted.",
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:64f3c700-f43c-42ab-8a7a-2e77c2cea62d": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:63700f4e-20b8-4c72-b4c0-6972a9be35d7": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question also asks about contractors, but the draft only answers for employees and never says whether MFA is required for contractors or that this cannot be confirmed."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 521,
+   "output_tokens": 94,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 2960,
+  "output_tokens": 672,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 7227
+ },
+ "cost_usd": 0.024627899999999998,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

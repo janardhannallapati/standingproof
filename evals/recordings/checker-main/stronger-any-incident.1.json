@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "stronger-any-incident",
+ "run": 1,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "fce4c9fdbb971dd0"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "any security incident",
+     "source_id": "LIB-IR",
+     "explanation": "The source promises notification within 72 hours only for a confirmed breach of the customer's data, not for any security incident."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 119,
+   "output_tokens": 93,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0012835,
+ "check_model": "claude-sonnet-5-5"
+}

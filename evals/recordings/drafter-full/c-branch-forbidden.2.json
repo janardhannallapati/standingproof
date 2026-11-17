@@ -1,0 +1,77 @@
+{
+ "kind": "drafter",
+ "case": "c-branch-forbidden",
+ "run": 2,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "3c5af5f0107b0907"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I couldn't find an approved answer or policy text about branch protection, code review or merge approval. I searched for 'branch protection default branch code review' and for 'change management pull request approval before merge'. The only match was an unrelated answer about encryption at rest (answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80), so I didn't use it. I also tried to check the live branch protection setting on harborlight/app, but nothing came back because the credential was denied access ('forbidden'). That means the setting's actual state is unknown, and the answer shouldn't say either way whether branch protection is on. To answer this, either someone with access to the repository confirms the setting and an owner approves the wording, or the check tool is given read access to branch protection on harborlight/app."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "branch protection default branch code review"
+   },
+   "is_error": false,
+   "source_ids": []
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": []
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "change management pull request approval before merge"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:4f9afb4d-1d2e-48a9-9f32-695d53565d80": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  ]
+ },
+ "check_turn": null,
+ "usage": {
+  "input_tokens": 1039,
+  "output_tokens": 486,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 6072
+ },
+ "cost_usd": 0.015090399999999999,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

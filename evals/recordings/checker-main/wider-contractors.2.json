@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "wider-contractors",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "76bb886c4595a2b4"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "all employees and contractors",
+     "source_id": "LIB-MFA",
+     "explanation": "The source says MFA is required for all employee accounts and does not mention contractors, so the wider scope is not supported."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 154,
+   "output_tokens": 97,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0013935,
+ "check_model": "claude-sonnet-5-5"
+}

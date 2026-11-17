@@ -1,0 +1,91 @@
+{
+ "kind": "drafter",
+ "case": "b-root-mfa-off",
+ "run": 1,
+ "variant": "docs_only",
+ "fingerprint": {
+  "drafter.prompt": "a0453615581c5705",
+  "drafter.tools": "9c8c5ded633941c6",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "d4c9462b1dce88fb"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication.",
+  "citations": [
+   "answer:2fb9fd66-b8df-4710-bff2-ebf6730a06c9"
+  ],
+  "note": "The approved answer matches this question directly. It is owned by security@harborlight.example and is valid until 2027-11-16 (control CC6.1). I used the approved wording as is. That wording includes the AWS account ID (111122223333), so please check that you're comfortable sharing it with this customer, or ask the owner whether it can be left out."
+ },
+ "steps": 2,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "root account MFA production cloud"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:2fb9fd66-b8df-4710-bff2-ebf6730a06c9",
+    "policy:170ace7d-aa0f-4fe8-b769-422f71ae57eb",
+    "answer:72563888-1d94-4dd6-9486-8ca594b9023c",
+    "answer:7bf839c5-5b33-420a-860c-4153d925992a",
+    "answer:90b40b6e-e211-4669-8e23-ba16cbb1416d"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:2fb9fd66-b8df-4710-bff2-ebf6730a06c9": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  ],
+  "policy:170ace7d-aa0f-4fe8-b769-422f71ae57eb": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "answer:72563888-1d94-4dd6-9486-8ca594b9023c": [
+   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  ],
+  "answer:7bf839c5-5b33-420a-860c-4153d925992a": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:90b40b6e-e211-4669-8e23-ba16cbb1416d": [
+   "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 462,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 1399,
+  "output_tokens": 343,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 3937
+ },
+ "cost_usd": 0.0120239,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5"
+}

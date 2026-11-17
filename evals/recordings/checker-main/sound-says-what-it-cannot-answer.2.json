@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "sound-says-what-it-cannot-answer",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "7e74b12753435215"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "we have no approved statement about sharing the full report",
+     "source_id": "LIB-PEN",
+     "explanation": "The source only says a summary letter is available under NDA and says nothing about whether an approved statement on sharing the full report exists."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 151,
+   "output_tokens": 107,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0014875,
+ "check_model": "claude-sonnet-5-5"
+}

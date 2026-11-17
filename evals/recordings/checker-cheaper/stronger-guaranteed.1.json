@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "stronger-guaranteed",
+ "run": 1,
+ "variant": "cheaper",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-haiku-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "4e3893b5801be8bb"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "guaranteed to be fixed",
+     "source_id": "LIB-VUL",
+     "explanation": "The source says critical findings are fixed within 7 days but does not state any guarantee."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 129,
+   "output_tokens": 91,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-haiku-5-5"
+ },
+ "cost_usd": 6.995e-05,
+ "check_model": "claude-haiku-5-5"
+}

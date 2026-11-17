@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "wider-vendors-trained",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "5732579518be38f1",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "58becc9cfe65933b",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "aa1a83e9abe53202"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "third-party vendors",
+     "source_id": "LIB-TRN",
+     "explanation": "The source says only that employees complete the training and does not mention third-party vendors."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 109,
+   "output_tokens": 84,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1155
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0011735,
+ "check_model": "claude-sonnet-5-5"
+}

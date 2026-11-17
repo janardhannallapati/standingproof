@@ -18,6 +18,10 @@ live system settings, and reopens them when those settings drift.
 - After changing a route or a response model: `uv run python scripts/export_openapi.py`, then `cd web && pnpm gen:api`
 - Ask the agent one question (calls the paid API): `uv run python -m standingproof.agent "<question>"`
 - Re-record the checker's six cases (calls the paid API): `uv run python scripts/record_checker_cases.py`
+- Grade the committed eval recordings against the baseline (free; CI runs it): `uv run python -m evals score`
+- What an eval run would cost (free): `uv run python -m evals estimate`
+- Run the eval (calls the paid API; it asks first): `uv run python -m evals run`, then
+  `uv run python -m evals report` and, to make the result the baseline, `accept --note "<why>"`
 
 ## Rules
 
@@ -36,6 +40,19 @@ live system settings, and reopens them when those settings drift.
 - Tests never call the model provider. Loop logic uses `tests/agent/fakes.py`; real model
   behaviour is replayed from `tests/agent/cassettes/`. Recording a cassette spends money: ask
   first.
+- A change to a prompt, a tool description, an output schema, a model name or effort, or an
+  eval case makes `python -m evals score` fail until the eval has been run again, because
+  the committed recordings no longer answer for the code. Running it spends money: show
+  the estimate and ask first. Do not get past the failure any other way.
+- Never edit a file in `evals/recordings/` or `evals/baseline.json` by hand. `run` writes
+  the first and `accept` the second, and a lower baseline needs a note that says why.
+- Do not change an eval case, a label or a grader to make a result look better. A case
+  that is wrong is fixed in its own commit, with the reason.
+- `evals/` grades with the product's own `decide` and `judge_check`. Do not add a second
+  way to accept a draft or to read a checker's reply there.
+- The eval reads a GitHub and an AWS that exist only in `evals/world.py`. Nothing under
+  `evals/` may call `build_backends` or build a real client for either.
+- An eval result is a count out of a total, with the cases named. Never a bare percentage.
 - `standingproof/agent/model.py` is the only module that imports the `anthropic` SDK. Everything
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance
