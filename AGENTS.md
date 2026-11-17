@@ -188,6 +188,17 @@ live system settings, and reopens them when those settings drift.
 - A provider failure that can pass (rate limit, outage) is retried later and ends as `failed`,
   never as "needs review". A person cannot fix a rate limit.
 - Log an exception's type, not its message, in the workflow: a message can carry customer text.
+- A new table with a `tenant_id` needs, in its migration: `ENABLE` and `FORCE ROW LEVEL
+  SECURITY`, the `tenant_only` policy for `standingproof_app`, and a grant to that role. Copy
+  `alembic/versions/0012_tenant_isolation.py`. `tests/attacks/test_database_rules.py` fails
+  until it has them.
+- Open a session with `database.tenant(tenant_id)`. `database.across_tenants` is for finding
+  work only; a new module that uses it must be added, with its reason, to
+  `tests/attacks/test_cross_tenant_modules.py`. Never give the system role a right on a table
+  that holds customer content.
+- No running service gets `SP_DATABASE_URL` (the owner). A migration that must read rows as
+  a plain owner, or add a foreign key between existing tables, sets `NO FORCE ROW LEVEL SECURITY` for its own transaction and restores it.
+- "Newest observation" means highest `evidence.seq`, never latest `observed_at`.
 - The saved-state tables belong to the workflow library and live in schema `workflow`. They are
   created by `python -m standingproof.workflow setup`, not by a migration.
 - `LANGSMITH_TRACING=false` is set in the image. Never enable tracing to a hosted service:

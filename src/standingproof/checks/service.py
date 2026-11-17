@@ -100,14 +100,15 @@ async def add_connection(
         )
     ).scalar_one_or_none()
     await session.commit()
-    # Deliberately not filtered by tenant: this asks who holds the scope. Nothing about
-    # another tenant's row is returned; the caller learns only that the scope is taken.
+    # The unique constraint spans every tenant; this session sees only its own rows. So a
+    # scope that could not be inserted and cannot be seen is held by another tenant. The
+    # caller learns that it is taken and nothing else.
     holder = (
         await session.execute(
             select(Connection).where(Connection.system == system, Connection.scope == scope)
         )
-    ).scalar_one()
-    if holder.tenant_id != tenant_id:
+    ).scalar_one_or_none()
+    if holder is None or holder.tenant_id != tenant_id:
         raise ScopeTakenError("That scope is already connected.")
     return holder, created is not None
 
@@ -138,7 +139,7 @@ async def _fresh(
             Evidence.status == "observed",
             Evidence.observed_at > not_before,
         )
-        .order_by(Evidence.observed_at.desc())
+        .order_by(Evidence.seq.desc())
         .limit(1)
     )
     return rows.scalar_one_or_none()

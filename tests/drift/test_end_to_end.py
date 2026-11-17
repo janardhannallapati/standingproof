@@ -69,7 +69,7 @@ def test_a_setting_changes_after_an_answer_was_sent(
     settings = api.app.state.settings.model_copy(  # type: ignore[attr-defined]
         update={"webhook_settle_seconds": 0, "webhook_min_gap_seconds": 0}
     )
-    watcher = Watcher(WatcherDeps(settings, db.sessions, github.backends(), announce))
+    watcher = Watcher(WatcherDeps(settings, db.database, github.backends(), announce))
     db.run(watcher.tick())
 
     # The answer is back in front of the reviewer, with what changed and who has it.

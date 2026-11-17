@@ -11,11 +11,13 @@ from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Computed,
     Date,
     DateTime,
     ForeignKey,
+    Identity,
     Index,
     Integer,
     LargeBinary,
@@ -241,9 +243,7 @@ class Evidence(Base):
     """What one run of a check saw, and when. Append-only: a new look is a new row."""
 
     __tablename__ = "evidence"
-    __table_args__ = (
-        Index("ix_evidence_lookup", "tenant_id", "check_name", "scope", "observed_at"),
-    )
+    __table_args__ = (Index("ix_evidence_lookup", "tenant_id", "check_name", "scope", "seq"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
     tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
@@ -255,7 +255,11 @@ class Evidence(Base):
     raw_result: Mapped[dict[str, Any]] = mapped_column(JSONB)
     statement: Mapped[str] = mapped_column(Text)
     reason: Mapped[str | None] = mapped_column(String(40))
+    # When the application's clock said it looked. For people to read, not for ordering.
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # The order rows were stored in, from a database sequence. "Newest" means highest seq:
+    # a clock can be stepped back, a sequence cannot.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(always=True))
 
 
 class Run(Base):

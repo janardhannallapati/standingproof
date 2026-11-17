@@ -8,16 +8,22 @@ from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from standingproof.checks.service import CheckBackends
 from standingproof.config import Settings
+from standingproof.db import Database
 from standingproof.library.embedding import Embedder
 from standingproof.models import Tenant
 
 
+def get_database(request: Request) -> Database:
+    return cast(Database, request.app.state.database)
+
+
 def get_engine(request: Request) -> AsyncEngine:
-    return cast(AsyncEngine, request.app.state.engine)
+    """For the readiness probe only: a bare connection names no tenant and sees no rows."""
+    return get_database(request).app_engine
 
 
 def get_redis(request: Request) -> Redis:
@@ -28,15 +34,10 @@ def get_app_settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 
 
-async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
-    """One database session per request.
-
-    Code that changes data commits explicitly, before the response is built, so a client
-    is never told "created" for something that then fails to save. Anything left
-    uncommitted when the request ends is rolled back as the session closes.
-    """
-    sessions = cast(async_sessionmaker[AsyncSession], request.app.state.sessions)
-    async with sessions() as session:
+async def get_system_session(request: Request) -> AsyncIterator[AsyncSession]:
+    """A session that crosses tenants, for recording a webhook delivery: the one thing a
+    request does that may be about no tenant at all."""
+    async with get_database(request).across_tenants() as session:
         yield session
 
 
@@ -53,15 +54,20 @@ RedisDep = Annotated[Redis, Depends(get_redis)]
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 EmbedderDep = Annotated[Embedder, Depends(get_embedder)]
 BackendsDep = Annotated[CheckBackends, Depends(get_backends)]
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+SystemSessionDep = Annotated[AsyncSession, Depends(get_system_session)]
+DatabaseDep = Annotated[Database, Depends(get_database)]
 
 
-async def current_tenant(session: SessionDep, settings: SettingsDep) -> uuid.UUID:
+async def current_tenant(database: DatabaseDep, settings: SettingsDep) -> uuid.UUID:
     """The tenant this request acts for.
 
     Until sign-in exists this is one development tenant, created on first use. Sign-in
     replaces the body of this function; nothing that depends on it changes.
     """
+    return await resolve_tenant(database, settings)
+
+
+async def resolve_tenant(database: Database, settings: Settings) -> uuid.UUID:
     if settings.environment == "prod":
         # Fail closed. Without this, a production deployment would serve every caller
         # as one shared tenant, with no authentication at all.
@@ -70,15 +76,36 @@ async def current_tenant(session: SessionDep, settings: SettingsDep) -> uuid.UUI
         )
     name = settings.dev_tenant_name
     lookup = select(Tenant.id).where(Tenant.name == name)
-    tenant_id = (await session.execute(lookup)).scalar_one_or_none()
-    if tenant_id is None:
-        # ON CONFLICT DO NOTHING: two first requests at once both succeed.
-        await session.execute(
-            insert(Tenant).values(name=name).on_conflict_do_nothing(index_elements=[Tenant.name])
-        )
-        await session.commit()
-        tenant_id = (await session.execute(lookup)).scalar_one()
+    # Asked across tenants, in a session that ends here: its connection is back in the
+    # pool before the request's own work begins.
+    async with database.across_tenants() as session:
+        tenant_id = (await session.execute(lookup)).scalar_one_or_none()
+        if tenant_id is None:
+            # ON CONFLICT DO NOTHING: two first requests at once both succeed.
+            await session.execute(
+                insert(Tenant)
+                .values(name=name)
+                .on_conflict_do_nothing(index_elements=[Tenant.name])
+            )
+            await session.commit()
+            tenant_id = (await session.execute(lookup)).scalar_one()
     return tenant_id
 
 
 TenantDep = Annotated[uuid.UUID, Depends(current_tenant)]
+
+
+async def get_session(request: Request, tenant_id: TenantDep) -> AsyncIterator[AsyncSession]:
+    """One database session per request, bound to the request's tenant.
+
+    The database shows this session that tenant's rows and no others, whatever a query
+    says (see standingproof.db). Code that changes data commits explicitly, before the
+    response is built, so a client is never told "created" for something that then fails
+    to save. Anything left uncommitted when the request ends is rolled back as the
+    session closes.
+    """
+    async with get_database(request).tenant(tenant_id)() as session:
+        yield session
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]

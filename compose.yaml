@@ -1,8 +1,13 @@
 # Local development stack. Ports are bound to 127.0.0.1 so nothing is reachable from the
 # network, and the credentials below are development defaults for that reason only.
 # Production values come from the environment at deploy time.
+# The services that serve requests and do the work sign in to Postgres as three roles that
+# own nothing (see SECURITY.md). None of them is given the owner's URL: only `migrate`
+# is, further down.
 x-app-env: &app_env
-  SP_DATABASE_URL: postgresql+asyncpg://standingproof:standingproof@postgres:5432/standingproof
+  SP_APP_DATABASE_URL: postgresql+asyncpg://standingproof_app:standingproof_app@postgres:5432/standingproof
+  SP_SYSTEM_DATABASE_URL: postgresql+asyncpg://standingproof_system:standingproof_system@postgres:5432/standingproof
+  SP_STATE_DATABASE_URL: postgresql+asyncpg://standingproof_state:standingproof_state@postgres:5432/standingproof
   SP_REDIS_URL: redis://redis:6379/0
   SP_ENVIRONMENT: dev
   # The default embedding model runs inside the container. To try a hosted one, set both
@@ -57,9 +62,19 @@ services:
   # never race to apply the same migration.
   migrate:
     build: .
-    # Our tables first, then the tables the workflow library keeps its saved state in.
-    command: ["sh", "-c", "alembic upgrade head && python -m standingproof.workflow setup"]
-    environment: *app_env
+    # Our tables and the three roles' rights first, then the tables the workflow library
+    # keeps its saved state in, then the roles' passwords (taken from the URLs above).
+    command:
+      - sh
+      - -c
+      - >-
+        alembic upgrade head
+        && python -m standingproof.workflow setup
+        && python -m standingproof.roles
+    environment:
+      <<: *app_env
+      # The owner of the tables. Only this service, which runs once and exits, has it.
+      SP_DATABASE_URL: postgresql+asyncpg://standingproof:standingproof@postgres:5432/standingproof
     <<: *app_hardening
     depends_on:
       postgres: { condition: service_healthy }

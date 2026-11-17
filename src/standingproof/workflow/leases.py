@@ -81,6 +81,13 @@ async def _close_unstarted(session: AsyncSession, item_id: uuid.UUID, reason: st
     )
 
 
+async def tenant_of(session: AsyncSession, item_id: uuid.UUID) -> uuid.UUID | None:
+    """Whose question a job names. Asked across tenants: a job carries only the id."""
+    return (
+        await session.execute(select(RunQuestion.tenant_id).where(RunQuestion.id == item_id))
+    ).scalar_one_or_none()
+
+
 async def take_lease(
     session: AsyncSession,
     *,

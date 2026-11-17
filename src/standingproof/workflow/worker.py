@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.exceptions import RedisError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy import select
 
 from standingproof.agent.checker import CheckerClient
 from standingproof.agent.limits import Limits
@@ -23,8 +23,10 @@ from standingproof.agent.loop import ModelCallError, ModelClient
 from standingproof.checks.service import CheckBackends
 from standingproof.checks.tools import check_tool
 from standingproof.config import Settings
+from standingproof.db import Database
 from standingproof.library.embedding import Embedder
 from standingproof.library.tools import build_library_registry
+from standingproof.models import Tenant
 from standingproof.workflow import leases, results, runs
 from standingproof.workflow import sweep as sweeping
 from standingproof.workflow.checkpoint import delete_state
@@ -49,7 +51,7 @@ class WorkerDeps:
     """Everything a worker uses that lives longer than one question."""
 
     settings: Settings
-    sessions: async_sessionmaker[AsyncSession]
+    database: Database
     queue: JobQueue
     graph: QuestionGraph
     model: ModelClient
@@ -75,12 +77,14 @@ class Worker:
     def _context(self, lease: leases.Lease) -> QuestionContext:
         deps, settings = self._deps, self._settings
         # Tools are built per question and bound to its tenant: the model cannot name another.
-        registry = build_library_registry(deps.sessions, lease.tenant_id, deps.embedder).with_tools(
-            check_tool(deps.sessions, lease.tenant_id, deps.backends, settings)
+        # So are their sessions: the database shows them this tenant's rows and no others.
+        sessions = deps.database.tenant(lease.tenant_id)
+        registry = build_library_registry(sessions, lease.tenant_id, deps.embedder).with_tools(
+            check_tool(sessions, lease.tenant_id, deps.backends, settings)
         )
 
         async def find_exact(question: str) -> ExactMatch | None:
-            async with deps.sessions() as session:
+            async with sessions() as session:
                 return await find_exact_answer(
                     session, tenant_id=lease.tenant_id, question=question
                 )
@@ -105,7 +109,7 @@ class Worker:
         """Renew the lease while the question is being worked on."""
         while True:
             await asyncio.sleep(self._settings.lease_seconds / 3)
-            async with self._deps.sessions() as session:
+            async with self._deps.database.tenant(lease.tenant_id)() as session:
                 held = await results.renew_lease(
                     session,
                     item_id=lease.item_id,
@@ -123,7 +127,7 @@ class Worker:
         # What the question has cost so far is recorded even though it did not finish:
         # the money is spent, and the run's ceiling has to see it.
         used = await progress(self._deps.graph, str(lease.item_id))
-        async with self._deps.sessions() as session:
+        async with self._deps.database.tenant(lease.tenant_id)() as session:
             await results.give_back(
                 session,
                 progress=used,
@@ -157,7 +161,13 @@ class Worker:
         except ValueError:
             log.warning("ignored a job that does not name a question")
             return
-        async with self._deps.sessions() as session:
+        # The job names a question and nothing else. Whose it is, is asked across tenants;
+        # everything after that happens as that tenant.
+        async with self._deps.database.across_tenants() as session:
+            tenant_id = await leases.tenant_of(session, item_id)
+        if tenant_id is None:
+            return
+        async with self._deps.database.tenant(tenant_id)() as session:
             lease = await leases.take_lease(
                 session,
                 item_id=item_id,
@@ -196,7 +206,7 @@ class Worker:
                 lease, REASON_INTERNAL_ERROR, delay=self._settings.retry_base_seconds
             )
         else:
-            async with self._deps.sessions() as session:
+            async with self._deps.database.tenant(lease.tenant_id)() as session:
                 saved = await results.save_result(
                     session, item_id=item_id, owner=self.name, outcome=outcome
                 )
@@ -211,7 +221,7 @@ class Worker:
     async def sweep(self) -> int:
         """Queue every open question that is due, and clear jobs left by dead workers."""
         settings = self._settings
-        async with self._deps.sessions() as session:
+        async with self._deps.database.across_tenants() as session:
             due = await sweeping.due_for_queue(
                 session, limit=_SWEEP_BATCH, requeue_seconds=settings.requeue_seconds
             )
@@ -230,15 +240,23 @@ class Worker:
         """Delete saved state of questions that finished long enough ago."""
         if self._deps.saver is None:
             return 0
-        async with self._deps.sessions() as session:
-            await runs.expire_unreviewed(session, keep_days=self._settings.review_keep_days)
-            old = await runs.finished_with_state(
-                session, keep_days=self._settings.state_keep_days, limit=_SWEEP_BATCH
-            )
-        await delete_state(self._deps.saver, [str(item_id) for item_id in old])
-        async with self._deps.sessions() as session:
-            await runs.mark_state_deleted(session, old)
-        return len(old)
+        # Which tenants there are is asked across tenants. Closing what nobody decided and
+        # forgetting old state change a tenant's rows, so each is done as that tenant.
+        async with self._deps.database.across_tenants() as session:
+            tenants = list((await session.execute(select(Tenant.id))).scalars())
+        pruned = 0
+        for tenant_id in tenants:
+            sessions = self._deps.database.tenant(tenant_id)
+            async with sessions() as session:
+                await runs.expire_unreviewed(session, keep_days=self._settings.review_keep_days)
+                old = await runs.finished_with_state(
+                    session, keep_days=self._settings.state_keep_days, limit=_SWEEP_BATCH
+                )
+            await delete_state(self._deps.saver, [str(item_id) for item_id in old])
+            async with sessions() as session:
+                await runs.mark_state_deleted(session, old)
+            pruned += len(old)
+        return pruned
 
     # --- the loop ---
 

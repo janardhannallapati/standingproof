@@ -144,3 +144,39 @@ def test_answers_that_already_cite_a_live_check_are_linked_to_it(
     )
 
     assert linked == [(citing, "github.branch_protection", "acme/app", ids["seen"])]
+
+
+def test_existing_observations_keep_their_order_and_new_ones_come_after(
+    migrated_postgres_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Migration 0011: `seq` is filled in the order `observed_at` gave until now."""
+    url = migrated_postgres_url
+    asyncio.run(_run(url, [("TRUNCATE tenants CASCADE", {})]))
+    _alembic(url, monkeypatch, "downgrade", "0010")
+    tenant, old, new, later = (uuid.uuid4() for _ in range(4))
+    evidence = (
+        "INSERT INTO evidence (id, tenant_id, check_name, scope, status, facts, raw_result, "
+        "statement, observed_at) VALUES (:id, :t, 'github.branch_protection', 'acme/app', "
+        "'observed', '{}', '{}', 's', now() - make_interval(secs => :ago))"
+    )
+    try:
+        asyncio.run(
+            _run(
+                url,
+                [
+                    ("INSERT INTO tenants (id, name) VALUES (:t, 'order')", {"t": tenant}),
+                    # Stored newest first, so physical order is not the answer.
+                    (evidence, {"id": new, "t": tenant, "ago": 10}),
+                    (evidence, {"id": old, "t": tenant, "ago": 20}),
+                ],
+            )
+        )
+    finally:
+        _alembic(url, monkeypatch, "upgrade", "head")
+    # After the migration a look with an earlier clock time still sorts last.
+    asyncio.run(_run(url, [(evidence, {"id": later, "t": tenant, "ago": 30})]))
+
+    rows = asyncio.run(_rows(url, "SELECT id FROM evidence ORDER BY seq"))
+    assert [row[0] for row in rows] == [old, new, later]
+    with pytest.raises(Exception, match="seq"):
+        asyncio.run(_run(url, [("UPDATE evidence SET seq = 99 WHERE id = :id", {"id": old})]))

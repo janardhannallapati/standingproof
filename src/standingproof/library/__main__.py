@@ -10,10 +10,13 @@ import argparse
 import asyncio
 import sys
 
+from sqlalchemy import select
+
 from standingproof.config import get_settings
-from standingproof.db import build_engine, build_session_factory
+from standingproof.db import build_database
 from standingproof.library.embedding import EmbeddingConfigError, EmbeddingError, build_embedder
 from standingproof.library.service import reembed_missing
+from standingproof.models import Tenant
 
 
 async def _reembed() -> int:
@@ -23,15 +26,21 @@ async def _reembed() -> int:
     except EmbeddingConfigError as error:
         print(error, file=sys.stderr)
         return 2
-    engine = build_engine(settings.database_url.get_secret_value())
+    database = build_database(settings)
+    count = 0
     try:
-        count = await reembed_missing(build_session_factory(engine), embedder)
+        # Which tenants there are is asked across tenants. Each library is then read and
+        # written as its own tenant.
+        async with database.across_tenants() as session:
+            tenants = list((await session.execute(select(Tenant.id))).scalars())
+        for tenant_id in tenants:
+            count += await reembed_missing(database.tenant(tenant_id), embedder)
     except EmbeddingError as error:
         print(f"Stopped: {error} Entries already embedded are kept; run again.", file=sys.stderr)
         return 1
     finally:
         await embedder.aclose()
-        await engine.dispose()
+        await database.dispose()
     print(f"Embedded {count} entries with {embedder.spec.name}.")
     return 0
 

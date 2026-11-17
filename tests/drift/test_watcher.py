@@ -69,7 +69,7 @@ class Scene:
         return Watcher(
             WatcherDeps(
                 settings=self.settings,
-                sessions=self.db.sessions,
+                database=self.db.database,
                 backends=self.github.backends(),
                 announce=announce,
                 clock=lambda: utc_now() + self.ahead,

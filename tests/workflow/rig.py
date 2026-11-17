@@ -85,7 +85,7 @@ class Rig:
             name,
             WorkerDeps(
                 settings=self.settings,
-                sessions=db.sessions,
+                database=db.database,
                 queue=self.queue,
                 graph=build_graph(InMemorySaver()),
                 model=model,

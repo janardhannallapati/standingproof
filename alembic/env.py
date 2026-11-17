@@ -3,7 +3,7 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -49,6 +49,13 @@ def run_migrations_offline() -> None:
 
 
 def _run_migrations(connection: Connection) -> None:
+    # The policies are forced, so they bind an owner that is not a superuser. With this
+    # setting a statement in a migration that a policy would filter stops with an error;
+    # without it, it would change no rows and say nothing. A migration that must touch
+    # rows sets NO FORCE on the table for its own transaction. Offline mode (--sql) does not
+    # emit this: put `SET row_security = off;` at the top of a script you apply by hand.
+    connection.execute(text("SET row_security = off"))
+    connection.commit()
     context.configure(
         connection=connection, target_metadata=target_metadata, include_name=_include_name
     )

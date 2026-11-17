@@ -15,10 +15,10 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from standingproof.api.deps import current_tenant
+from standingproof.api.deps import resolve_tenant
 from standingproof.config import Settings
+from standingproof.db import Database
 from standingproof.models import Run
 from standingproof.workflow.events import CHANGED, channel
 
@@ -44,12 +44,12 @@ def origin_allowed(origin: str | None, settings: Settings) -> bool:
 async def _owned(websocket: WebSocket, run_id: uuid.UUID) -> int | None:
     """None if this caller may watch the run; otherwise the code to close with."""
     settings = cast(Settings, websocket.app.state.settings)
-    sessions = cast(async_sessionmaker[AsyncSession], websocket.app.state.sessions)
-    async with sessions() as session:
-        try:
-            tenant_id = await current_tenant(session, settings)
-        except HTTPException:
-            return NOT_SIGNED_IN
+    database = cast(Database, websocket.app.state.database)
+    try:
+        tenant_id = await resolve_tenant(database, settings)
+    except HTTPException:
+        return NOT_SIGNED_IN
+    async with database.tenant(tenant_id)() as session:
         found = await session.execute(
             select(Run.id).where(Run.tenant_id == tenant_id, Run.id == run_id)
         )

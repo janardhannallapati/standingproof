@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -17,6 +18,15 @@ class Settings(BaseSettings):
     database_url: SecretStr = SecretStr(
         "postgresql+asyncpg://standingproof:standingproof@localhost:5432/standingproof"
     )
+    # `database_url` above is the owner of the tables: migrations and operator commands use
+    # it, and nothing that serves a request does. The running processes connect as three
+    # roles with fewer rights (see SECURITY.md): `app` sees one tenant at a time,
+    # `system` finds work across tenants, `state` holds the workflow's saved state.
+    # Unset outside production: the same server and database as `database_url`, with the
+    # role's name as its password. In production each must be set.
+    app_database_url: SecretStr | None = None
+    system_database_url: SecretStr | None = None
+    state_database_url: SecretStr | None = None
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     environment: Literal["dev", "test", "prod"] = "dev"
 
@@ -130,6 +140,9 @@ class Settings(BaseSettings):
         "github_token",
         "voyage_api_key",
         "github_webhook_secret",
+        "app_database_url",
+        "system_database_url",
+        "state_database_url",
         mode="before",
     )
     @classmethod
@@ -139,6 +152,18 @@ class Settings(BaseSettings):
         if isinstance(value, str) and not value.strip():
             return None
         return value
+
+    def role_url(self, role: Literal["app", "system", "state"]) -> str:
+        """The database URL one of the three running roles connects with."""
+        explicit: SecretStr | None = getattr(self, f"{role}_database_url")
+        if explicit is not None:
+            return explicit.get_secret_value()
+        if self.environment == "prod":
+            # Never the owner's URL instead: as the owner, no row-level rule would apply.
+            raise ValueError(f"SP_{role.upper()}_DATABASE_URL must be set in production")
+        name = f"standingproof_{role}"
+        owner = make_url(self.database_url.get_secret_value())
+        return owner.set(username=name, password=name).render_as_string(hide_password=False)
 
     def declared_scopes(self, system: str) -> set[str]:
         """The scopes the operator has declared for a system, lower-cased."""
