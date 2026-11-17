@@ -103,11 +103,11 @@ def test_the_full_plan_and_its_estimate() -> None:
     assert (len(plan.drafter), len(plan.docs_only), len(plan.checker), len(plan.cheaper)) == (
         96,
         18,
-        144,
-        48,
+        153,
+        51,
     )
     assert 2.3 < cost.total < 2.8
-    assert [line.calls for line in cost.lines] == [96, 18, 144, 48]
+    assert [line.calls for line in cost.lines] == [96, 18, 153, 51]
 
 
 def test_the_smoke_plan_is_one_case_of_each_family_and_six_drafts() -> None:

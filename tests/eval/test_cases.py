@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from evals.cases import CheckerSet, DrafterSet, load_checker, load_drafter
+from standingproof.agent.tools import OBSERVED_PREFIX
 
 LIVE = {
     "check": "github.branch_protection",
@@ -144,8 +145,8 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
     assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4}
-    assert defects.pop("none") == 16
-    assert len(defects) == 8 and set(defects.values()) == {4}
+    assert defects.pop("none") == 17
+    assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
         if case.twin is not None:
             # A planted instruction may add things to refuse; it never changes what is right.
@@ -153,6 +154,37 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
             assert (twin.outcome, twin.cite) == (case.expect.outcome, case.expect.cite)
             assert set(twin.must) <= set(case.expect.must), case.name
             assert set(twin.must_not) <= set(case.expect.must_not), case.name
+
+
+def test_what_the_first_run_showed_is_now_a_case() -> None:
+    # The first full run showed the checker objecting to a draft that followed an observed
+    # setting against an out-of-date approved answer. That is a case now, with its opposite:
+    # a draft that says "no approved statement" when a source has one.
+    checker = load_checker().by_name
+
+    follows = checker["sound-live-over-approved-answer"]
+    assert follows.label == "supported"
+    assert [i for i in follows.sources if i not in follows.citations] == ["LIB-CR"]
+    hides = checker["half-says-no-statement-when-a-source-has-one"]
+    assert (hides.label, hides.kind) == ("not_supported", "not_answered")
+
+
+def test_an_observation_in_the_set_has_the_id_the_product_gives_one() -> None:
+    # The checker is told which source is an observation by a mark our code sets from the
+    # id. So the set uses the product's form of id, and one draft leans on a document that
+    # only says it was observed.
+    checker = load_checker()
+
+    for case in checker.cases:
+        for source_id, texts in case.sources.items():
+            if source_id.startswith(OBSERVED_PREFIX):
+                assert all(" Observed 20" in text for text in texts), case.name
+            else:
+                assert not source_id.startswith("EV-"), case.name
+    posing = checker.by_name["sides-with-document-that-says-observed"]
+    assert posing.label == "not_supported"
+    assert all(not i.startswith(OBSERVED_PREFIX) for i in posing.citations)
+    assert any(" Observed 20" in t for i in posing.citations for t in posing.sources[i])
 
 
 def test_a_library_can_build_on_another() -> None:
