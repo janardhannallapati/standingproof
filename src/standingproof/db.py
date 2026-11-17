@@ -80,31 +80,42 @@ _UNSAFE = """
            OR EXISTS (SELECT 1 FROM pg_tables t
                       WHERE t.schemaname IN ('public', 'workflow')
                         AND pg_has_role(r.oid, t.tableowner, 'MEMBER'))
-           -- It is a member of another of the running roles, and so has that one's rights.
+           -- It is a member, directly or through another role, of any role that is not on
+           -- the short list below: it would have that role's rights. So not of another
+           -- running role, of the owner, or of pg_read_all_data and its like.
            OR EXISTS (SELECT 1 FROM pg_roles o
-                      WHERE o.rolname IN ('standingproof_app', 'standingproof_system',
-                                          'standingproof_state')
-                        AND o.rolname <> '{role}' AND pg_has_role(r.oid, o.oid, 'MEMBER'))
+                      WHERE o.oid <> r.oid AND pg_has_role(r.oid, o.oid, 'MEMBER')
+                        AND o.rolname NOT IN ({tolerated}))
     FROM pg_roles r WHERE r.rolname = current_user
 """
+
+
+# Memberships that give no right on our tables and that a managed database may require:
+# reading server statistics, and signing in through the provider's identity service.
+TOLERATED_MEMBERSHIPS = (
+    "pg_monitor",
+    "pg_read_all_settings",
+    "pg_read_all_stats",
+    "pg_stat_scan_tables",
+    "rds_iam",
+)
 
 
 def unsafe_role_query(role: str) -> str:
     """SQL that is true when the signed-in role is not exactly `role`, with its limits:
     a superuser, exempt from row-level security, an owner of our tables, or a member of
-    a role that owns them or of another running role. Other memberships (a managed
-    database's sign-in or monitoring roles) are not refused. `role` is one of our three
-    constants."""
+    any role outside TOLERATED_MEMBERSHIPS. `role` is one of our three constants."""
     if role not in ROLES.values():
         raise ValueError("not one of the running roles")
-    return _UNSAFE.format(role=role)
+    tolerated = ", ".join(f"'{name}'" for name in TOLERATED_MEMBERSHIPS)
+    return _UNSAFE.format(role=role, tolerated=tolerated)
 
 
 def refusal(role: str) -> UnsafeRoleError:
     return UnsafeRoleError(
         f"this database login is not {role} with that role's limits (it is another role, a "
-        "superuser, exempt from row-level security, or an owner of the tables or a member "
-        "of their owner or of another running role); refusing to use it"
+        "superuser, exempt from row-level security, an owner of the tables, or a member of "
+        "a role other than a monitoring or sign-in role); refusing to use it"
     )
 
 

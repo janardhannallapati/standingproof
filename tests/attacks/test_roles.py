@@ -104,10 +104,11 @@ def test_a_role_with_an_ordinary_extra_membership_is_still_accepted(wf: Db) -> N
     assert wf.run(go()) == [1]
 
 
-def test_a_role_that_is_a_member_of_another_running_role_is_refused(wf: Db) -> None:
+@pytest.mark.parametrize("other", ["standingproof_system", "pg_read_all_data"])
+def test_a_role_that_is_a_member_of_a_role_with_more_rights_is_refused(wf: Db, other: str) -> None:
     async def go() -> None:
         async with wf.sessions() as session:
-            await session.execute(text("GRANT standingproof_system TO standingproof_app"))
+            await session.execute(text(f"GRANT {other} TO standingproof_app"))
             await session.commit()
         fresh = Database(
             app_url=settings_for(wf.url).role_url("app"),
@@ -120,7 +121,7 @@ def test_a_role_that_is_a_member_of_another_running_role_is_refused(wf: Db) -> N
         finally:
             await fresh.dispose()
             async with wf.sessions() as session:
-                await session.execute(text("REVOKE standingproof_system FROM standingproof_app"))
+                await session.execute(text(f"REVOKE {other} FROM standingproof_app"))
                 await session.commit()
 
     wf.run(go())
