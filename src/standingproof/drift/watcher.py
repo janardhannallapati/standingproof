@@ -48,10 +48,11 @@ class Watcher:
         async with self._deps.database.tenant(tenant_id)() as session:
             return (await switch.read(session, tenant_id, self._settings)).stopped
 
-    async def _look(self, setting: Setting, trigger: str) -> None:
+    async def _look(self, setting: Setting, trigger: str) -> bool:
+        """Look at a setting. False when the stop switch refused the look."""
         # As the tenant whose setting it is: what is seen is that tenant's to keep.
         async with self._deps.database.tenant(setting.tenant_id)() as session:
-            await run_check(
+            seen = await run_check(
                 session,
                 tenant_id=setting.tenant_id,
                 name=setting.check_name,
@@ -62,6 +63,7 @@ class Watcher:
                 max_age=_FRESH,
                 trigger=trigger,
             )
+            return seen.reason != STOPPED
 
     async def _last_look(self, session: AsyncSession, setting: Setting) -> dt.datetime | None:
         """When this setting was last looked at, whatever came of it."""
@@ -119,7 +121,10 @@ class Watcher:
                             # Too soon after the last look. They stay waiting, so the last
                             # delivery of a burst still gets its look when the gap has passed.
                             continue
-                        await self._look(setting, "webhook")
+                        if not await self._look(setting, "webhook"):
+                            # Stopped between our reading the switch and the look. The
+                            # deliveries stay waiting; nothing was read for them.
+                            continue
                         # The look answers what had settled when this pass began. A
                         # delivery that came later may be about a later change.
                         upto = now - settle

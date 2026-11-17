@@ -301,7 +301,12 @@ def test_a_look_refused_while_stopped_does_not_put_the_setting_off_for_a_day(wf:
 
     owner, _, _ = answer_resting_on_a_setting(wf)
     settings = settings_for(wf.url, github_orgs="acme")
-    later = dt.datetime.now(dt.UTC) + dt.timedelta(days=2)
+    # The one real look was two days ago, so the setting is due. An hour from now a
+    # refusal made today would still be "less than a day old" if it counted as a look.
+    from tests.workflow.seed import sql as owner_sql
+
+    owner_sql(wf, "UPDATE evidence SET observed_at = now() - interval '2 days'")
+    later = dt.datetime.now(dt.UTC) + dt.timedelta(hours=1)
 
     async def due_then() -> int:
         async with wf.database.across_tenants() as session:
@@ -344,3 +349,70 @@ def test_a_change_needs_a_name_that_fits_the_record(by: str) -> None:
 def test_a_reservation_of_nothing_is_refused_at_startup() -> None:
     with pytest.raises(ValueError, match="call_reserve_usd"):
         settings_for("postgresql+asyncpg://u:p@localhost/db", call_reserve_usd=0)
+
+
+def test_a_stopped_tenants_work_does_not_fill_the_batch_ahead_of_anothers(wf: Db) -> None:
+    from standingproof.drift import deliveries
+    from standingproof.drift.github_events import read
+    from standingproof.drift.watch import due
+    from tests.drift.rig import answers, observe
+    from tests.workflow.seed import sql as owner_sql
+
+    stopped_one, working = tenant(wf, "stopped"), tenant(wf, "working")
+    # The stopped tenant has more due settings than one batch holds, all older.
+    for number in range(4):
+        scope = f"acme/old-{number}"
+        answers(wf, stopped_one, observe(wf, stopped_one, scope=scope, queue=False))
+    answers(wf, working, observe(wf, working, scope="other/app", queue=False))
+    owner_sql(wf, "UPDATE evidence SET observed_at = now() - interval '3 days'")
+    owner_sql(
+        wf,
+        "UPDATE evidence SET observed_at = now() - interval '2 days' WHERE scope = 'other/app'",
+    )
+    owner_sql(
+        wf,
+        "INSERT INTO connections (tenant_id, system, scope) VALUES (:t, 'github', 'acme')",
+        t=stopped_one,
+    )
+    owner_sql(
+        wf,
+        "INSERT INTO connections (tenant_id, system, scope) VALUES (:t, 'github', 'other')",
+        t=working,
+    )
+    operator(wf, stopped_one, stopped=True)
+    now = dt.datetime.now(dt.UTC)
+
+    def delivery(org: str) -> dict[str, Any]:
+        return {
+            "action": "edited",
+            "repository": {"name": "app", "owner": {"login": org}, "full_name": f"{org}/app"},
+            "organization": {"login": org},
+            "rule": {"name": "main"},
+        }
+
+    async def go() -> tuple[list[Any], list[Any]]:
+        async with wf.database.across_tenants() as session:
+            for number, org in enumerate(["acme", "acme", "acme", "other"]):
+                await deliveries.store(
+                    session,
+                    delivery_id=f"d-{number}",
+                    event="branch_protection_rule",
+                    reading=read("branch_protection_rule", delivery(org)),
+                    now=now - dt.timedelta(minutes=10 - number),
+                )
+            found = await due(
+                session,
+                now=now,
+                recheck=dt.timedelta(days=1),
+                retry=dt.timedelta(hours=1),
+                limit=2,
+            )
+            waiting = await deliveries.waiting(session, before=now, limit=2)
+            return [s.tenant_id for s in found], [d.tenant_id for d in waiting]
+
+    due_for, waiting_for = wf.run(go())
+
+    # A batch of two, and the stopped tenant alone could fill it twice over. The working
+    # tenant's setting and delivery are found all the same.
+    assert due_for == [working]
+    assert waiting_for == [working]

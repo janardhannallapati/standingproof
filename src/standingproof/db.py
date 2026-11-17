@@ -10,6 +10,7 @@ tables that hold a customer's documents and files. See SECURITY.md.
 import uuid
 from typing import Any
 
+from pydantic import SecretBytes
 from sqlalchemy import event, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import (
@@ -151,8 +152,10 @@ class Database:
         self._system_engine = build_engine(system_url)
         _refuse_unsafe_role(self.app_engine, APP_ROLE)
         _refuse_unsafe_role(self._system_engine, SYSTEM_ROLE)
-        self._audit_key = audit_key
-        self._system = build_session_factory(self._system_engine, **{AUDIT_KEY: audit_key})
+        # Wrapped, so that printing a session factory (in a traceback, a debugger, a log
+        # line somebody adds) shows asterisks and not the key.
+        self._audit_key = None if audit_key is None else SecretBytes(audit_key)
+        self._system = build_session_factory(self._system_engine, **{AUDIT_KEY: self._audit_key})
 
     def tenant(
         self, tenant_id: uuid.UUID, *, actor: str | None = None
@@ -178,6 +181,11 @@ class Database:
 
 def build_database(settings: Settings) -> Database:
     key = settings.audit_key
+    if key is None and settings.environment == "prod":
+        # Every process that writes an audit entry must sign it with the same key. One
+        # that ran without it would add an entry that never verifies, and nothing can be
+        # removed from the log afterwards.
+        raise ValueError("SP_AUDIT_KEY must be set in production")
     return Database(
         app_url=settings.role_url("app"),
         system_url=settings.role_url("system"),

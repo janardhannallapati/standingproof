@@ -13,7 +13,11 @@ class Settings(BaseSettings):
     tracebacks and repr(). Call .get_secret_value() only at the point of use.
     """
 
-    model_config = SettingsConfigDict(env_prefix="SP_", env_file=".env", extra="ignore")
+    # hide_input_in_errors: a value that fails validation is not quoted in the error. Most
+    # values here are credentials, and a startup error goes to a log.
+    model_config = SettingsConfigDict(
+        env_prefix="SP_", env_file=".env", extra="ignore", hide_input_in_errors=True
+    )
 
     database_url: SecretStr = SecretStr(
         "postgresql+asyncpg://standingproof:standingproof@localhost:5432/standingproof"

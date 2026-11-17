@@ -3,6 +3,7 @@
 import datetime as dt
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import delete, func, select, true
 from sqlalchemy.dialects.postgresql import insert
@@ -17,6 +18,7 @@ from standingproof.models import (
     AnswerEvidence,
     DriftQueue,
     Evidence,
+    Limit,
     RunQuestion,
 )
 
@@ -132,6 +134,15 @@ async def queue_newer(session: AsyncSession, run_question_id: uuid.UUID) -> None
             )
 
 
+def not_stopped(tenant_id: Any) -> Any:
+    """True for a tenant that neither its own switch nor the deployment's has stopped."""
+    return ~(
+        select(Limit.id)
+        .where(Limit.stopped, (Limit.tenant_id == tenant_id) | Limit.tenant_id.is_(None))
+        .exists()
+    )
+
+
 async def is_watched(session: AsyncSession, setting: "Setting") -> bool:
     """True when some answer rests on this setting."""
     found = await session.execute(
@@ -163,7 +174,13 @@ async def due(
     watched = (
         select(AnswerEvidence.tenant_id, AnswerEvidence.check_name, AnswerEvidence.scope)
         .join(RunQuestion, RunQuestion.id == AnswerEvidence.run_question_id)
-        .where(RunQuestion.status.in_(LIVE_STATUSES), RunQuestion.review.in_(LIVE_REVIEWS))
+        .where(
+            RunQuestion.status.in_(LIVE_STATUSES),
+            RunQuestion.review.in_(LIVE_REVIEWS),
+            # Left out here, before the batch is cut: a stopped tenant's settings stay due
+            # for as long as it is stopped, and would otherwise fill every batch.
+            not_stopped(AnswerEvidence.tenant_id),
+        )
         .distinct()
         .subquery()
     )

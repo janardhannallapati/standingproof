@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.drift.compare import Change, changed_facts
-from standingproof.drift.watch import LIVE_REVIEWS, LIVE_STATUSES
+from standingproof.drift.watch import LIVE_REVIEWS, LIVE_STATUSES, STOPPED
 from standingproof.models import (
     AnswerEvidence,
     AnswerReopening,
@@ -268,6 +268,8 @@ async def watched(session: AsyncSession, tenant_id: uuid.UUID) -> list[Watched]:
                 Evidence.tenant_id == tenant_id,
                 Evidence.check_name == check_name,
                 Evidence.scope == scope,
+                # A look the stop switch refused looked at nothing.
+                Evidence.reason.is_distinct_from(STOPPED),
             )
             .order_by(Evidence.seq.desc())
             .limit(1)

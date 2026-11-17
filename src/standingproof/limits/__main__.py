@@ -47,7 +47,7 @@ async def show(database: Database, guard: Guard, settings: Settings) -> list[str
             await session.execute(select(Tenant.name, Tenant.id).order_by(Tenant.name))
         ).all()
     lines = []
-    everyone = Decimal(0)
+    everyone: Decimal | None = Decimal(0)
     for name, tenant_id in tenants:
         async with database.tenant(tenant_id)() as session:
             state = await switch.read(session, tenant_id, settings)
@@ -56,14 +56,15 @@ async def show(database: Database, guard: Guard, settings: Settings) -> list[str
             counted = f"${spent:.2f}"
         except (RedisError, OSError):
             # The switch is still worth showing when the counter cannot be read.
-            counted, everyone = "unknown (the counter cannot be reached)", Decimal("NaN")
+            counted, everyone = "unknown (the counter cannot be reached)", None
         lines.append(
             f"tenant {name}: {'STOPPED' if state.stopped else 'running'}, "
             f"{counted} of ${state.tenant_daily_usd:.2f} today"
         )
         deployment = state.deployment_daily_usd
     if tenants:
-        lines.insert(0, f"deployment: ${everyone:.2f} of ${deployment:.2f} today (UTC)")
+        total = "unknown" if everyone is None else f"${everyone:.2f}"
+        lines.insert(0, f"deployment: {total} of ${deployment:.2f} today (UTC)")
     return lines
 
 

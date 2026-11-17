@@ -91,6 +91,9 @@ python -m standingproof.roles
 
 Limits you should know:
 
+- SQL injected as the app role could also take a table lock (`LOCK TABLE`) on a table that
+  role may update or delete from, and make every tenant wait. That is a loss of availability,
+  not of data. The audit chain's lock rows are protected against it; the other tables are not.
 - The rules guard against a query that forgets its tenant filter. They do not guard against
   injected SQL: a statement that runs as the app role can name another tenant itself. No
   value from a request reaches that setting, and queries are parameterised.
@@ -141,8 +144,13 @@ The database enforces three things itself, whoever is writing:
 
 To also stop an entry being forged by someone who can run SQL as the application, set
 `SP_AUDIT_KEY` (32 characters or more, from your secret store). Entries are then signed with
-a key the database never sees, and a forged one fails `verify`. Set it before the first entry
-and keep it: entries written under one key do not verify under another.
+a key the database never sees, and a forged one fails `verify`. With `SP_ENVIRONMENT=prod`
+the key is required and a process without it does not start.
+
+Set the key before the first entry, give the same value to every service and to any shell
+you run `python -m standingproof.limits` from, and never change it. An entry written without
+the key, or under another one, is reported as broken by `verify` for good: it looks the same
+as a forgery, and nothing can be removed from the log.
 
 What a sound chain does not prove:
 

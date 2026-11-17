@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.drift.github_events import Reading
+from standingproof.drift.watch import not_stopped
 from standingproof.models import Connection, WebhookDelivery
 
 GITHUB = "github"
@@ -71,7 +72,13 @@ async def waiting(
     """
     rows = await session.execute(
         select(WebhookDelivery)
-        .where(WebhookDelivery.handled_at.is_(None), WebhookDelivery.received_at <= before)
+        .where(
+            WebhookDelivery.handled_at.is_(None),
+            WebhookDelivery.received_at <= before,
+            # A stopped tenant's deliveries wait where they are, and are not taken into a
+            # batch that others then cannot get into.
+            not_stopped(WebhookDelivery.tenant_id),
+        )
         .order_by(WebhookDelivery.received_at)
         .limit(limit)
         .with_for_update(skip_locked=True)

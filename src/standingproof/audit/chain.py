@@ -17,6 +17,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import SecretBytes
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -111,7 +112,7 @@ def _of(tenant_id: uuid.UUID | None) -> Any:
 
 def _key(session: AsyncSession) -> bytes | None:
     key = session.info.get(AUDIT_KEY)
-    return key if isinstance(key, bytes) else None
+    return key.get_secret_value() if isinstance(key, SecretBytes) else None
 
 
 async def _take_the_chain(session: AsyncSession, tenant_id: uuid.UUID | None) -> None:

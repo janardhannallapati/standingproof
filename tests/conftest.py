@@ -127,6 +127,9 @@ def make_api(migrated_postgres_url: str, redis_url: str) -> Iterator[ClientFacto
             roles = settings_for(migrated_postgres_url)
             for role in ("app", "system", "state"):
                 values.setdefault(f"{role}_database_url", SecretStr(roles.role_url(role)))
+            if values["environment"] == "prod":
+                # Production must sign its audit entries; a made-up key for the test.
+                values.setdefault("audit_key", SecretStr("made-up-audit-key-for-tests-0123456789"))
             settings = Settings(_env_file=None, **values)  # type: ignore[arg-type]
             return stack.enter_context(
                 TestClient(

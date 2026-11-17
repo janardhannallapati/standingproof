@@ -111,8 +111,11 @@ def upgrade() -> None:
     )
     op.execute("ALTER TABLE audit_heads ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE audit_heads FORCE ROW LEVEL SECURITY")
-    # UPDATE is what lets a role take a row lock; there is no column worth changing.
-    op.execute(f"GRANT SELECT, INSERT, UPDATE ON audit_heads TO {APP}, {SYSTEM}")
+    # UPDATE on a column is what lets a role lock a row (SELECT ... FOR UPDATE). On one
+    # column only: UPDATE on the whole table would also allow LOCK TABLE, and one tenant
+    # could then hold every chain at once.
+    op.execute(f"GRANT SELECT, INSERT ON audit_heads TO {APP}, {SYSTEM}")
+    op.execute(f"GRANT UPDATE (id) ON audit_heads TO {APP}, {SYSTEM}")
     op.execute(
         f"CREATE POLICY tenant_only ON audit_heads TO {APP} "
         f"USING (tenant_id = {TENANT}) WITH CHECK (tenant_id = {TENANT})"

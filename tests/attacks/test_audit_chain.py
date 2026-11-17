@@ -430,6 +430,11 @@ def test_holding_a_lock_as_one_tenant_does_not_block_another_or_the_operator(wf:
                     text("SELECT pg_advisory_lock(hashtextextended(:name, 0))"), {"name": name}
                 )
             await hostile.execute(text("SELECT * FROM audit_heads FOR UPDATE"))
+            # And the whole table, in every mode that would make another writer wait.
+            for mode in ("SHARE", "SHARE ROW EXCLUSIVE", "EXCLUSIVE", "ACCESS EXCLUSIVE"):
+                async with wf.database.tenant(ours)() as other:
+                    with pytest.raises(DBAPIError, match="permission denied"):
+                        await other.execute(text(f"LOCK TABLE audit_heads IN {mode} MODE"))
             async with asyncio.timeout(5):
                 async with wf.database.tenant(theirs)() as session:
                     await audit.record(
@@ -447,10 +452,18 @@ def test_holding_a_lock_as_one_tenant_does_not_block_another_or_the_operator(wf:
     assert checked(wf, None) == (1, None)
 
 
-def test_approving_three_hundred_at_once_takes_the_chain_once(
+def test_approving_many_at_once_takes_the_chain_once(
     wf: Db, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    owner, _, _ = approved_answer(wf)
+    from tests.workflow.seed import questionnaire, start, tenant
+
+    owner = tenant(wf)
+    started = start(wf, owner, questionnaire(wf, owner, ["One?", "Two?", "Three?"]))
+    owner_sql(
+        wf,
+        "UPDATE run_questions SET status = 'ready', review = 'pending', answer = 'Yes.', "
+        "version = 1",
+    )
     calls: list[int] = []
     real = review.record
 
@@ -459,18 +472,70 @@ def test_approving_three_hundred_at_once_takes_the_chain_once(
         await real(session, tenant_id, *given)
 
     monkeypatch.setattr(review, "record", counting)
-    owner_sql(
-        wf,
-        "UPDATE run_questions SET review = 'pending', status = 'ready', version = 1, "
-        "final_answer = NULL",
-    )
 
     async def approve() -> int | None:
         async with wf.database.tenant(owner)() as session:
             return await review.approve_ready(
-                session, tenant_id=owner, run_id=run_id, count=1, reviewer="asha"
+                session, tenant_id=owner, run_id=started.run.id, count=3, reviewer="asha"
             )
 
-    [(run_id,)] = wf.run(_scalar(wf, "SELECT id FROM runs"))
-    assert wf.run(approve()) == 1
-    assert calls == [1]  # one call for the batch, however many questions it holds
+    assert wf.run(approve()) == 3
+    # One call carrying three entries: the chain is taken once, however long the batch.
+    assert calls == [3]
+    assert checked(wf, owner) == (4, None)
+
+
+def test_with_a_key_set_every_writer_signs_and_one_without_it_is_found(
+    wf: Db, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from pydantic import SecretStr
+
+    from standingproof.db import build_database
+    from tests.conftest import settings_for
+    from tests.workflow.seed import tenant
+
+    owner = tenant(wf, "ours")
+    keyed = build_database(settings_for(wf.url, audit_key=SecretStr("k" * 40)))
+
+    async def write(database: Any) -> None:
+        async with database.tenant(owner, actor="asha")() as session:
+            await audit.record(
+                session, owner, audit.Entry(action="test.note", subject="n", details={})
+            )
+            await session.commit()
+
+    async def go() -> tuple[int, int, str]:
+        try:
+            await write(keyed)
+            await write(keyed)
+            sound = await audit_command(keyed, "verify")
+            # The same tenant, written by a process that was not given the key.
+            await write(wf.database)
+            return sound, await audit_command(keyed, "verify"), repr(keyed.tenant(owner))
+        finally:
+            await keyed.dispose()
+
+    before, after, shown = wf.run(go())
+
+    assert (before, after) == (0, 1)
+    assert "tenant ours: BROKEN at entry 3" in capsys.readouterr().err
+    # The key is not printed with the things that carry it.
+    assert "kkkk" not in shown and "kkkk" not in repr(keyed.across_tenants)
+
+
+def test_production_refuses_to_run_without_an_audit_key_and_does_not_print_a_short_one() -> None:
+    from pydantic import SecretStr, ValidationError
+
+    from standingproof.db import build_database
+    from tests.conftest import settings_for
+
+    url = "postgresql+asyncpg://standingproof:x@localhost/standingproof"
+    roles = {
+        f"{role}_database_url": SecretStr(url.replace("standingproof:x", f"standingproof_{role}:x"))
+        for role in ("app", "system", "state")
+    }
+    with pytest.raises(ValueError, match="SP_AUDIT_KEY"):
+        build_database(settings_for(url, environment="prod", **roles))
+    with pytest.raises(ValidationError) as short:
+        settings_for(url, audit_key="too-short-to-be-a-key")
+    assert "too-short-to-be-a-key" not in str(short.value)
