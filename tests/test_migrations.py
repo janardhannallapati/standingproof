@@ -128,6 +128,7 @@ def test_draft_checks_exists_with_an_index_for_the_latest_check(migrated_postgre
         "model",
         "cost_usd",
         "checked_at",
+        "seq",
     }
     assert "ix_draft_checks_question" in indexes
 

@@ -88,7 +88,7 @@ async def _latest(session: AsyncSession, run_id: uuid.UUID, key: str) -> FileInf
                 FilledFile.key,
             )
             .where(FilledFile.run_id == run_id)
-            .order_by(FilledFile.created_at.desc(), FilledFile.id.desc())
+            .order_by(FilledFile.seq.desc())
             .limit(1)
         )
     ).one_or_none()

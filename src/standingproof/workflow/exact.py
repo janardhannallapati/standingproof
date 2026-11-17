@@ -34,7 +34,7 @@ async def find_exact_answer(
                     f"{_NORMALISED.format('CAST(:asked AS text)')}"
                 ).bindparams(asked=question),
             )
-            .order_by(LibraryAnswer.created_at.desc())
+            .order_by(LibraryAnswer.created_at.desc(), LibraryAnswer.id)
             .limit(5)
         )
     ).all()

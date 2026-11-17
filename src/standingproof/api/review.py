@@ -151,7 +151,7 @@ async def _question_out(
         await session.execute(
             select(DraftCheck)
             .where(DraftCheck.tenant_id == tenant_id, DraftCheck.run_question_id == item.id)
-            .order_by(DraftCheck.checked_at.desc(), DraftCheck.id.desc())
+            .order_by(DraftCheck.seq.desc())
             .limit(1)
         )
     ).scalar_one_or_none()
@@ -217,7 +217,7 @@ async def list_runs(
         select(Run, Questionnaire.filename, reopened)
         .join(Questionnaire, Questionnaire.id == Run.questionnaire_id)
         .where(Run.tenant_id == tenant_id)
-        .order_by(Run.created_at.desc())
+        .order_by(Run.created_at.desc(), Run.id.desc())
         .limit(limit)
     )
     return RunList(

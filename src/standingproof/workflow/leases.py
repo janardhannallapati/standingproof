@@ -205,7 +205,8 @@ async def take_lease(
                     ReviewDecision.run_question_id == item_id,
                     ReviewDecision.decision == "redraft",
                 )
-                .order_by(ReviewDecision.decided_at.desc())
+                # The one stored last. Never by `decided_at`: a clock can be stepped back.
+                .order_by(ReviewDecision.seq.desc())
                 .limit(1)
             )
         ).scalar_one_or_none()

@@ -118,7 +118,7 @@ async def sent_to(session: AsyncSession, item: RunQuestion) -> list[SentTo]:
     rows = await session.execute(
         select(SentFile.customer, SentFile.sent_at, SentFile.answers)
         .where(SentFile.tenant_id == item.tenant_id, SentFile.run_id == item.run_id)
-        .order_by(SentFile.sent_at, SentFile.id)
+        .order_by(SentFile.seq)
     )
     question = str(item.question_id)
     return [
@@ -139,9 +139,11 @@ async def reopening_of(session: AsyncSession, item: RunQuestion) -> Reopening | 
             .where(
                 AnswerReopening.tenant_id == item.tenant_id,
                 AnswerReopening.run_question_id == item.id,
-                AnswerReopening.reopened_at >= item.reopened_at,
+                # Since the last decision, by stored order: a reopening stamped by a clock
+                # that was stepped back is still one of them.
+                AnswerReopening.seq >= item.reopened_seq,
             )
-            .order_by(AnswerReopening.reopened_at, AnswerReopening.id)
+            .order_by(AnswerReopening.seq)
         )
     ).all()
     if not rows:
@@ -199,7 +201,7 @@ async def changes_page(
                 AnswerReopening.tenant_id == tenant_id,
                 AnswerReopening.drift_event_id.in_([event.id for event in events]),
             )
-            .order_by(Run.created_at.desc(), RunQuestion.position)
+            .order_by(Run.created_at.desc(), Run.id, RunQuestion.position)
         )
     ).all()
     by_event: dict[uuid.UUID, list[tuple[AnswerReopening, RunQuestion, str, str]]] = {}

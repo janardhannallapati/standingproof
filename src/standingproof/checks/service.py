@@ -201,7 +201,10 @@ async def run_check(
             scope = scope.lower()  # GitHub names are case-insensitive; one spelling per scope
         if max_age is None:
             max_age = dt.timedelta(seconds=settings.evidence_max_age_seconds)
-        fresh = await _fresh(session, tenant_id, check, scope, now - max_age)
+        # Zero means "look now", and is not asked of the clock: an observation stamped
+        # after a clock that has since stepped back is "newer than now" and would be
+        # handed back as the new look.
+        fresh = await _fresh(session, tenant_id, check, scope, now - max_age) if max_age else None
         if fresh is not None:
             return fresh
         try:
@@ -252,18 +255,16 @@ async def page_of_evidence(
     *,
     check_name: str | None,
     scope: str | None,
-    before: dt.datetime | None,
+    before_seq: int | None,
     limit: int,
 ) -> list[Evidence]:
-    """Up to `limit` rows observed before `before`, newest first."""
+    """Up to `limit` rows stored before the one numbered `before_seq`, newest first."""
     statement = select(Evidence).where(Evidence.tenant_id == tenant_id)
     if check_name is not None:
         statement = statement.where(Evidence.check_name == check_name)
     if scope is not None:
         statement = statement.where(Evidence.scope == scope.lower())
-    if before is not None:
-        statement = statement.where(Evidence.observed_at < before)
-    rows = await session.execute(
-        statement.order_by(Evidence.observed_at.desc(), Evidence.id).limit(limit)
-    )
+    if before_seq is not None:
+        statement = statement.where(Evidence.seq < before_seq)
+    rows = await session.execute(statement.order_by(Evidence.seq.desc()).limit(limit))
     return list(rows.scalars())

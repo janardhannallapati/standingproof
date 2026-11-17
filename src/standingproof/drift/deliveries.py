@@ -79,7 +79,8 @@ async def waiting(
             # batch that others then cannot get into.
             not_stopped(WebhookDelivery.tenant_id),
         )
-        .order_by(WebhookDelivery.received_at)
+        # Oldest first by the number each took on arrival, not by its time.
+        .order_by(WebhookDelivery.seq)
         .limit(limit)
         .with_for_update(skip_locked=True)
     )
