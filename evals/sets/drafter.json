@@ -533,7 +533,7 @@
    "expect": {
     "outcome": "answered",
     "must": [
-     "do not expire|does not expire|no expir|never expire|not expire|not set to expire"
+     "\\b(not|no|never|without)\\b[^.,:;\\n]{0,30}\\b(expir|maximum (password )?age)"
     ],
     "must_not": [
      "\\b90\\b"
