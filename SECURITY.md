@@ -72,7 +72,7 @@ The services sign in as roles that own nothing. Only the `migrate` service has t
 |---|---|---|
 | owner (`SP_DATABASE_URL`) | `migrate`: migrations, `workflow setup`, `roles` | Everything. No running service has it |
 | `standingproof_app` (`SP_APP_DATABASE_URL`) | API, worker, watcher, for one tenant at a time | Read and write customer tables, one tenant's rows per transaction |
-| `standingproof_system` (`SP_SYSTEM_DATABASE_URL`) | Finding work: which question is due, which setting to look at, which tenant a webhook is for | Read scheduling columns across tenants. No right on the library, uploaded or filled files, questions, decisions, or what an observation saw |
+| `standingproof_system` (`SP_SYSTEM_DATABASE_URL`) | Finding work: which question is due, which setting to look at, which tenant a webhook is for | Read where and when across tenants (ids, statuses, queue and lease times), and move a question's next queueing time. No right on the library, uploaded or filled files, questions, decisions, a drafted or approved answer, or what an observation saw |
 | `standingproof_state` (`SP_STATE_DATABASE_URL`) | The worker's saved workflow state | Schema `workflow` only |
 
 A process refuses a database connection whose role is a superuser, owns a table, or is exempt
@@ -93,8 +93,9 @@ Limits you should know:
 
 - There is no sign-in yet, so a deployment has one tenant in practice. The rules above are what
   make a second one safe to add.
-- The system role reads scheduling data of every tenant. A test
-  (`tests/attacks/test_cross_tenant_modules.py`) lists the modules allowed to use it.
+- The system role reads scheduling data of every tenant, can close an idle run, and can
+  create a tenant. A test (`tests/attacks/test_cross_tenant_modules.py`) lists the modules
+  allowed to use it.
 - Saved workflow state is separated from customer tables by role, and one question's state from
   another's by its id. It has no row-level policy: the tables belong to the workflow library.
 - The evals (`python -m evals run`) start their own throwaway database and use it as its owner.
