@@ -5,6 +5,7 @@ review state. Nothing here calls a model or touches the graph: a redraft only pu
 question back on the queue, and a worker takes it from there.
 """
 
+import hashlib
 import uuid
 from dataclasses import dataclass
 from typing import Literal
@@ -14,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from standingproof.agent.claims import unsupported_claims
+from standingproof.audit import Entry, record
 from standingproof.library.sources import resolve_all
 from standingproof.models import (
     ITEM_QUEUED,
@@ -89,6 +91,22 @@ async def _apply(
     item.final_answer = final_answer
     item.version += 1
     item.reviewed_at = _NOW
+    await record(
+        session,
+        item.tenant_id,
+        Entry(
+            action=f"review.{decision}",
+            subject=f"run_question:{item.id}",
+            # The wording's hash, not the wording: enough to prove which text was approved.
+            details={
+                "batch": batch,
+                "wording_sha256": None
+                if final_answer is None
+                else hashlib.sha256(final_answer.encode()).hexdigest(),
+            },
+            actor=reviewer,
+        ),
+    )
     # Whatever was decided, a person has now looked at the change.
     item.reopened_at = None
 

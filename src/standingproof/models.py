@@ -576,3 +576,29 @@ class WebhookDelivery(Base):
     handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # looked | ignored:<reason>
     outcome: Mapped[str | None] = mapped_column(String(60))
+
+
+class AuditEntry(Base):
+    """One entry of a tenant's audit chain (or the deployment's, when tenant_id is NULL).
+    Append-only, by grant and by trigger. See standingproof.audit.chain."""
+
+    __tablename__ = "audit_log"
+    __table_args__ = (
+        # NULLS NOT DISTINCT: the deployment's chain has one entry per number too.
+        UniqueConstraint(
+            "tenant_id", "seq", name="uq_audit_log_seq", postgresql_nulls_not_distinct=True
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, server_default=_UUID_DEFAULT)
+    # No ON DELETE CASCADE: a tenant with a record cannot be deleted from under it.
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tenants.id"))
+    # 1, 2, 3... within the chain, with no gaps.
+    seq: Mapped[int] = mapped_column(BigInteger)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    actor: Mapped[str] = mapped_column(String(200))
+    action: Mapped[str] = mapped_column(String(60))
+    subject: Mapped[str] = mapped_column(String(300))
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    hash: Mapped[str] = mapped_column(String(64))

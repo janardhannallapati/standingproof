@@ -12,6 +12,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.db import Database
 from standingproof.drift.compare import Change, changed_facts
 from standingproof.drift.watch import LIVE_REVIEWS, LIVE_STATUSES
@@ -95,6 +96,16 @@ async def _reopen(
             was_review=None if waiting else item.review,
         )
         .on_conflict_do_nothing(constraint="uq_answer_reopenings_once")
+    )
+    await record(
+        session,
+        item.tenant_id,
+        Entry(
+            action="answer.reopen",
+            subject=f"run_question:{item.id}",
+            details={"drift_event_id": str(event_id), "facts_changed": len(changes)},
+            actor="watcher",
+        ),
     )
     # Back to a person. `status`, `reason` and the approved wording are not touched: they
     # say what the agent concluded and what was approved, and both are still true.

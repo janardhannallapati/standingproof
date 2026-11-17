@@ -95,7 +95,9 @@ async def resolve_tenant(database: Database, settings: Settings) -> uuid.UUID:
 TenantDep = Annotated[uuid.UUID, Depends(current_tenant)]
 
 
-async def get_session(request: Request, tenant_id: TenantDep) -> AsyncIterator[AsyncSession]:
+async def get_session(
+    request: Request, tenant_id: TenantDep, settings: SettingsDep
+) -> AsyncIterator[AsyncSession]:
     """One database session per request, bound to the request's tenant.
 
     The database shows this session that tenant's rows and no others, whatever a query
@@ -104,7 +106,9 @@ async def get_session(request: Request, tenant_id: TenantDep) -> AsyncIterator[A
     to save. Anything left uncommitted when the request ends is rolled back as the
     session closes.
     """
-    async with get_database(request).tenant(tenant_id)() as session:
+    # Until sign-in exists, every request is this one stand-in person.
+    sessions = get_database(request).tenant(tenant_id, actor=settings.dev_reviewer)
+    async with sessions() as session:
         yield session
 
 

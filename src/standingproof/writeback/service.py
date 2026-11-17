@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.models import FilledFile, Questionnaire, Run
 from standingproof.writeback.load import WRITER_VERSION, Row, file_key, filled_name, load
 from standingproof.writeback.plan import Plan, plan_writeback
@@ -174,6 +175,22 @@ async def make_file(
             .returning(FilledFile.id)
         )
     ).scalar_one_or_none()
+    if inserted is not None:
+        await record(
+            session,
+            tenant_id,
+            Entry(
+                action="file.make",
+                subject=f"file:{inserted}",
+                details={
+                    "run_id": str(run_id),
+                    "sha256": hashlib.sha256(filled).hexdigest(),
+                    "written": len(plan.writes),
+                    "left_empty": len(plan.skips),
+                },
+                actor=created_by,
+            ),
+        )
     await session.commit()
     stored = await _by_key(session, run_id, key)
     return stored, inserted is not None

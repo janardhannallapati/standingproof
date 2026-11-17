@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from standingproof.audit import Entry, record
 from standingproof.checks.authorize import authorize, valid_scope
 from standingproof.checks.aws import AWS_CHECKS, AwsReader
 from standingproof.checks.github import GITHUB_CHECKS, GitHubClient
@@ -99,6 +100,12 @@ async def add_connection(
             .returning(Connection.id)
         )
     ).scalar_one_or_none()
+    if created is not None:
+        await record(
+            session,
+            tenant_id,
+            Entry(action="connection.add", subject=f"{system}:{scope}", details={}),
+        )
     await session.commit()
     # The unique constraint spans every tenant; this session sees only its own rows. So a
     # scope that could not be inserted and cannot be seen is held by another tenant. The

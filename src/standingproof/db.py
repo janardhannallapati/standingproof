@@ -28,6 +28,8 @@ STATE_ROLE = "standingproof_state"
 ROLES = {"app": APP_ROLE, "system": SYSTEM_ROLE, "state": STATE_ROLE}
 
 _TENANT = "tenant_id"
+# Who a session acts for, for the audit log. Set beside the tenant; absent means "system".
+ACTOR = "actor"
 
 
 class UnsafeRoleError(RuntimeError):
@@ -148,9 +150,13 @@ class Database:
         _refuse_unsafe_role(self._system_engine, SYSTEM_ROLE)
         self._system = build_session_factory(self._system_engine)
 
-    def tenant(self, tenant_id: uuid.UUID) -> async_sessionmaker[AsyncSession]:
-        """Sessions that see and change one tenant's rows, whatever the query says."""
-        return build_session_factory(self.app_engine, **{_TENANT: tenant_id})
+    def tenant(
+        self, tenant_id: uuid.UUID, *, actor: str | None = None
+    ) -> async_sessionmaker[AsyncSession]:
+        """Sessions that see and change one tenant's rows, whatever the query says.
+
+        `actor` is the person the session acts for, recorded with what they decide."""
+        return build_session_factory(self.app_engine, **{_TENANT: tenant_id, ACTOR: actor})
 
     @property
     def across_tenants(self) -> async_sessionmaker[AsyncSession]:
