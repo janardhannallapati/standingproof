@@ -6,6 +6,10 @@ Run as the owner, after `alembic upgrade head` (which creates the roles and thei
 and on every deploy: it is how a password is changed. Each role's password is the one in
 its own URL (SP_APP_DATABASE_URL, SP_SYSTEM_DATABASE_URL, SP_STATE_DATABASE_URL).
 
+A URL that is not set is derived, with the role's name as its password, and only when the
+owner's URL names this machine. A tunnel or proxy to a remote database also looks like this
+machine: set the three URLs yourself before running this through one.
+
 The password is sent inside an `ALTER ROLE` statement, so a server that logs statements
 (`log_statement = ddl` or `all`) writes it to its log.
 

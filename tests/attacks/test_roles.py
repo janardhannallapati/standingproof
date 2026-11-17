@@ -52,14 +52,23 @@ def test_a_role_is_refused_where_another_roles_login_was_given(wf: Db) -> None:
     wf.run(go())
 
 
-def test_saved_state_is_not_kept_under_the_owners_login(wf: Db) -> None:
+@pytest.mark.parametrize("login", ["owner", "app"])
+def test_saved_state_is_kept_under_the_state_role_only(
+    wf: Db, login: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    url = wf.url if login == "owner" else settings_for(wf.url).role_url("app")
+
     async def go() -> None:
         await setup(wf.url)
-        with pytest.raises(Exception, match="refusing to use it|pool initialization incomplete"):
-            async with open_checkpointer(wf.url, max_connections=1, wait_seconds=3):
+        with pytest.raises(Exception, match="pool initialization incomplete"):
+            async with open_checkpointer(url, max_connections=1, wait_seconds=3):
                 pass
 
     wf.run(go())
+
+    # The pool reports only that it could not open. Why is in its log: our refusal, not
+    # a wrong address or a slow start.
+    assert "refusing to use it" in caplog.text
 
 
 def test_role_name_passwords_are_set_only_on_this_machine() -> None:
@@ -70,6 +79,51 @@ def test_role_name_passwords_are_set_only_on_this_machine() -> None:
 
     with pytest.raises(ValueError, match="SP_APP_DATABASE_URL"):
         asyncio.run(ensure_logins(elsewhere))
+
+
+def test_a_role_with_an_ordinary_extra_membership_is_still_accepted(wf: Db) -> None:
+    # A managed database asks for memberships of its own (sign-in by IAM, monitoring).
+    # Those give no right on our tables and must not lock the application out.
+    async def go() -> list[object]:
+        async with wf.sessions() as session:
+            await session.execute(text("GRANT pg_monitor TO standingproof_app"))
+            await session.commit()
+        fresh = Database(
+            app_url=settings_for(wf.url).role_url("app"),
+            system_url=settings_for(wf.url).role_url("system"),
+        )
+        try:
+            async with fresh.tenant(uuid.uuid4())() as session:
+                return list((await session.execute(text("SELECT 1"))).scalars())
+        finally:
+            await fresh.dispose()
+            async with wf.sessions() as session:
+                await session.execute(text("REVOKE pg_monitor FROM standingproof_app"))
+                await session.commit()
+
+    assert wf.run(go()) == [1]
+
+
+def test_a_role_that_is_a_member_of_another_running_role_is_refused(wf: Db) -> None:
+    async def go() -> None:
+        async with wf.sessions() as session:
+            await session.execute(text("GRANT standingproof_system TO standingproof_app"))
+            await session.commit()
+        fresh = Database(
+            app_url=settings_for(wf.url).role_url("app"),
+            system_url=settings_for(wf.url).role_url("system"),
+        )
+        try:
+            with pytest.raises((UnsafeRoleError, DBAPIError), match="refusing to use it"):
+                async with fresh.tenant(uuid.uuid4())() as session:
+                    await session.execute(text("SELECT 1"))
+        finally:
+            await fresh.dispose()
+            async with wf.sessions() as session:
+                await session.execute(text("REVOKE standingproof_system FROM standingproof_app"))
+                await session.commit()
+
+    wf.run(go())
 
 
 def test_in_production_each_role_must_be_given_its_own_url() -> None:

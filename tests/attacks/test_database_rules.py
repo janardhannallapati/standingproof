@@ -59,6 +59,15 @@ def count(db: Db, sessions: Sessions, table: str, tenant_id: uuid.UUID | None = 
     return int(found)
 
 
+def owner_sql(db: Db, sql: str) -> None:
+    async def go() -> None:
+        async with db.sessions() as session:
+            await session.execute(text(sql))
+            await session.commit()
+
+    db.run(go())
+
+
 def two_tenants(db: Db) -> tuple[uuid.UUID, uuid.UUID]:
     ours, _, _ = approved_answer(db, "ours")
     theirs, _, _ = approved_answer(db, "theirs")
@@ -214,6 +223,30 @@ def test_a_row_cannot_point_at_another_tenants_row(wf: Db) -> None:
     )
 
 
+def test_no_reference_can_be_moved_to_another_tenants_row(wf: Db) -> None:
+    """Every foreign key between tenant tables, read from the models, tried in turn."""
+    ours, theirs = two_tenants(wf)
+    as_us = wf.database.tenant(ours)
+    tried = 0
+
+    for table in APP_TABLES:
+        for key in Base.metadata.tables[table].foreign_keys:
+            parent, column = key.column.table.name, key.parent.name
+            if parent == "tenants" or not count(wf, wf.sessions, table, ours):
+                continue
+            # Table and column names come from our own models.
+            find = f"SELECT id FROM {parent} WHERE tenant_id = :t LIMIT 1"  # noqa: S608
+            move = f"UPDATE {table} SET {column} = :id"  # noqa: S608
+            target = rows(wf, wf.sessions, find, t=theirs)
+            if not target:
+                continue
+            reason = refused(wf, as_us, move, id=target[0][0])
+            assert "row-level security" in reason, (table, column)
+            tried += 1
+
+    assert tried >= 7
+
+
 def test_the_tenant_holds_across_commits_and_does_not_stay_on_the_connection(wf: Db) -> None:
     ours, _ = two_tenants(wf)
     names = text("SELECT name FROM tenants")
@@ -244,7 +277,18 @@ def test_the_system_role_finds_work_but_cannot_read_customer_content(wf: Db) -> 
     assert len(rows(wf, system, "SELECT DISTINCT tenant_id FROM run_questions")) == 2
     assert len(rows(wf, system, "SELECT status, observed_at FROM evidence")) == 2
     assert len(rows(wf, system, "UPDATE run_questions SET enqueue_after = now() RETURNING id")) == 2
-    assert len(rows(wf, system, "UPDATE runs SET status = 'finished' RETURNING id")) == 2
+
+    def finished_by_system() -> int:
+        return len(rows(wf, system, "UPDATE runs SET status = 'finished' RETURNING id"))
+
+    # It may close a running run that has nothing left to do, and no other run.
+    owner_sql(wf, "UPDATE runs SET status = 'cancelled'")
+    assert finished_by_system() == 0
+    owner_sql(wf, "UPDATE runs SET status = 'running'")
+    owner_sql(wf, "UPDATE run_questions SET status = 'queued'")
+    assert finished_by_system() == 0
+    owner_sql(wf, "UPDATE run_questions SET status = 'ready'")
+    assert finished_by_system() == 2
     for sql in (
         # Where and when, never what: not an answer, a note, a citation or a cost.
         "SELECT answer FROM run_questions",

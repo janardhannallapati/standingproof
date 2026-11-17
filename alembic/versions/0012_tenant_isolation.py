@@ -17,7 +17,8 @@ From here the running processes sign in as roles that own nothing:
   rights there from `python -m standingproof.workflow setup`, and none here.
 
 Row-level security is FORCED, so it binds the owner too unless the owner is a superuser.
-A later migration that must read or change rows as a plain owner switches it off for its
+A later migration that must read or change rows as a plain owner, or add a foreign key
+between existing tables (the database reads the rows to validate it), switches it off for its
 own transaction (`ALTER TABLE ... NO FORCE ROW LEVEL SECURITY`) and back on.
 
 Every new table with a `tenant_id` needs the same three statements; a test fails until it
@@ -162,15 +163,18 @@ def upgrade() -> None:
     for table, rights in SYSTEM_COLUMN_RIGHTS.items():
         for command, columns in rights.items():
             op.execute(f"GRANT {command} ({columns}) ON {table} TO {SYSTEM}")
-            # The one thing the system role sets on a run: that it is over.
-            closing = (
-                " WITH CHECK (status = 'finished')"
-                if (table, command) == ("runs", "UPDATE")
-                else ""
-            )
+            using, check = "true", ""
+            if (table, command) == ("runs", "UPDATE"):
+                # The one thing the system role does to a run: close one that is running
+                # and has no open question left. Not a run in progress, not a cancelled one.
+                using = (
+                    "status = 'running' AND NOT EXISTS (SELECT 1 FROM run_questions q "
+                    "WHERE q.run_id = runs.id AND q.status IN ('queued', 'running'))"
+                )
+                check = " WITH CHECK (status = 'finished')"
             op.execute(
                 f"CREATE POLICY across_tenants_{command.lower()} ON {table} "
-                f"FOR {command} TO {SYSTEM} USING (true){closing}"
+                f"FOR {command} TO {SYSTEM} USING ({using}){check}"
             )
 
 

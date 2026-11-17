@@ -52,7 +52,8 @@ def _run_migrations(connection: Connection) -> None:
     # The policies are forced, so they bind an owner that is not a superuser. With this
     # setting a statement in a migration that a policy would filter stops with an error;
     # without it, it would change no rows and say nothing. A migration that must touch
-    # rows sets NO FORCE on the table for its own transaction.
+    # rows sets NO FORCE on the table for its own transaction. Offline mode (--sql) does not
+    # emit this: put `SET row_security = off;` at the top of a script you apply by hand.
     connection.execute(text("SET row_security = off"))
     connection.commit()
     context.configure(

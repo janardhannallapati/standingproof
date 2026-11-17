@@ -196,8 +196,8 @@ live system settings, and reopens them when those settings drift.
   work only; a new module that uses it must be added, with its reason, to
   `tests/attacks/test_cross_tenant_modules.py`. Never give the system role a right on a table
   that holds customer content.
-- No running service gets `SP_DATABASE_URL` (the owner). A data migration that must read rows
-  as a plain owner sets `NO FORCE ROW LEVEL SECURITY` for its own transaction and restores it.
+- No running service gets `SP_DATABASE_URL` (the owner). A migration that must read rows as
+  a plain owner, or add a foreign key between existing tables, sets `NO FORCE ROW LEVEL SECURITY` for its own transaction and restores it.
 - "Newest observation" means highest `evidence.seq`, never latest `observed_at`.
 - The saved-state tables belong to the workflow library and live in schema `workflow`. They are
   created by `python -m standingproof.workflow setup`, not by a migration.

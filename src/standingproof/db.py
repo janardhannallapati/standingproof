@@ -74,19 +74,27 @@ def build_session_factory(engine: AsyncEngine, **info: object) -> async_sessionm
 
 
 _UNSAFE = """
-    SELECT r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb
+    SELECT r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication
            OR r.rolname <> '{role}'
-           OR EXISTS (SELECT 1 FROM pg_auth_members m WHERE m.member = r.oid)
-           OR EXISTS (SELECT 1 FROM pg_tables
-                      WHERE schemaname IN ('public', 'workflow') AND tableowner = current_user)
+           -- It owns one of our tables, or is a member of a role that does.
+           OR EXISTS (SELECT 1 FROM pg_tables t
+                      WHERE t.schemaname IN ('public', 'workflow')
+                        AND pg_has_role(r.oid, t.tableowner, 'MEMBER'))
+           -- It is a member of another of the running roles, and so has that one's rights.
+           OR EXISTS (SELECT 1 FROM pg_roles o
+                      WHERE o.rolname IN ('standingproof_app', 'standingproof_system',
+                                          'standingproof_state')
+                        AND o.rolname <> '{role}' AND pg_has_role(r.oid, o.oid, 'MEMBER'))
     FROM pg_roles r WHERE r.rolname = current_user
 """
 
 
 def unsafe_role_query(role: str) -> str:
     """SQL that is true when the signed-in role is not exactly `role`, with its limits:
-    a superuser, an owner, exempt from row-level security, or a member of another role
-    (whose rights it would then have). `role` is one of our three constants."""
+    a superuser, exempt from row-level security, an owner of our tables, or a member of
+    a role that owns them or of another running role. Other memberships (a managed
+    database's sign-in or monitoring roles) are not refused. `role` is one of our three
+    constants."""
     if role not in ROLES.values():
         raise ValueError("not one of the running roles")
     return _UNSAFE.format(role=role)
@@ -95,7 +103,8 @@ def unsafe_role_query(role: str) -> str:
 def refusal(role: str) -> UnsafeRoleError:
     return UnsafeRoleError(
         f"this database login is not {role} with that role's limits (it is another role, a "
-        "superuser, an owner of tables, or exempt from row-level security); refusing to use it"
+        "superuser, exempt from row-level security, or an owner of the tables or a member "
+        "of their owner or of another running role); refusing to use it"
     )
 
 

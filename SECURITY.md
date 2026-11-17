@@ -97,8 +97,9 @@ Limits you should know:
 
 - There is no sign-in yet, so a deployment has one tenant in practice. The rules above are what
   make a second one safe to add.
-- The system role reads scheduling data of every tenant, can close an idle run, and can
-  create a tenant. A test (`tests/attacks/test_cross_tenant_modules.py`) lists the modules
+- The system role reads scheduling data of every tenant, can close a running run that has no
+  open question, can delay any question's queueing, and can create a tenant. It can affect
+  availability; it cannot read or change an answer. A test (`tests/attacks/test_cross_tenant_modules.py`) lists the modules
   allowed to use it.
 - Saved workflow state is separated from customer tables by role, and one question's state from
   another's by its id. It has no row-level policy: the tables belong to the workflow library.
