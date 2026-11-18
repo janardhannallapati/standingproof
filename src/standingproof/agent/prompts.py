@@ -35,7 +35,17 @@ words. Use `note` for anything a human reviewer should know, such as a partial m
 # would let it pose as another part (a source marked as cited, say).
 _OUR_TAG = re.compile(r"<(?=\s*(?:/\s*)?(?:question|draft|source)\b)", re.IGNORECASE)
 
-REDRAFT_REQUEST = "Redraft the answer as the reviewer instruction in the system message asks."
+# Our own fixed words, the last message of a redraft. The second and third sentences are
+# there because of what the eval's redraft cases showed (family G): sent back, the model
+# answered again from the look it already had, and when the setting had changed in between
+# the new draft repeated the old value with a source that supported it.
+REDRAFT_REQUEST = (
+    "Redraft the answer as the reviewer instruction in the system message asks. "
+    "A result of check_live_setting earlier in this conversation shows what that setting "
+    "read when the check was made, and it may read differently now. If the new answer "
+    "states or cites a live setting, look at that setting again with check_live_setting "
+    "first, and write the answer from the new result."
+)
 
 
 def wrap(tag: str, text: str, attributes: str = "") -> str:

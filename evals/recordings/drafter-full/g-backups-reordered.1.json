@@ -1,0 +1,101 @@
+{
+ "kind": "drafter",
+ "case": "g-backups-reordered",
+ "run": 1,
+ "variant": "full",
+ "fingerprint": {
+  "drafter.redraft": "a3956b51e635812f",
+  "drafter.prompt": "91732f23e9b73fbc",
+  "drafter.tools": "5e92c6c016b91556",
+  "drafter.schema": "9597184104d3e3fa",
+  "drafter.request": "7c9cfc621d8db44c",
+  "drafter.model": "claude-opus-5-5",
+  "drafter.effort": "medium",
+  "drafter.limits": "8/0.5/120.0",
+  "drafter.max_tokens": "16000",
+  "world.embedding": "BAAI/bge-small-en-v1.5",
+  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "b155a0c77fb83498",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "185ad7c43f1fdb48"
+ },
+ "handoff": null,
+ "final_stop_reason": "end_turn",
+ "final_draft": {
+  "status": "answered",
+  "answer": "Backups are kept for 35 days and stored in a second region. Production databases are backed up daily.",
+  "citations": [
+   "answer:e1ae5ce3-ba92-4de2-bcee-721d7b33b4d3"
+  ],
+  "note": "As the reviewer asked, the answer now gives the retention period first. The two sentences of the approved answer for control A1.2 have been swapped, and the wording is otherwise the same. Its owner is security@harborlight.example and it is valid until 2027-11-18. The approved answer only mentions production databases. It says nothing about backups of other systems, so this answer doesn't cover them."
+ },
+ "steps": 3,
+ "tool_uses": [
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "backup frequency and retention period"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:e1ae5ce3-ba92-4de2-bcee-721d7b33b4d3",
+    "answer:b3153270-f972-4fe1-95cb-5356d2667a98",
+    "answer:28d267be-e85a-4f89-a41e-e2eaa79ac9b3",
+    "policy:906d2257-517a-46e0-aa9c-0becb88eb179",
+    "answer:65ed334a-d2f0-4775-b68a-2ffa637aab3d"
+   ]
+  }
+ ],
+ "seen_sources": {
+  "answer:e1ae5ce3-ba92-4de2-bcee-721d7b33b4d3": [
+   "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region."
+  ],
+  "answer:b3153270-f972-4fe1-95cb-5356d2667a98": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:28d267be-e85a-4f89-a41e-e2eaa79ac9b3": [
+   "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
+  ],
+  "policy:906d2257-517a-46e0-aa9c-0becb88eb179": [
+   "Access is removed within 24 hours of a person's last working day."
+  ],
+  "answer:65ed334a-d2f0-4775-b68a-2ffa637aab3d": [
+   "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
+  ]
+ },
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 481,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1339
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "usage": {
+  "input_tokens": 2960,
+  "output_tokens": 525,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 8873
+ },
+ "cost_usd": 0.0215628,
+ "draft_model": "claude-opus-5-5",
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": {
+  "status": "answered",
+  "answer": "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region.",
+  "citations": [
+   "answer:e1ae5ce3-ba92-4de2-bcee-721d7b33b4d3"
+  ],
+  "note": "I used the approved answer for control A1.2 word for word. Its owner is security@harborlight.example and it is valid until 2027-11-18. It only mentions production databases. It says nothing about backups of other systems, file storage or configuration, so this answer doesn't cover them. I didn't run a live check because none of the available checks looks at backups."
+ },
+ "redraft_from": 1
+}
