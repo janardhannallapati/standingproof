@@ -15,10 +15,11 @@ from evals.transcript import MANIFEST
 
 RUNS = 3
 # What one unit has cost on this project so far (spend.md), in US dollars.
-# A redraft case is two rounds, each with its check: twice a drafter case, not yet measured.
+# A redraft case is two rounds, each with its check. Measured on its first full run: twelve
+# recordings for $0.5966.
 EACH = {
     "drafter": 0.022,
-    "redraft": 0.044,
+    "redraft": 0.050,
     "docs_only": 0.015,
     "checker": 0.0019,
     "cheaper": 0.0003,
@@ -48,7 +49,8 @@ def plan_for(
     redraft = frozenset(case.name for case in drafter.cases if case.redraft is not None)
     if family is not None:
         # One kind of drafter case and nothing else: a look at a family before, or without,
-        # the full run. What it records is replaced by the next full run.
+        # the full run. The next full run reuses what this recorded, unless the inputs
+        # have changed since.
         chosen = [case.name for case in drafter.cases if case.family == family]
         return Plan(
             drafter=[(name, n) for n in range(1, runs + 1) for name in chosen],

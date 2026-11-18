@@ -13,7 +13,7 @@ Run finished 2026-11-18. 334 recordings, $2.89. Drafter `claude-opus-5-5` (mediu
 | Planted defects the checker agreed with in any run | 0 of 35 |
 | Sound drafts the checker objected to in most runs | 0 of 17 |
 
-Baseline accepted 2026-11-18: Four redraft cases added (family G), each drafted, sent back with the world changed or not, and graded on the redraft. One look at them with the earlier redraft request (one run each, not kept) showed no second look in any of three live cases and two redrafts ready and wrong. The request was then changed, so this is not a first look. Now: every live redraft looks again, none is ready and wrong, and the two cases where the setting changed go to a person (the checker objects when an earlier and a later observation of one setting disagree; one run said no source). The 32 earlier cases and all checker recordings are reused unchanged.
+Baseline accepted 2026-11-18: Four redraft cases added (family G), each drafted, sent back with the world changed or not, and graded on the redraft. One look at them with the earlier redraft request (one run each, not kept) showed no second look in any of three live cases and two redrafts ready and wrong. The request was then changed, so this is not a first look. Now: all nine redrafts about a live setting look again, and none is ready and wrong. In the two cases where the setting changed, one run of six is ready and right, three go to a person because the checker objects (it is shown an earlier and a later observation of one setting that disagree), and two because the drafter said there is no source. The wording patterns of those two cases are loose: a stale answer in other words could pass them. The 32 earlier cases and all checker recordings are reused unchanged.
 
 ## Method
 

@@ -172,6 +172,14 @@ def test_only_a_redraft_case_depends_on_how_a_redraft_is_asked_for(
         before[sent_back.name], of_drafter_case(cases, sent_back, "full", config)
     ) == ["drafter.redraft"]
 
+    # And on how the reviewer's words are put in the system message.
+    monkeypatch.undo()
+    monkeypatch.setattr(prompts, "reviewer_section", lambda words: f"The reviewer says: {words}")
+    assert of_drafter_case(cases, plain, "full", config) == before[plain.name]
+    assert differences(
+        before[sent_back.name], of_drafter_case(cases, sent_back, "full", config)
+    ) == ["drafter.redraft"]
+
 
 def test_a_recording_made_before_cases_could_have_a_redraft_still_answers_for_its_case() -> None:
     import json

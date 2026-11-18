@@ -464,3 +464,35 @@ def test_a_redraft_that_looks_again_is_right(db: Db, tmp_path: Path) -> None:
 
     graded = grade_draft(DRAFTER.by_name["g-reviews-switched-off"], run)
     assert (graded.grade, graded.ready, graded.looked) == ("right", True, True)
+
+
+class GoesAwayWhenSentBack(RedraftsFrom):
+    """The provider answers the first draft and is unreachable for the redraft."""
+
+    async def complete(self, *, messages: list[dict[str, Any]], **more: Any) -> ModelTurn:
+        if more.get("system_addendum") is not None:
+            raise ModelCallError("rate limited", retryable=True)
+        return await super().complete(messages=messages, **more)
+
+
+def test_a_provider_failure_in_a_redraft_stops_the_run_cleanly_and_records_nothing(
+    db: Db, tmp_path: Path
+) -> None:
+    # The graph lets a failure that may pass go up to its caller, where the loop turns
+    # every failure into a result. The run must end as it does for any other case.
+    manifest, _ = go(db, tmp_path, SENT_BACK, model=GoesAwayWhenSentBack(look_again=True))
+
+    assert not manifest.complete
+    assert "could not be reached" in manifest.stopped
+    assert [run for run in read_all(tmp_path) if isinstance(run, DrafterRun)] == []
+    # Both attempts are counted as if they were billed.
+    assert manifest.spent_usd >= 2 * DRAFT_CALL_AT_MOST
+
+
+def test_smoke_and_one_family_cannot_be_asked_for_together(tmp_path: Path) -> None:
+    from evals.__main__ import NOT_APPROVED, main
+
+    said: list[str] = []
+    for words in (["estimate", "--smoke", "--family", "G"], ["estimate", "--runs", "1"]):
+        assert main(words, root=tmp_path, out=said.append) == NOT_APPROVED
+    assert "--smoke" in said[0] and "--family" in said[1]

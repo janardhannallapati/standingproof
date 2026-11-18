@@ -149,6 +149,9 @@ def main(
         if args.runs is not None and args.family is None:
             out("--runs goes with --family: a full run is always three of each case")
             return NOT_APPROVED
+        if args.smoke and args.family is not None:
+            out("--smoke and --family are two different short runs: give one of them")
+            return NOT_APPROVED
         plan = plan_for(drafter, checker, smoke=args.smoke, family=args.family, runs=args.runs or 3)
         ceiling = SMOKE_CEILING if args.smoke else CEILING
         if args.ceiling is not None:

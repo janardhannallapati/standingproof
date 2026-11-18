@@ -280,6 +280,11 @@ async def _redraft(
             context=context,
             resume={"decision": "redraft", "instruction": case.redraft.instruction},
         )
+    except ModelCallError:
+        # The graph lets a failure that may pass (a rate limit, an outage) go up to its
+        # caller, which in the product is the worker's retry. Here it is what it is for
+        # every other case: the provider could not be reached, and nothing is recorded.
+        raise _ProviderFailedError from None
     finally:
         await world.aclose()
     if _provider_failed(result, checker):

@@ -182,3 +182,24 @@ def test_a_worlds_settings_can_change_between_two_looks(db: Db) -> None:
     assert before["facts"]["protected"] is True and "2 approving reviews" in before["statement"]
     assert after["facts"]["protected"] is False and "not protected" in after["statement"]
     assert before["id"] != after["id"]
+
+
+def test_the_fake_aws_reads_a_changed_world_too(db: Db) -> None:
+    from evals.cases import Live
+
+    world = world_of(db, "a-ebs-encrypted")
+    before = json.loads(look(db, world, "aws.ebs_default_encryption", "111122223333").content)
+
+    world.becomes(
+        [
+            Live(
+                check="aws.ebs_default_encryption",
+                scope="111122223333",
+                reads={"encrypted": False},
+            )
+        ]
+    )
+    after = json.loads(look(db, world, "aws.ebs_default_encryption", "111122223333").content)
+
+    assert before["facts"] != after["facts"]
+    assert before["statement"] != after["statement"]
