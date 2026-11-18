@@ -339,3 +339,15 @@ def test_only_the_look_number_reads_all_four_drafts_as_they_are_labelled() -> No
     for name in TWO_LOOKS[2:]:
         case = checker.by_name[name]
         assert not list(case.sources)[-1].startswith(OBSERVED_PREFIX)
+
+
+def test_a_case_read_for_a_setting_tells_the_drafter_where_that_setting_is() -> None:
+    # The drafter learns a repository's name from the question or from the library, never
+    # from the case. A case that names it nowhere is declined before any look, on the first
+    # draft and the redraft alike, and so says nothing about a setting that changed.
+    drafter = load_drafter()
+    for case in drafter.cases:
+        library = drafter.library(case.library)
+        told = " ".join([case.question, library.model_dump_json()])
+        for state in case.expect.states:
+            assert state.scope in told, (case.name, state.scope)

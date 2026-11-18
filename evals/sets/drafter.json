@@ -970,7 +970,7 @@
   {
    "name": "g-reviews-switched-off-no-claim",
    "family": "G",
-   "question": "How many approving reviews does a code change need before it is merged to your main branch?",
+   "question": "How many approving reviews does a code change need before it is merged to the default branch of harborlight/app?",
    "library": "core",
    "connected": {
     "github": [
@@ -1019,7 +1019,7 @@
      "scope": "harborlight/app"
     }
    },
-   "note": "The switched-off case with a library that holds no approved answer about reviews. Nothing argues against answering from the observation, so an answer is expected here. If the redraft declines here too, the drafter declines whenever a setting changes under a redraft, whatever the library says."
+   "note": "The switched-off case with a library that holds no approved answer about reviews, so nothing argues against answering from the observation. The question names the repository, because nothing in this library does: as first written it did not, and the drafter declined before any look, on the first draft and the redraft alike, which said nothing about a setting that changed. An answer is expected. If the redraft declines here, the drafter declines whenever a setting changes under a redraft, whatever the library says."
   },
   {
    "name": "g-reviews-unchanged",
