@@ -950,20 +950,76 @@
    },
    "expect": {
     "outcome": "answered",
-    "must": [
-     "(not|no longer|isn'?t|without)\\s+(currently\\s+)?(protected|enforced|enabled|in place)|unprotected|\\bno\\s+(branch\\s+)?protection|protection\\b[^.;\\n]{0,25}\\b(off|disabled|removed)|(does not|doesn'?t|do not|don'?t|no longer)\\s+(need|require)s?\\b|\\b(no|zero|0)\\s+(approving\\s+)?(reviews?|approvals?)\\s+(are|is)\\s+(required|needed)"
-    ],
-    "must_not": [
-     "(?<!not )(?<!longer )(?<!n't )\\b(needs?|requires?|must have)\\s+(at least\\s+)?(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
-     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)\\s+(are|is)\\s+(still\\s+)?(required|needed)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
-     "\\bis protected\\b|\\bapproved by (2|two)\\b"
+    "states": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "facts": [
+       "protected",
+       "reviews"
+      ]
+     }
     ],
     "cite": {
      "check": "github.branch_protection",
      "scope": "harborlight/app"
     }
    },
-   "note": "Branch protection is switched off between the draft and the redraft. A redraft written from the first look says two reviews, and its own source supports it. The patterns ask for the new state in words about protection or reviews, and refuse a present-tense requirement of two; a sentence that contrasts the written policy with the setting is allowed."
+   "note": "Branch protection is switched off between the draft and the redraft. A right redraft says so, in whatever words: that no reviews are enforced, or that main is not protected. A model reads the wording and code compares the reading with this world; a pattern could not tell \"two reviews\" as a stale statement from \"the policy asks for two, but main is not protected\". In every run so far the redraft declined and told the reviewer that the setting had changed. That is graded safe, not right: an answer from the observation exists, and on a first draft (family B) the drafter gives one."
+  },
+  {
+   "name": "g-reviews-switched-off-no-claim",
+   "family": "G",
+   "question": "How many approving reviews does a code change need before it is merged to your main branch?",
+   "library": "core",
+   "connected": {
+    "github": [
+     "harborlight"
+    ]
+   },
+   "live": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "reads": {
+      "protected": true,
+      "reviews": 2,
+      "admins": true
+     }
+    }
+   ],
+   "redraft": {
+    "instruction": "Shorter, please: one or two sentences.",
+    "live": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "reads": {
+       "protected": false,
+       "reviews": 0,
+       "admins": false
+      }
+     }
+    ]
+   },
+   "expect": {
+    "outcome": "answered",
+    "states": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "facts": [
+       "protected",
+       "reviews"
+      ]
+     }
+    ],
+    "cite": {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app"
+    }
+   },
+   "note": "The switched-off case with a library that holds no approved answer about reviews. Nothing argues against answering from the observation, so an answer is expected here. If the redraft declines here too, the drafter declines whenever a setting changes under a redraft, whatever the library says."
   },
   {
    "name": "g-reviews-unchanged",
@@ -1064,20 +1120,28 @@
    },
    "expect": {
     "outcome": "answered",
-    "must": [
-     "\\b(2|two)\\b",
-     "scanning\\b[^.;\\n]{0,60}\\b(off|disabled|(not|isn'?t)\\s+(currently\\s+)?(enabled|on|switched on|turned on|active))"
-    ],
-    "must_not": [
-     "scanning\\b[^.;\\n]{0,25}\\b(is|are|remains?)\\s+(also\\s+|currently\\s+|still\\s+|both\\s+)?(enabled|switched on|turned on|on|active)\\b",
-     "\\b(has|have|with)\\s+(github\\s+)?secret scanning\\s+(enabled|switched on|turned on|on)\\b"
+    "states": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "facts": [
+       "reviews"
+      ]
+     },
+     {
+      "check": "github.secret_scanning",
+      "scope": "harborlight/app",
+      "facts": [
+       "enabled"
+      ]
+     }
     ],
     "cite": {
      "check": "github.secret_scanning",
      "scope": "harborlight/app"
     }
    },
-   "note": "Two settings; one of them changes between the draft and the redraft. The patterns ask for scanning being off in so many words, and refuse scanning being on in the present or the past tense."
+   "note": "Two settings; one of them changes between the draft and the redraft. A right redraft still says two reviews and says that secret scanning is off now. A model reads the wording and code compares the reading with this world."
   },
   {
    "name": "g-backups-reordered",

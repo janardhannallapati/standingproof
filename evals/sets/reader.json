@@ -1,0 +1,242 @@
+{
+ "sentences": [
+  {
+   "name": "open-01",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Branch main is not protected, so no approving reviews are required.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-02",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Policy calls for two approving reviews, but the branch is currently unprotected.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-03",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "The policy requires two approving reviews, but branch main is not protected.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-04",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "No. Branch protection is not enforced on branch main of harborlight/app.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-05",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "No. Branch protection is not enabled on main.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-06",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Branch main has no branch protection rule.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-07",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Branch main is not protected; it no longer requires 2 approving reviews.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-08",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Main is unprotected, so a change does not need 2 approving reviews.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-09",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Changes need two approving reviews. Secret scanning is switched off.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-10",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are needed. Secret scanning is not currently enabled.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-11",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are needed. Secret scanning isn't enabled.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-12",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are needed. Secret scanning is off; it was on at the earlier check.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-13",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews. Secret scanning, which was enabled earlier, is now disabled.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-14",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are needed. Secret scanning is off; protection is on.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-15",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Currently none: branch protection on main of harborlight/app is turned off.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-16",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "A change currently needs 0 approving reviews, because main is not a protected branch.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-17",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Although our policy requires two approving reviews, branch main of harborlight/app is not protected, so none are enforced.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-18",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "No reviews are enforced: main of harborlight/app is unprotected. The written policy says a change needs two approving reviews.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-19",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two approving reviews are required. Secret scanning is no longer enabled on harborlight/app.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-20",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews. Secret scanning is currently inactive on harborlight/app.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-21",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two approving reviews are needed. Our policy states that secret scanning is enabled on all repositories, but on harborlight/app secret scanning is currently off.",
+   "label": "states_now"
+  },
+  {
+   "name": "open-22",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "A change needs two approving reviews, and administrators are not exempt.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-23",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Two approving reviews are required before a merge.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-24",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Yes. A change must be approved by 2 reviewers, and no approvals can be skipped.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-25",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Yes. Branch main is protected: 2 approving reviews, and no reviews are waived.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-26",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews, and administrators are not exempt. Secret scanning was switched on.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-27",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are needed. The repository has secret scanning enabled.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-28",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews are required, administrators are not exempt, with secret scanning enabled.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-29",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two reviews; not exempt, and secret scanning and push protection are both enabled.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-30",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "The branch protection rule on main demands two approving reviews; it does not require signed commits.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-31",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Two approvals from reviewers; a change does not need a third.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-32",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Two approving reviews; the rule also covers administrators, so they do not need to be handled separately.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-33",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two approving reviews. Yes, harborlight/app uses GitHub secret scanning, and it is not disabled for any branch.",
+   "label": "does_not"
+  },
+  {
+   "name": "open-34",
+   "part": "open",
+   "case": "g-scanning-off-reviews-same",
+   "answer": "Two approving reviews. Secret scanning runs on harborlight/app, and alerts are not disabled.",
+   "label": "does_not"
+  }
+ ]
+}
