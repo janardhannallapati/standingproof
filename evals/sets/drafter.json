@@ -956,7 +956,8 @@
       "scope": "harborlight/app",
       "facts": [
        "protected",
-       "reviews"
+       "reviews",
+       "admins"
       ]
      }
     ],
@@ -965,7 +966,7 @@
      "scope": "harborlight/app"
     }
    },
-   "note": "Branch protection is switched off between the draft and the redraft. A right redraft says so, in whatever words: that no reviews are enforced, or that main is not protected. A model reads the wording and code compares the reading with this world; a pattern could not tell \"two reviews\" as a stale statement from \"the policy asks for two, but main is not protected\". In every run so far the redraft declined and told the reviewer that the setting had changed. That is graded safe, not right: an answer from the observation exists, and on a first draft (family B) the drafter gives one."
+   "note": "Branch protection is switched off between the draft and the redraft, and the library still holds an approved answer saying two reviews. A right redraft says what the setting reads now, in whatever words; a model reads the wording and code compares the reading with this world. In every run so far the redraft looked again, declined, and told the reviewer that the setting no longer matches the approved answer. That is graded safe, not right, because on a first draft (family B) the drafter answers from the observation in the same clash. Declining is a defensible thing for a product to do here, and this case does not settle which is better. What it does not measure: no answer has come, so the reader has never read one for this case, and a decline with no reason given would be graded the same as these. The variant g-reviews-switched-off-no-claim is where the reader reads real answers to this change."
   },
   {
    "name": "g-reviews-switched-off-no-claim",
@@ -1010,7 +1011,8 @@
       "scope": "harborlight/app",
       "facts": [
        "protected",
-       "reviews"
+       "reviews",
+       "admins"
       ]
      }
     ],

@@ -96,7 +96,7 @@ def test_a_redrafts_wording_is_read_and_the_reading_is_kept_with_the_run(
     assert manifest.complete and isinstance(run, DrafterRun)
     assert run.reading is not None and run.reading.reading is not None
     said = {item.fact: item.value for item in run.reading.reading.facts}
-    assert said == {"protected": "false", "reviews": "0"}
+    assert said == {"protected": "false", "reviews": "0", "admins": "false"}
     assert grade_draft(DRAFTER.by_name[OFF], run).read is True
     # One reading, of the redraft. The first draft's wording is never sent to the reader.
     [request] = reader.requests

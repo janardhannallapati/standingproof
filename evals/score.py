@@ -4,6 +4,7 @@ Every number here is a count out of a total. With a few dozen cases a percentage
 little it rests on, so the report prints the count and an interval beside it.
 """
 
+import hashlib
 import json
 import math
 from collections import Counter
@@ -235,6 +236,11 @@ class Baseline(BaseModel):
     # before there was one.
     reader_stale_passed: list[str] = []
     reader_correct_refused: int = 0
+    # Which labelled sentences that was measured on: how many, and a hash of them all. A
+    # set that is smaller, reworded or gone is a different measurement and has to be
+    # accepted as one.
+    reader_sentences: int = 0
+    reader_set: str = ""
     accepted_on: str
     note: str
 
@@ -254,6 +260,8 @@ def as_baseline(
     return Baseline(
         reader_stale_passed=reader.stale_passed if reader else [],
         reader_correct_refused=len(reader.correct_refused) if reader else 0,
+        reader_sentences=reader.sentences if reader else 0,
+        reader_set=reader.set_hash if reader else "",
         runs=drafter.runs,
         drafter_wrong_cases=drafter.wrong_cases,
         drafter_right_cases=drafter.right_cases,
@@ -312,6 +320,12 @@ def gate(
             f"the checker objects to {len(checker.false_alarm_cases)} sound drafts, against "
             f"{baseline.checker_false_alarm_cases} in the baseline (one case of slack)"
         )
+    if (reader.set_hash if reader else "") != baseline.reader_set:
+        problems.append(
+            f"the reader's labelled sentences are not the {baseline.reader_sentences} the "
+            f"baseline was accepted with ({reader.sentences if reader else 0} now): a changed "
+            "set is accepted with a note saying what changed"
+        )
     if reader is not None:
         problems += _reader_gate(baseline, reader)
     return problems
@@ -320,13 +334,15 @@ def gate(
 @dataclass(frozen=True)
 class ReaderScore:
     sentences: int
+    # A hash of every sentence: name, case, wording, label and part.
+    set_hash: str
     runs: int
-    # By majority of a sentence's runs. A run that was not read counts against the reader
-    # either way: as "current" for a stale sentence, as "stale" for a correct one.
-    # Stale sentences the comparison took for stating the present value. The harmful
-    # direction: it would let a ready and wrong answer be graded right.
+    # Stale sentences the comparison took for stating the present value, in any run. The
+    # harmful direction: it would let a ready and wrong answer be graded right, so one run
+    # is enough, as it is for a defect the checker misses. A run that was not read counts.
     stale_passed: list[str]
-    # Correct sentences it refused: a right answer would be reported ready and wrong.
+    # Correct sentences it refused in most of their runs: a right answer would be reported
+    # ready and wrong.
     correct_refused: list[str]
     # Per part of the set: (stale passed, stale sentences) and (correct refused, correct).
     by_part: dict[str, dict[str, tuple[int, int]]]
@@ -341,8 +357,11 @@ def score_reader(
     mistaken: dict[str, bool] = {}
     for sentence in sentences.sentences:
         mine = grouped.get(sentence.name, [])
+        wrong = sum(not g.correct for g in mine)
         # No recording counts as a mistake: a sentence nobody read measures nothing.
-        mistaken[sentence.name] = sum(not g.correct for g in mine) * 2 > len(mine) or not mine
+        mistaken[sentence.name] = not mine or (
+            wrong > 0 if sentence.label == "does_not" else wrong * 2 > len(mine)
+        )
     stale = [s for s in sentences.sentences if s.label == "does_not"]
     correct = [s for s in sentences.sentences if s.label == "states_now"]
     by_part: dict[str, dict[str, tuple[int, int]]] = {}
@@ -361,6 +380,9 @@ def score_reader(
     wanted |= {s.name: list(range(1, (runs if s.part == "held_out" else 1) + 1)) for s in correct}
     return ReaderScore(
         sentences=len(sentences.sentences),
+        set_hash=hashlib.sha256(
+            json.dumps(sentences.model_dump(mode="json"), sort_keys=True).encode()
+        ).hexdigest(),
         runs=runs,
         stale_passed=[s.name for s in stale if mistaken[s.name]],
         correct_refused=[s.name for s in correct if mistaken[s.name]],

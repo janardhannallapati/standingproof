@@ -84,6 +84,48 @@ def test_one_right_fact_does_not_excuse_a_wrong_one() -> None:
     assert states_now(OFF, said) == ["says reviews of github.branch_protection reads 2; it reads 0"]
 
 
+def test_a_changed_fact_the_answer_still_states_the_old_way_is_wrong() -> None:
+    # The world's rule for administrators went with the protection. An answer that gets
+    # the number right and keeps the old rule is stale in that part.
+    asked = case(
+        [{"check": BP, "facts": ["protected", "reviews", "admins"]}],
+        {BP: {"protected": False, "reviews": 0, "admins": False}},
+    )
+    kept = reading(
+        (BP, "protected", "not_stated", ""),
+        (BP, "reviews", "value", "0"),
+        (BP, "admins", "value", "true"),
+    )
+    silent = reading(
+        (BP, "protected", "value", "false"),
+        (BP, "reviews", "value", "0"),
+        (BP, "admins", "not_stated", ""),
+    )
+
+    assert states_now(asked, kept) == [
+        "says admins of github.branch_protection reads true; it reads false"
+    ]
+    assert states_now(asked, silent) == []
+
+
+def test_every_fact_a_changed_setting_case_changes_is_one_its_answer_is_read_for() -> None:
+    # A fact that changes and is not read is a way for a stale answer to be graded right.
+    for c in load_drafter().cases:
+        if c.redraft is None or not c.expect.states:
+            continue
+        before = {(live.check, live.scope): live.reads for live in c.live}
+        for live in c.now:
+            was = before.get((live.check, live.scope)) or {}
+            changed = {fact for fact, value in (live.reads or {}).items() if was.get(fact) != value}
+            read = {
+                fact
+                for state in c.expect.states
+                if (state.check, state.scope) == (live.check, live.scope)
+                for fact in state.facts
+            }
+            assert changed <= read, (c.name, live.check, changed - read)
+
+
 def test_an_answer_that_says_both_values_is_wrong() -> None:
     said = reading((BP, "protected", "conflicting", ""), (BP, "reviews", "not_stated", ""))
 
@@ -198,7 +240,8 @@ def test_the_readers_request_is_the_question_the_answer_and_the_facts_and_nothin
             "<draft>\nTwo. Scanning is off.\n</draft>\n\n"
             "<facts>\n"
             "github.branch_protection | harborlight/app | reviews | "
-            "how many approving reviews a change needs: a whole number, 0 for none\n"
+            "how many approving reviews a change to the default branch needs: "
+            "a whole number, 0 for none\n"
             "github.secret_scanning | harborlight/app | enabled | "
             "whether secret scanning is switched on: true or false\n"
             "</facts>"

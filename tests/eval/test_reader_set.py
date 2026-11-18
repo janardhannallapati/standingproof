@@ -13,7 +13,14 @@ from evals.fingerprint import Config, differences, of_drafter_case, of_sentence
 from evals.graders import grade_reading
 from evals.plan import estimate, plan_for
 from evals.reader import ReadTurn
-from evals.score import Baseline, gate, score_checker, score_drafter, score_reader
+from evals.score import (
+    Baseline,
+    as_baseline,
+    gate,
+    score_checker,
+    score_drafter,
+    score_reader,
+)
 from evals.transcript import ReaderRun, read_all, write
 from tests.eval.readings import CUT, NOW_OFF, OFF, STILL_TWO, TWO, read, sentence
 
@@ -83,6 +90,39 @@ def test_a_sentence_recording_depends_on_the_reader_and_the_sentence_and_nothing
     assert differences(before, of_sentence(s, DRAFTER.by_name[OFF], CONFIG)) == ["reader.prompt"]
 
 
+def test_a_reading_depends_on_how_its_own_facts_are_described_and_how_its_text_is_wrapped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import re
+
+    from evals import cases
+    from evals import reader as module
+
+    off, two = DRAFTER.by_name[OFF], DRAFTER.by_name[TWO]
+    s = sentence()
+
+    def parts() -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+        return (
+            of_sentence(s, two, CONFIG),
+            of_drafter_case(DRAFTER, two, "full", CONFIG),
+            of_sentence(s, off, CONFIG),
+        )
+
+    before = parts()
+    # A fact only the second case asks about is described differently.
+    scanning = {"enabled": "whether it is on. If unsure say false"}
+    monkeypatch.setitem(cases.READABLE, "github.secret_scanning", scanning)
+    after = parts()
+    assert differences(before[0], after[0]) == ["reader.request"]
+    assert differences(before[1], after[1]) == ["reader.request"]
+    assert differences(before[2], after[2]) == []
+    monkeypatch.undo()
+
+    # The answer's text is no longer kept from closing its tag.
+    monkeypatch.setattr(module, "_FACTS_TAG", re.compile(r"(?!)"))
+    assert differences(before[2], parts()[2]) == ["reader.request"]
+
+
 def test_only_a_case_whose_wording_is_read_depends_on_the_reader(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -129,13 +169,16 @@ def _sentences() -> ReaderSet:
     return ReaderSet(sentences=made)
 
 
-def test_the_reader_is_scored_in_both_directions_by_majority_with_names() -> None:
+def test_a_stale_sentence_passed_once_is_named_and_a_correct_one_is_refused_by_majority() -> None:
+    # The two directions are not alike. A stale sentence taken for current lets a ready and
+    # wrong answer be graded right, so one run of three is enough to name it, as one run is
+    # for a defect the checker misses. A correct sentence refused is the noisy direction.
     sentences, case = _sentences(), DRAFTER.by_name[OFF]
     replies = {
         "h-0": [NOW_OFF, NOW_OFF, STILL_TWO],  # correct, read as current in most runs
-        "h-1": [STILL_TWO, NOW_OFF, NOW_OFF],  # stale, read as current in most runs
+        "h-1": [STILL_TWO, STILL_TWO, NOW_OFF],  # stale, read as current in one run
         "h-2": [STILL_TWO, STILL_TWO, NOW_OFF],  # correct, refused in most runs
-        "h-3": [STILL_TWO, STILL_TWO, CUT],  # stale, refused; one run not read
+        "h-3": [STILL_TWO, STILL_TWO, STILL_TWO],  # stale, refused every time
     }
     graded = [
         grade_reading(s, case, read(s, reply, run))
@@ -147,7 +190,51 @@ def test_the_reader_is_scored_in_both_directions_by_majority_with_names() -> Non
 
     assert (score.stale_passed, score.correct_refused) == (["h-1"], ["h-2"])
     assert score.by_part["held_out"] == {"stale": (1, 2), "correct": (1, 2)}
-    assert (score.not_read_runs, score.missing) == (1, [])
+    assert (score.not_read_runs, score.missing) == (0, [])
+
+
+def test_the_gate_fails_when_the_labelled_sentences_are_not_the_ones_accepted() -> None:
+    # Without this a hard sentence could be added, fail, and be taken out again, or the
+    # whole set removed, and the gate would pass with cases still graded by the reader.
+    sentences, case = _sentences(), DRAFTER.by_name[OFF]
+    good = {"h-0": NOW_OFF, "h-1": STILL_TWO, "h-2": NOW_OFF, "h-3": STILL_TWO}
+
+    def scored(kept: ReaderSet) -> Any:
+        graded = [
+            grade_reading(s, case, read(s, good[s.name], run))
+            for s in kept.sentences
+            for run in (1, 2, 3)
+        ]
+        return score_reader(kept, graded, runs=3)
+
+    drafter, checker = _scores()
+    baseline = as_baseline(drafter, checker, on="2026-11-18", note="n", reader=scored(sentences))
+    assert baseline.reader_sentences == 4 and baseline.reader_set
+
+    def said(reader: Any) -> list[str]:
+        return [p for p in gate(baseline, drafter, checker, reader) if "labelled sentences" in p]
+
+    assert said(scored(sentences)) == []
+    assert said(scored(ReaderSet(sentences=sentences.sentences[:3])))
+    assert said(None)
+    reworded = sentences.sentences[0].model_copy(update={"answer": "Other words."})
+    assert said(scored(ReaderSet(sentences=[reworded, *sentences.sentences[1:]])))
+
+
+def test_a_baseline_from_before_the_sentences_were_recorded_in_it_asks_nothing_of_them() -> None:
+    old = Baseline.model_validate(
+        {
+            "runs": 3,
+            "drafter_wrong_cases": [],
+            "drafter_right_cases": 0,
+            "checker_missed_cases": [],
+            "checker_false_alarm_cases": 0,
+            "accepted_on": "2026-11-17",
+            "note": "before there was a reader",
+        }
+    )
+
+    assert (old.reader_sentences, old.reader_set, old.reader_stale_passed) == (0, "", [])
 
 
 def _scores() -> tuple[Any, Any]:
@@ -172,6 +259,8 @@ def test_the_gate_names_a_stale_sentence_the_reader_newly_passes() -> None:
         drafter_right_cases=0,
         checker_missed_cases=[c.name for c in CHECKER.cases if c.label == "not_supported"],
         checker_false_alarm_cases=len(CHECKER.cases),
+        reader_sentences=4,
+        reader_set=scored(good).set_hash,
         accepted_on="2026-11-18",
         note="made up",
     )
@@ -185,14 +274,6 @@ def test_the_gate_names_a_stale_sentence_the_reader_newly_passes() -> None:
     assert any("2 correct sentences" in problem for problem in refused)
     unread = gate(baseline, drafter, checker, scored(good | {"h-3": CUT}))
     assert any("did not finish" in problem and "reader" in problem for problem in unread)
-
-
-def test_a_baseline_accepted_before_there_was_a_reader_still_loads() -> None:
-    from evals.score import load_baseline
-
-    loaded = load_baseline()
-
-    assert loaded is not None and loaded.runs == 3
 
 
 # Recordings

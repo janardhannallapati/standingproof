@@ -22,8 +22,9 @@ def turn(*said: tuple[str, str, str, str], stop_reason: str = "end_turn") -> Rea
     )
 
 
-NOW_OFF = turn((BP, "protected", "value", "false"), (BP, "reviews", "value", "0"))
-STILL_TWO = turn((BP, "protected", "not_stated", ""), (BP, "reviews", "value", "2"))
+_ADMINS = (BP, "admins", "not_stated", "")
+NOW_OFF = turn((BP, "protected", "value", "false"), (BP, "reviews", "value", "0"), _ADMINS)
+STILL_TWO = turn((BP, "protected", "not_stated", ""), (BP, "reviews", "value", "2"), _ADMINS)
 CUT = turn(stop_reason="max_tokens")
 
 
@@ -73,6 +74,10 @@ class ReadsPlainly:
         answer = content.split("<draft>\n")[1].split("\n</draft>")[0]
         unprotected = "not protected" in answer
         number = "0" if unprotected else answer.split(" approving review")[0].split()[-1]
-        values = {"protected": "false" if unprotected else "true", "reviews": number}
+        values = {
+            "protected": "false" if unprotected else "true",
+            "reviews": number,
+            "admins": "false" if unprotected else "true",
+        }
         asked = [line.split(" | ") for line in content.split("<facts>\n")[1].splitlines()[:-1]]
         return turn(*[(check, fact, "value", values[fact]) for check, _scope, fact, _kind in asked])

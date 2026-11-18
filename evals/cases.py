@@ -31,8 +31,12 @@ READS: dict[str, frozenset[str]] = {
 # these may be named in a case's `states`.
 READABLE: dict[str, dict[str, str]] = {
     "github.branch_protection": {
-        "protected": "whether the branch is protected: true or false",
-        "reviews": "how many approving reviews a change needs: a whole number, 0 for none",
+        "protected": "whether the default branch is protected: true or false",
+        "reviews": (
+            "how many approving reviews a change to the default branch needs: "
+            "a whole number, 0 for none"
+        ),
+        "admins": "whether the review rule also binds administrators: true or false",
     },
     "github.secret_scanning": {
         "enabled": "whether secret scanning is switched on: true or false",
