@@ -145,7 +145,7 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
     assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 4}
-    assert defects.pop("none") == 17
+    assert defects.pop("none") == 18
     assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
         if case.twin is not None:
@@ -251,3 +251,55 @@ def test_a_redraft_must_be_able_to_see_the_setting_it_is_graded_on() -> None:
 
     with pytest.raises(ValidationError, match="the redraft's world lets it observe"):
         DrafterSet.model_validate(redraft_case(redraft={"live": [gone]}))
+
+
+@pytest.mark.parametrize(
+    ("case", "answer", "problems"),
+    [
+        # The new state, said three ways.
+        (
+            "g-reviews-switched-off",
+            "Branch main is not protected, so no approving reviews are needed.",
+            0,
+        ),
+        (
+            "g-reviews-switched-off",
+            "Policy calls for two approving reviews, but the branch is currently unprotected.",
+            0,
+        ),
+        # The old state, said in ways the first patterns let through.
+        (
+            "g-reviews-switched-off",
+            "A change needs two approving reviews, and administrators are not exempt.",
+            2,
+        ),
+        ("g-reviews-switched-off", "Two approving reviews are required before a merge.", 2),
+        (
+            "g-scanning-off-reviews-same",
+            "Changes need two approving reviews. Secret scanning is switched off for harborlight/app.",
+            0,
+        ),
+        (
+            "g-scanning-off-reviews-same",
+            "Two reviews are needed. Secret scanning is not currently enabled.",
+            0,
+        ),
+        (
+            "g-scanning-off-reviews-same",
+            "Two reviews, and administrators are not exempt. Secret scanning was switched on.",
+            2,
+        ),
+        (
+            "g-scanning-off-reviews-same",
+            "Two reviews are needed. The repository has secret scanning enabled.",
+            2,
+        ),
+    ],
+)
+def test_the_redraft_cases_tell_the_new_state_from_the_old_in_other_words(
+    case: str, answer: str, problems: int
+) -> None:
+    from evals import graders
+
+    wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
+    assert len(wording(load_drafter().by_name[case], answer)) == problems
