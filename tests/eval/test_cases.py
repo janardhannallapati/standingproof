@@ -316,6 +316,8 @@ def _verdicts(case: Any) -> dict[str, bool]:
         "the last source": values[-1] == claim,
         "the worse reading": all(values) == claim,
         "most of the sources": (sum(values) * 2 > len(values)) == claim,
+        # No reading at all: object whenever the cited source is the first one listed.
+        "not citing the first source": list(case.sources).index(case.citations[0]) != 0,
     }
 
 
@@ -334,6 +336,7 @@ def test_only_the_look_number_reads_all_four_drafts_as_they_are_labelled() -> No
         "the last source",
         "the worse reading",
         "most of the sources",
+        "not citing the first source",
     }
     # And the later look is not the last source where it reads "protected".
     for name in TWO_LOOKS[2:]:
