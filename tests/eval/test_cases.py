@@ -276,7 +276,7 @@ def test_a_redraft_must_be_able_to_see_the_setting_it_is_graded_on() -> None:
         ("g-reviews-switched-off", "Two approving reviews are required before a merge.", 2),
         (
             "g-scanning-off-reviews-same",
-            "Changes need two approving reviews. Secret scanning is switched off for harborlight/app.",
+            "Changes need two approving reviews. Secret scanning is switched off.",
             0,
         ),
         (
