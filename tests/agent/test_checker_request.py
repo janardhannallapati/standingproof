@@ -143,7 +143,23 @@ def test_looks_are_numbered_in_the_order_they_were_made() -> None:
 
 
 def test_the_instructions_say_that_the_later_look_is_what_the_setting_reads_now() -> None:
-    assert 'look="' in CHECKER_PROMPT
-    assert "the higher number" in CHECKER_PROMPT
+    plain = " ".join(CHECKER_PROMPT.split())
+    assert 'look="1" is the earliest' in plain
+    assert "the one with the higher number is what it reads now" in plain
     # Both directions: stating the later look is sound, stating the earlier one is not.
-    assert "does not contradict" in CHECKER_PROMPT and "is contradicted" in CHECKER_PROMPT
+    assert "is not contradicted by the earlier one" in plain
+    assert "states what the earlier look states against the later one is contradicted" in plain
+
+
+def test_a_look_returned_twice_is_one_look_and_keeps_its_place() -> None:
+    # The same observation handed back by a later tool call is the same look.
+    [message] = check_messages(
+        QUESTION,
+        DRAFT,
+        {"evidence:a": ["Protected.", "Protected."], "evidence:b": ["Not protected."]},
+    )
+    body = message["content"]
+
+    assert body.count('look="') == 2
+    assert 'id="evidence:a" cited="no" kind="observed" look="1"' in body
+    assert 'id="evidence:b" cited="no" kind="observed" look="2"' in body

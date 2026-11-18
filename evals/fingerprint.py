@@ -167,7 +167,16 @@ def of_drafter_case(
 
 
 def of_checker_case(case: CheckerCase, variant: CheckerVariant, config: Config) -> dict[str, str]:
-    return {**_checker_parts(config, variant), "case": _sha(case.model_dump(mode="json"))}
+    # The case is hashed with its keys sorted, so the order of its sources is not in that
+    # hash. For two looks the order is what says which is later. It is a part of its own,
+    # and only where it means something, so that a case without two looks hashes as before.
+    looks = [source_id for source_id in case.sources if source_id.startswith(OBSERVED_PREFIX)]
+    order = {"case.looks": _sha(looks)} if len(looks) > 1 else {}
+    return {
+        **_checker_parts(config, variant),
+        **order,
+        "case": _sha(case.model_dump(mode="json")),
+    }
 
 
 def differences(recorded: dict[str, str], today: dict[str, str]) -> list[str]:

@@ -209,3 +209,28 @@ def test_how_an_observation_is_marked_for_the_checker_is_part_of_every_recording
     monkeypatch.setattr(product, "OBSERVED_PREFIX", "seen:")
 
     assert differences(before, of_checker_case(case, "main", config)) == ["checker.request"]
+
+
+def test_which_of_two_looks_comes_first_is_part_of_a_labelled_drafts_recording() -> None:
+    from evals.cases import load_checker
+
+    cases = load_checker()
+    case = cases.by_name["sound-later-look-unprotected"]
+    config = Config.current()
+    # The same case with its two looks the other way round: the later one is now first,
+    # so the request says the opposite and the label would be wrong.
+    turned = case.model_copy(update={"sources": dict(reversed(list(case.sources.items())))})
+
+    assert differences(
+        of_checker_case(case, "main", config), of_checker_case(turned, "main", config)
+    ) == ["case.looks"]
+    # A case with one look or none has no such part, and hashes as it did.
+    assert "case.looks" not in of_checker_case(cases.cases[0], "main", config)
+
+
+def test_the_two_looks_of_a_labelled_draft_cannot_be_told_apart_by_their_names() -> None:
+    from evals.cases import load_checker
+
+    for case in load_checker().cases:
+        for source_id in case.sources:
+            assert not any(word in source_id.upper() for word in ("EARL", "LATE", "OLD", "NEW"))

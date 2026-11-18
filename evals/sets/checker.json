@@ -895,13 +895,13 @@
    "question": "Is branch protection enforced on the default branch of your application repository?",
    "answer": "No. Branch main of harborlight/app is not protected.",
    "citations": [
-    "evidence:EV-BP-LATER"
+    "evidence:EV-BP-3"
    ],
    "sources": {
-    "evidence:EV-BP-EARLIER": [
+    "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
-    "evidence:EV-BP-LATER": [
+    "evidence:EV-BP-3": [
      "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -913,13 +913,13 @@
    "question": "Is branch protection enforced on the default branch of your application repository?",
    "answer": "Yes. Changes to branch main of harborlight/app need 2 approving reviews before they can be merged, and the rule applies to administrators.",
    "citations": [
-    "evidence:EV-BP-EARLIER"
+    "evidence:EV-BP-7"
    ],
    "sources": {
-    "evidence:EV-BP-EARLIER": [
+    "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
-    "evidence:EV-BP-LATER": [
+    "evidence:EV-BP-3": [
      "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
     ]
    },

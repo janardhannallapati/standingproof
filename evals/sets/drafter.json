@@ -951,11 +951,12 @@
    "expect": {
     "outcome": "answered",
     "must": [
-     "not protected|unprotected|no longer protected|isn'?t protected|without (branch )?protection|protection\\b[^.\\n]{0,20}\\b(off|disabled|removed)|\\b(no|zero|0)\\s+(approving\\s+)?(reviews?|approvals?)\\b"
+     "(not|no longer|isn'?t|without)\\s+(currently\\s+)?(protected|enforced|enabled|in place)|unprotected|\\bno\\s+(branch\\s+)?protection|protection\\b[^.;\\n]{0,25}\\b(off|disabled|removed)|(does not|doesn'?t|do not|don'?t|no longer)\\s+(need|require)s?\\b|\\b(no|zero|0)\\s+(approving\\s+)?(reviews?|approvals?)\\s+(are|is)\\s+(required|needed)"
     ],
     "must_not": [
-     "\\b(needs?|requires?|must have)\\s+(at least\\s+)?(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)",
-     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)\\s+(are|is)\\s+(still\\s+)?(required|needed)"
+     "(?<!not )(?<!longer )(?<!n't )\\b(needs?|requires?|must have)\\s+(at least\\s+)?(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
+     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)\\s+(are|is)\\s+(still\\s+)?(required|needed)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
+     "\\bis protected\\b|\\bapproved by (2|two)\\b"
     ],
     "cite": {
      "check": "github.branch_protection",
@@ -1065,11 +1066,11 @@
     "outcome": "answered",
     "must": [
      "\\b(2|two)\\b",
-     "scanning\\b[^.\\n]{0,60}\\b(off|disabled|not\\s+(currently\\s+)?(enabled|on|switched on|turned on|active))|\\b(not|no longer)\\b[^.\\n]{0,30}\\bscanning"
+     "scanning\\b[^.;\\n]{0,60}\\b(off|disabled|(not|isn'?t)\\s+(currently\\s+)?(enabled|on|switched on|turned on|active))"
     ],
     "must_not": [
-     "scanning\\b[^.\\n]{0,25}\\b(is|are|was|remains?)\\s+(also\\s+|currently\\s+|still\\s+)?(enabled|switched on|turned on|on|active)\\b",
-     "\\b(has|have)\\s+(github\\s+)?secret scanning\\s+(enabled|switched on|turned on|on)\\b"
+     "scanning\\b[^.;\\n]{0,25}\\b(is|are|remains?)\\s+(also\\s+|currently\\s+|still\\s+|both\\s+)?(enabled|switched on|turned on|on|active)\\b",
+     "\\b(has|have|with)\\s+(github\\s+)?secret scanning\\s+(enabled|switched on|turned on|on)\\b"
     ],
     "cite": {
      "check": "github.secret_scanning",
