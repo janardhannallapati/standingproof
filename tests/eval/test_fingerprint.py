@@ -244,11 +244,3 @@ def check_messages_of(case: Any) -> Any:
 
     draft = AnswerDraft(status="answered", answer=case.answer, citations=case.citations, note="")
     return check_messages(case.question, draft, case.sources)
-
-
-def test_the_two_looks_of_a_labelled_draft_cannot_be_told_apart_by_their_names() -> None:
-    from evals.cases import load_checker
-
-    for case in load_checker().cases:
-        for source_id in case.sources:
-            assert not any(word in source_id.upper() for word in ("EARL", "LATE", "OLD", "NEW"))

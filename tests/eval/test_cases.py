@@ -1,6 +1,7 @@
 """The eval cases are data a person wrote. A case that cannot be graded is refused on load."""
 
 import copy
+import re
 from collections import Counter
 from typing import Any
 
@@ -298,3 +299,90 @@ def test_a_redraft_that_states_the_old_state_fails_in_many_wordings(case: str, a
 
     wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
     assert wording(load_drafter().by_name[case], answer) != []
+
+
+# What a labelled draft's sources must not give away. The checker is shown each source's
+# id, so an id that states an order or a value answers the case for it.
+LOOK_ID = re.compile(r"^evidence:EV-(BP|SS|2FA|EBS|ROOT|S3|PW)-(\d+)$")
+TWO_LOOKS = [
+    "sound-later-look-unprotected",
+    "earlier-look-against-later",
+    "sound-later-look-protected",
+    "earlier-look-unprotected-against-later",
+]
+
+
+def _looks(case: Any) -> list[str]:
+    return [source_id for source_id in case.sources if source_id.startswith(OBSERVED_PREFIX)]
+
+
+def test_an_observations_id_names_its_setting_and_a_number_and_nothing_else() -> None:
+    for case in load_checker().cases:
+        for source_id in _looks(case):
+            match = LOOK_ID.match(source_id)
+            assert match, f"{case.name}: {source_id}"
+            # The number is a label. It must not be a number the source's text states
+            # (a count of reviews, a length), or the id repeats the value.
+            stated = re.findall(r"(?<![\w:-])\d+(?![\w:-])", " ".join(case.sources[source_id]))
+            assert match[2] not in stated, f"{case.name}: {source_id}"
+
+
+def test_the_number_in_an_id_does_not_say_which_of_two_looks_is_later() -> None:
+    checker = load_checker()
+    later_is_higher = set()
+    for name in TWO_LOOKS:
+        earlier, later = (int(LOOK_ID.match(i)[2]) for i in _looks(checker.by_name[name]))  # type: ignore[index]
+        later_is_higher.add(later > earlier)
+
+    assert later_is_higher == {True, False}
+    assert [c.name for c in checker.cases if len(_looks(c)) > 1] == TWO_LOOKS
+
+
+def test_two_looks_in_one_draft_carry_the_same_minute() -> None:
+    # In the product the time in a source is to the minute. If the two differed here, a
+    # checker could order them by the text and never use the look number.
+    for name in TWO_LOOKS:
+        case = load_checker().by_name[name]
+        minutes = {text.rsplit("Observed ", 1)[1] for i in _looks(case) for text in case.sources[i]}
+        assert len(minutes) == 1, name
+
+
+def _says_protected(text: str) -> bool:
+    return "is not protected" not in text
+
+
+def _verdicts(case: Any) -> dict[str, bool]:
+    """Whether each way of choosing a source to believe would call this draft supported."""
+    claim = case.answer.startswith("Yes")
+    reads = {source_id: _says_protected(texts[0]) for source_id, texts in case.sources.items()}
+    looks = _looks(case)
+    values = list(reads.values())
+    return {
+        "the look number": reads[looks[-1]] == claim,
+        "the earlier look": reads[looks[0]] == claim,
+        "the last source": values[-1] == claim,
+        "the worse reading": all(values) == claim,
+        "most of the sources": (sum(values) * 2 > len(values)) == claim,
+    }
+
+
+def test_only_the_look_number_reads_all_four_drafts_as_they_are_labelled() -> None:
+    checker = load_checker()
+    wrong: dict[str, list[str]] = {}
+    for name in TWO_LOOKS:
+        case = checker.by_name[name]
+        for rule, supported in _verdicts(case).items():
+            if supported != (case.label == "supported"):
+                wrong.setdefault(rule, []).append(name)
+
+    assert "the look number" not in wrong
+    assert set(wrong) == {
+        "the earlier look",
+        "the last source",
+        "the worse reading",
+        "most of the sources",
+    }
+    # And the later look is not the last source where it reads "protected".
+    for name in TWO_LOOKS[2:]:
+        case = checker.by_name[name]
+        assert not list(case.sources)[-1].startswith(OBSERVED_PREFIX)
