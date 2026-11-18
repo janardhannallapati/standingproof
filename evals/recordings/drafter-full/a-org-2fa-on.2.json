@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,10 +27,10 @@
   "status": "answered",
   "answer": "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members.",
   "citations": [
-   "answer:d01466c6-c4ef-4de8-9e4d-cf63d215f611",
-   "evidence:c380825d-f553-40b2-b2ca-4e5737235eb4"
+   "answer:6b2bb2b7-5d20-418c-87a9-e86880437eb9",
+   "evidence:2b70ba86-0a3d-4049-8410-a5bfffb1c34a"
   ],
-  "note": "The answer uses the approved wording, which is valid until 2027-11-17 and owned by security@harborlight.example. A live read-only check of the harborlight GitHub organisation on 2026-11-17 at 01:09:52 UTC confirmed that two-factor sign-in is required for members."
+  "note": "The answer uses the approved wording. A live read-only check of the harborlight GitHub organisation on 2026-11-18 at 03:39 UTC showed two-factor sign-in required for its members, so the live setting matches the approved answer. The approved answer is owned by security@harborlight.example and is valid until 2027-11-18."
  },
  "steps": 3,
  "tool_uses": [
@@ -41,11 +41,11 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:d01466c6-c4ef-4de8-9e4d-cf63d215f611",
-    "answer:bfadea80-dbb6-40dc-a05f-06a2666bd793",
-    "policy:9501912b-66be-4485-9407-d0e9f4962fb6",
-    "answer:7290c0f5-0614-4c8b-ae55-332ae8e7a763",
-    "answer:b33b6aea-bd79-4991-bfda-bbe19410a544"
+    "answer:6b2bb2b7-5d20-418c-87a9-e86880437eb9",
+    "answer:54637f46-ed2d-4c6d-a696-18e915055488",
+    "answer:73da31ba-c9d6-4622-9aa0-7251ed946886",
+    "policy:4d271f23-325e-46c8-81a4-edd353c8ff04",
+    "answer:1f005b7f-2020-4080-b7d2-d53000aabb07"
    ]
   },
   {
@@ -56,28 +56,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:c380825d-f553-40b2-b2ca-4e5737235eb4"
+    "evidence:2b70ba86-0a3d-4049-8410-a5bfffb1c34a"
    ]
   }
  ],
  "seen_sources": {
-  "answer:d01466c6-c4ef-4de8-9e4d-cf63d215f611": [
+  "answer:6b2bb2b7-5d20-418c-87a9-e86880437eb9": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:bfadea80-dbb6-40dc-a05f-06a2666bd793": [
+  "answer:54637f46-ed2d-4c6d-a696-18e915055488": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "policy:9501912b-66be-4485-9407-d0e9f4962fb6": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "answer:7290c0f5-0614-4c8b-ae55-332ae8e7a763": [
-   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
-  ],
-  "answer:b33b6aea-bd79-4991-bfda-bbe19410a544": [
+  "answer:73da31ba-c9d6-4622-9aa0-7251ed946886": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "evidence:c380825d-f553-40b2-b2ca-4e5737235eb4": [
-   "The GitHub organisation harborlight requires two-factor sign-in for its members. Observed 2026-11-17 01:09 UTC."
+  "policy:4d271f23-325e-46c8-81a4-edd353c8ff04": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "answer:1f005b7f-2020-4080-b7d2-d53000aabb07": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "evidence:2b70ba86-0a3d-4049-8410-a5bfffb1c34a": [
+   "The GitHub organisation harborlight requires two-factor sign-in for its members. Observed 2026-11-18 03:39 UTC."
   ]
  },
  "check_turn": {
@@ -87,20 +87,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 596,
+   "input_tokens": 599,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2635,
-  "output_tokens": 384,
+  "input_tokens": 2633,
+  "output_tokens": 399,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0182209,
+ "cost_usd": 0.0185234,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

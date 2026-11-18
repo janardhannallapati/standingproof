@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Changes to the default branch (main) of our application repository (harborlight/app on GitHub) require one approving review before they can be merged, and the rule applies to administrators as well.",
+  "answer": "The default branch (main) of our application repository, harborlight/app on GitHub, is protected. A change needs 1 approving review before it can be merged, and the rule applies to administrators as well. This was observed on 2026-11-18.",
   "citations": [
-   "evidence:414dd5db-9335-4392-9ba4-8fba0119bb06"
+   "evidence:330c38c1-02d5-43e2-9ab8-436e60e29622"
   ],
-  "note": "Please review before sending: the approved answer and the live setting disagree. Approved answer answer:c4805da2-c96d-4a8d-9bae-9e455cefa720 (owner security@harborlight.example, valid until 2027-11-17) says two approving reviews are required. A live check of harborlight/app at 2026-11-17T01:10:19Z found that branch main is protected but needs only 1 approving review (the rule does apply to administrators). I wrote the draft from the live setting because the approved 'two reviews' wording isn't true right now. The control owner should decide which to fix: raise the GitHub setting to 2 reviews, or update the approved answer to 1. After that, run the check again and finalise the wording. The check covers only harborlight/app, so the answer does not speak for other repositories."
+  "note": "Please check before sending: the approved answer and the live setting disagree. The approved answer (answer:9129d762-03d2-47ea-a17d-657350a659d7, owner security@harborlight.example, valid until 2027-11-18) says changes need two approving reviews. A live check of harborlight/app on 2026-11-18T03:40:20Z found only 1 approving review required. The answer gives the observed setting, not the approved wording. Either the branch protection should go back to 2 reviews, or the approved answer should be changed to say 1. The answer owner should decide which, and then the answer can be updated."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review approvals required before merge to main branch"
+    "query": "code review approvals before merge to main branch"
    },
    "is_error": false,
    "source_ids": [
-    "answer:c4805da2-c96d-4a8d-9bae-9e455cefa720",
-    "answer:9c226054-1565-4c90-81eb-6961c1cdc686",
-    "answer:b78dbeca-bb29-4a78-97d5-0aefa0e0f496",
-    "answer:fd8511b9-685a-4682-b1ef-da40dff0a657",
-    "answer:285b5271-4921-4e1f-8321-91c6d0234234"
+    "answer:9129d762-03d2-47ea-a17d-657350a659d7",
+    "answer:3c3f2f1a-1091-40f7-99d0-213d2378a77a",
+    "answer:593fec38-a684-4892-ac88-1981adbd66e7",
+    "answer:e609a578-3cfb-413a-aeac-2618c87a369c",
+    "answer:df39feac-307b-4c9c-a71c-4bbbfda56d59"
    ]
   },
   {
@@ -55,28 +55,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:414dd5db-9335-4392-9ba4-8fba0119bb06"
+    "evidence:330c38c1-02d5-43e2-9ab8-436e60e29622"
    ]
   }
  ],
  "seen_sources": {
-  "answer:c4805da2-c96d-4a8d-9bae-9e455cefa720": [
+  "answer:9129d762-03d2-47ea-a17d-657350a659d7": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:9c226054-1565-4c90-81eb-6961c1cdc686": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:b78dbeca-bb29-4a78-97d5-0aefa0e0f496": [
+  "answer:3c3f2f1a-1091-40f7-99d0-213d2378a77a": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:fd8511b9-685a-4682-b1ef-da40dff0a657": [
-   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  "answer:593fec38-a684-4892-ac88-1981adbd66e7": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:285b5271-4921-4e1f-8321-91c6d0234234": [
+  "answer:e609a578-3cfb-413a-aeac-2618c87a369c": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "evidence:414dd5db-9335-4392-9ba4-8fba0119bb06": [
-   "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-17 01:10 UTC."
+  "answer:df39feac-307b-4c9c-a71c-4bbbfda56d59": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "evidence:330c38c1-02d5-43e2-9ab8-436e60e29622": [
+   "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-18 03:40 UTC."
   ]
  },
  "check_turn": {
@@ -86,20 +86,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 662,
+   "input_tokens": 681,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2848,
-  "output_tokens": 630,
+  "input_tokens": 2859,
+  "output_tokens": 578,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0238609,
+ "cost_usd": 0.0228434,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

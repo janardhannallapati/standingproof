@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "answered",
   "answer": "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication.",
   "citations": [
-   "answer:f20a787c-da61-4a46-bc8b-439f605ac74f"
+   "answer:a0585528-fefe-4b82-9e50-b20dda6e0532"
   ],
-  "note": "This uses the approved answer for control CC6.1 word for word. It's owned by security@harborlight.example and valid until 2027-11-17. The approved wording includes the production AWS account ID (111122223333). Please decide whether to share that ID with this customer or leave it out."
+  "note": "This is the approved answer word for word (owner security@harborlight.example, control CC6.1, valid until 2027-11-18). Please check one thing before sending: the approved wording includes the AWS account ID (111122223333). Decide whether that ID should go to this customer or be removed."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,28 +40,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:f20a787c-da61-4a46-bc8b-439f605ac74f",
-    "policy:fec4a7b6-7cd4-4768-9717-c9c8ee0f92c3",
-    "answer:71d138da-496f-4c1f-86f9-6fa442f89595",
-    "answer:2a063f3e-796e-4486-ab1b-d8db025d3ffd",
-    "answer:8432cf0a-2a5b-44a6-ae6b-ed3238a61e41"
+    "answer:a0585528-fefe-4b82-9e50-b20dda6e0532",
+    "policy:4edca1c5-fcc0-4f53-8d4d-d638586523e2",
+    "answer:0b35a7cb-1b53-4f6d-9c8f-ce417f39a949",
+    "answer:970471b2-b58e-4e87-bced-5745e1ea3e29",
+    "answer:f0bdf128-7461-43ae-bc42-bb2e69f53707"
    ]
   }
  ],
  "seen_sources": {
-  "answer:f20a787c-da61-4a46-bc8b-439f605ac74f": [
+  "answer:a0585528-fefe-4b82-9e50-b20dda6e0532": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "policy:fec4a7b6-7cd4-4768-9717-c9c8ee0f92c3": [
+  "policy:4edca1c5-fcc0-4f53-8d4d-d638586523e2": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:71d138da-496f-4c1f-86f9-6fa442f89595": [
+  "answer:0b35a7cb-1b53-4f6d-9c8f-ce417f39a949": [
    "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "answer:2a063f3e-796e-4486-ab1b-d8db025d3ffd": [
+  "answer:970471b2-b58e-4e87-bced-5745e1ea3e29": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:8432cf0a-2a5b-44a6-ae6b-ed3238a61e41": [
+  "answer:f0bdf128-7461-43ae-bc42-bb2e69f53707": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ]
  },
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 494,
+   "input_tokens": 491,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1438,
-  "output_tokens": 311,
+  "input_tokens": 1432,
+  "output_tokens": 314,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.0115107,
+ "cost_usd": 0.0115692,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Changes to the default branch (main) of our application repository (harborlight/app on GitHub) need 1 approving review before they can be merged, and the rule applies to administrators as well. This setting was checked on 2026-11-17.",
+  "answer": "Changes to the default branch (main) of our application repository (harborlight/app on GitHub) need 1 approving review before they can be merged. The rule also applies to administrators. This was observed in the live repository settings on 2026-11-18.",
   "citations": [
-   "evidence:0385d0f7-68af-4276-b9f3-1c7af4af57bd"
+   "evidence:d12114ca-fd4e-429a-9faa-823ba9818a8d"
   ],
-  "note": "The approved answer and the live setting don't match, so a reviewer needs to settle this before the answer goes out. The approved answer (answer:850221d4-ae55-4e7b-aac0-a18edfd2072d, owner security@harborlight.example, valid until 2027-11-17) says the default branch needs two approving reviews. A live check of harborlight/app on 2026-11-17T01:05Z showed main is protected but needs only 1 approving review, with the rule applying to administrators. I used the live result because the approved answer's claim of two reviews isn't true right now. Please confirm with the owner which is right: either branch protection should be set back to 2, or the approved answer should be changed to 1."
+  "note": "The approved answer and the live setting give different numbers, so please check this before sending. The approved answer (answer:b8c41209-8b11-49e7-a8de-6e37a4d33c06, owner security@harborlight.example, valid until 2027-11-18) says merges need two approving reviews. The live check of harborlight/app on 2026-11-18T03:33:52Z found branch main protected with 1 required review, applying to administrators. I wrote the draft from the live check so it doesn't claim more than is enforced today. The control owner should decide which is right: either set the requirement back to 2 reviews and update this answer, or correct the approved answer to 1. If the setting is put back to 2, run the check again before using the approved wording."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review approvals required before merge to main branch"
+    "query": "code review approvals before merge to main branch"
    },
    "is_error": false,
    "source_ids": [
-    "answer:850221d4-ae55-4e7b-aac0-a18edfd2072d",
-    "answer:1a269baf-279d-496e-bb22-bb1030806aba",
-    "answer:50e33a8f-c824-4b28-8419-16befed2fccf",
-    "answer:a82ff656-4b8b-4126-9012-1e1ed1797774",
-    "answer:ddf0829e-9a01-48c5-a15d-8e50e805f3fb"
+    "answer:b8c41209-8b11-49e7-a8de-6e37a4d33c06",
+    "answer:df2d86b8-3aa4-47c8-8139-7b7facfe1292",
+    "answer:e12e5789-c53c-47a3-a1ec-a92b213264ca",
+    "answer:697ef4f8-9b6d-4abb-b531-1d887e2db0df",
+    "answer:a0aa0fba-a814-41e9-abcd-7124224c4293"
    ]
   },
   {
@@ -55,28 +55,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:0385d0f7-68af-4276-b9f3-1c7af4af57bd"
+    "evidence:d12114ca-fd4e-429a-9faa-823ba9818a8d"
    ]
   }
  ],
  "seen_sources": {
-  "answer:850221d4-ae55-4e7b-aac0-a18edfd2072d": [
+  "answer:b8c41209-8b11-49e7-a8de-6e37a4d33c06": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:1a269baf-279d-496e-bb22-bb1030806aba": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:50e33a8f-c824-4b28-8419-16befed2fccf": [
+  "answer:df2d86b8-3aa4-47c8-8139-7b7facfe1292": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:a82ff656-4b8b-4126-9012-1e1ed1797774": [
-   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  "answer:e12e5789-c53c-47a3-a1ec-a92b213264ca": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:ddf0829e-9a01-48c5-a15d-8e50e805f3fb": [
+  "answer:697ef4f8-9b6d-4abb-b531-1d887e2db0df": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "evidence:0385d0f7-68af-4276-b9f3-1c7af4af57bd": [
-   "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-17 01:05 UTC."
+  "answer:a0aa0fba-a814-41e9-abcd-7124224c4293": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "evidence:d12114ca-fd4e-429a-9faa-823ba9818a8d": [
+   "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-18 03:33 UTC."
   ]
  },
  "check_turn": {
@@ -86,20 +86,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 681,
+   "input_tokens": 693,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2869,
-  "output_tokens": 659,
+  "input_tokens": 2890,
+  "output_tokens": 642,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0244869,
+ "cost_usd": 0.0242234,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

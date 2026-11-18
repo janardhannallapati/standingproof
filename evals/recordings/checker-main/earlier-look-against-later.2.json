@@ -1,0 +1,38 @@
+{
+ "kind": "checker",
+ "case": "earlier-look-against-later",
+ "run": 2,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "309798862f3b605c",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "81a90d4cdd785a51",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "ca63a84af633f897"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "Changes to branch main of harborlight/app need 2 approving reviews before they can be merged",
+     "source_id": "evidence:EV-BP-LATER",
+     "explanation": "The later observation (look 2) of the same branch in the same repository reads that main is not protected, so the earlier look the draft relies on is out of date."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 270,
+   "output_tokens": 135,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1504
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0020404,
+ "check_model": "claude-sonnet-5-5"
+}

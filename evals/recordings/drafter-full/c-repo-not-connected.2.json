@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,51 +27,40 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find anything that answers whether branch protection is on for the default branch of partnerco/widgets. Two searches of the approved answers and policy text found nothing on branch protection or merge approvals. The only result was about vulnerability scanning, which doesn't apply. I also tried a live check on partnerco/widgets, but that repository isn't connected (error: scope_not_connected), so its settings couldn't be seen. The repo name also suggests it may belong to a different organisation, not to us. Someone should confirm who owns partnerco/widgets. If it's ours, it needs to be connected so the live check can run, or someone needs to write and approve an answer on branch protection."
+  "note": "I couldn't find an approved answer or policy text about branch protection. The search only returned unrelated answers on penetration testing and employee MFA. I also didn't run the live branch-protection check. That check only looks at the company's own GitHub, and the question asks about 'partnerco/widgets', which looks like a third-party repository rather than one of ours (Harborlight). Please confirm whether 'partnerco/widgets' is actually one of our repositories. If it is, the live check can be run on it. If it isn't, we can't speak for a third party's settings and the customer should ask that party. It would also help to have an approved answer on branch protection added."
  },
- "steps": 3,
+ "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "branch protection default branch code review"
-   },
-   "is_error": false,
-   "source_ids": []
-  },
-  {
-   "name": "check_live_setting",
-   "arguments": {
-    "check": "github.branch_protection",
-    "scope": "partnerco/widgets"
-   },
-   "is_error": true,
-   "source_ids": []
-  },
-  {
-   "name": "search_approved_answers",
-   "arguments": {
-    "query": "pull request approval before merge"
+    "query": "branch protection default branch required reviews"
    },
    "is_error": false,
    "source_ids": [
-    "answer:d9b1ecfb-5deb-4d56-84ef-ae2cfab4df77"
+    "answer:19050f3d-6df9-417d-b06a-04fc8870b958",
+    "answer:c1c0ec97-71c1-4ff5-980f-5ab4f5a309e4"
    ]
   }
  ],
  "seen_sources": {
-  "answer:d9b1ecfb-5deb-4d56-84ef-ae2cfab4df77": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  "answer:19050f3d-6df9-417d-b06a-04fc8870b958": [
+   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  ],
+  "answer:c1c0ec97-71c1-4ff5-980f-5ab4f5a309e4": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1082,
-  "output_tokens": 452,
+  "input_tokens": 649,
+  "output_tokens": 604,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 6195
+  "cache_read_input_tokens": 4130
  },
- "cost_usd": 0.014607,
+ "cost_usd": 0.015502000000000002,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,12 +25,12 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor. Our Access Control Policy states that all workforce members must authenticate with a second factor.",
+  "answer": "Yes, for employees. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor. Our Access Control Policy also states that all workforce members must authenticate with a second factor.",
   "citations": [
-   "answer:9035a952-a2e3-4c8a-8d30-da45ab32a53a",
-   "policy:6cb5d315-12e9-4243-9c83-ddd04dc04650"
+   "answer:8b0ff23a-9c20-4d83-b9c8-5b62db595180",
+   "policy:dc86f828-10b6-4243-b606-c02d2235b5e0"
   ],
-  "note": "Only partly covered: the question asks about contractors as well as employees. The approved answer (CC6.1) covers employee accounts only. Access Control Policy section 4.2 says 'all workforce members', but the sources I found don't say whether 'workforce members' includes contractors. Because of that, the answer doesn't say directly that contractors must use MFA. Before sending, the answer owner (security@harborlight.example) should confirm whether contractors are covered. If they are, the approved answer could be updated to say so. I didn't run a live settings check because the available checks are for GitHub and AWS, not the identity provider."
+  "note": "This only partly matches the question. The approved answer covers employees only and says nothing about contractors. The Access Control Policy (section 4.2) says 'all workforce members', but neither source defines 'workforce members' or says whether it covers contractors. So the answer doesn't state that contractors are covered. A reviewer should confirm with the answer owner (security@harborlight.example) whether contractors use MFA through the identity provider. If they do, the answer can say so; if not, the gap should be disclosed. I didn't run any live checks because none of them looks at MFA for workforce or identity-provider accounts."
  },
  "steps": 3,
  "tool_uses": [
@@ -41,39 +41,39 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:9035a952-a2e3-4c8a-8d30-da45ab32a53a",
-    "policy:6cb5d315-12e9-4243-9c83-ddd04dc04650",
-    "policy:298e9e45-cf93-46c0-af26-f739dc1d94cc",
-    "answer:fc5792a4-d3bc-4388-80a4-33322aedd508",
-    "answer:99626419-3bef-4387-ae4b-cc3551e2a444"
+    "answer:8b0ff23a-9c20-4d83-b9c8-5b62db595180",
+    "policy:dc86f828-10b6-4243-b606-c02d2235b5e0",
+    "policy:86f43dae-b426-4cf7-bd4a-13074163b78a",
+    "answer:aae5c2a5-f295-4579-b721-751921af9806",
+    "answer:ce452944-af8b-4cd5-85c2-50672823a0fd"
    ]
   },
   {
    "name": "get_policy_section",
    "arguments": {
-    "source_id": "policy:6cb5d315-12e9-4243-9c83-ddd04dc04650"
+    "source_id": "policy:dc86f828-10b6-4243-b606-c02d2235b5e0"
    },
    "is_error": false,
    "source_ids": [
-    "policy:6cb5d315-12e9-4243-9c83-ddd04dc04650"
+    "policy:dc86f828-10b6-4243-b606-c02d2235b5e0"
    ]
   }
  ],
  "seen_sources": {
-  "answer:9035a952-a2e3-4c8a-8d30-da45ab32a53a": [
+  "answer:8b0ff23a-9c20-4d83-b9c8-5b62db595180": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "policy:6cb5d315-12e9-4243-9c83-ddd04dc04650": [
+  "policy:dc86f828-10b6-4243-b606-c02d2235b5e0": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "policy:298e9e45-cf93-46c0-af26-f739dc1d94cc": [
+  "policy:86f43dae-b426-4cf7-bd4a-13074163b78a": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:fc5792a4-d3bc-4388-80a4-33322aedd508": [
+  "answer:aae5c2a5-f295-4579-b721-751921af9806": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:99626419-3bef-4387-ae4b-cc3551e2a444": [
+  "answer:ce452944-af8b-4cd5-85c2-50672823a0fd": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
@@ -86,25 +86,27 @@
      "kind": "not_answered",
      "quote": "",
      "source_id": "",
-     "explanation": "The question asks about contractors as well as employees, but the draft only addresses employee accounts and workforce members, and no source says whether contractors are covered."
+     "explanation": "The question asks about contractors as well as employees, but the draft only says yes for employees and neither answers nor says it cannot answer for contractors."
     }
    ]
   },
   "usage": {
-   "input_tokens": 531,
-   "output_tokens": 94,
+   "input_tokens": 532,
+   "output_tokens": 92,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2488,
-  "output_tokens": 639,
+  "input_tokens": 2476,
+  "output_tokens": 633,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.022102899999999998,
+ "cost_usd": 0.0219694,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

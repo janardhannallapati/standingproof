@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,55 +25,55 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor. Our Access Control Policy also requires all workforce members to authenticate with a second factor.",
+  "answer": "Multi-factor authentication is required for all employee accounts through our identity provider. Our Access Control Policy says that all workforce members must authenticate with a second factor. SMS is not an accepted factor.",
   "citations": [
-   "answer:3eaa5309-7804-4186-8114-b3f53fecfdd2",
-   "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8"
+   "answer:a2423d2a-e628-4a4a-a5eb-fb6ca47d7f7b",
+   "policy:9e923879-d6a3-4187-89a1-48f3112ff807"
   ],
-  "note": "This is only a partial match. The approved answer (CC6.1, valid until 2027-11-17) covers employees only. Access Control Policy section 4.2 says 'workforce members', but neither source says whether that includes contractors. I didn't state that contractors are covered. The policy owner (security@harborlight.example) should confirm that before we say MFA applies to contractors. I didn't run a live check: none of the available checks look at the identity provider's MFA setting."
+  "note": "Partial match: the question asks about employees and contractors. The approved answer covers employees only. The policy text says 'all workforce members', but it doesn't define that term or mention contractors, so the answer doesn't confirm that contractors are covered. Please confirm with the answer owner (security@harborlight.example) before adding contractors. I didn't run a live check, because none of the available checks covers sign-in to the identity provider."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "multi-factor authentication required for employees and contractors"
+    "query": "multi-factor authentication employees contractors"
    },
    "is_error": false,
    "source_ids": [
-    "answer:3eaa5309-7804-4186-8114-b3f53fecfdd2",
-    "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8",
-    "policy:9e679afa-fbe9-467c-a388-3aca9f77e465",
-    "answer:96e3856f-2584-41d8-b13a-6c6cc96de794",
-    "answer:000189f5-650c-4a1b-8cd5-1f159dc35dad"
+    "answer:a2423d2a-e628-4a4a-a5eb-fb6ca47d7f7b",
+    "policy:9e923879-d6a3-4187-89a1-48f3112ff807",
+    "policy:c2d13bc4-271a-4bda-af73-bc3b14527b6b",
+    "answer:cebdd234-0b51-4fb0-9128-8e4c63382657",
+    "answer:68967adc-ff1a-4c41-a326-4021ac03ea7d"
    ]
   },
   {
    "name": "get_policy_section",
    "arguments": {
-    "source_id": "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8"
+    "source_id": "policy:9e923879-d6a3-4187-89a1-48f3112ff807"
    },
    "is_error": false,
    "source_ids": [
-    "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8"
+    "policy:9e923879-d6a3-4187-89a1-48f3112ff807"
    ]
   }
  ],
  "seen_sources": {
-  "answer:3eaa5309-7804-4186-8114-b3f53fecfdd2": [
+  "answer:a2423d2a-e628-4a4a-a5eb-fb6ca47d7f7b": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8": [
+  "policy:9e923879-d6a3-4187-89a1-48f3112ff807": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "policy:9e679afa-fbe9-467c-a388-3aca9f77e465": [
+  "policy:c2d13bc4-271a-4bda-af73-bc3b14527b6b": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:96e3856f-2584-41d8-b13a-6c6cc96de794": [
+  "answer:cebdd234-0b51-4fb0-9128-8e4c63382657": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:000189f5-650c-4a1b-8cd5-1f159dc35dad": [
+  "answer:68967adc-ff1a-4c41-a326-4021ac03ea7d": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
@@ -83,34 +83,30 @@
    "verdict": "not_supported",
    "findings": [
     {
-     "kind": "unsupported",
-     "quote": "Yes.",
-     "source_id": "answer:3eaa5309-7804-4186-8114-b3f53fecfdd2",
-     "explanation": "The question asks about employees and contractors, but the cited sources cover only employee accounts and \"workforce members\" and never mention contractors."
-    },
-    {
-     "kind": "unsupported",
-     "quote": "Our Access Control Policy",
-     "source_id": "policy:29a48201-7c18-4eb2-a61b-8c4b4bc8aca8",
-     "explanation": "The cited policy passage does not give the policy's name, so calling it the Access Control Policy is a detail the source does not state."
+     "kind": "not_answered",
+     "quote": "",
+     "source_id": "",
+     "explanation": "The question asks about contractors as well as employees, but the draft only addresses employee accounts and workforce members and never says whether contractors are covered or that it cannot say."
     }
    ]
   },
   "usage": {
-   "input_tokens": 535,
-   "output_tokens": 550,
+   "input_tokens": 532,
+   "output_tokens": 99,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2499,
-  "output_tokens": 1047,
+  "input_tokens": 2478,
+  "output_tokens": 563,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0257389,
+ "cost_usd": 0.0205074,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

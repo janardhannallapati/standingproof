@@ -103,11 +103,11 @@ def test_the_full_plan_and_its_estimate() -> None:
     assert (len(plan.drafter), len(plan.docs_only), len(plan.checker), len(plan.cheaper)) == (
         108,
         18,
-        156,
-        52,
+        162,
+        54,
     )
     # A redraft case is two rounds, so it is counted on its own line at twice the price.
-    assert [line.calls for line in cost.lines] == [96, 12, 18, 156, 52]
+    assert [line.calls for line in cost.lines] == [96, 12, 18, 162, 54]
     assert 2.9 < cost.total < 3.4
 
 

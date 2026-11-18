@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,10 +27,10 @@
   "status": "answered",
   "answer": "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor.",
   "citations": [
-   "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb",
-   "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115"
+   "answer:4d437afb-9d49-44f2-b4a5-e6618b4974b0",
+   "policy:77f07ac4-59d2-4754-aa2d-80768c194425"
   ],
-  "note": "This uses the approved answer word for word. It is backed by Access Control Policy section 4.2, which says all workforce members must sign in with a second factor and SMS is not accepted. The approved answer's owner is security@harborlight.example and it is valid until 2027-11-17. The answer comes from a written answer and policy, not a check of live systems. The question asks whether MFA is enforced. I could not check a live GitHub or AWS setting because no organisation name or AWS account ID was available. If the customer wants evidence from live systems, a reviewer could run github.org_two_factor or aws.root_mfa for the right organisation or account. Those checks would cover only GitHub and AWS, not the identity provider."
+  "note": "This uses the approved answer's wording (control CC6.1, owner security@harborlight.example, valid until 2027-11-18). Access Control Policy section 4.2 supports it: all workforce members must use a second factor, and SMS is not accepted. Neither source names the identity provider or says which systems it covers. I didn't check any live settings, so nothing here confirms how MFA is set up today. The question doesn't name a GitHub organisation or AWS account, and none of the live checks looks at the identity provider. If you need proof that MFA is actually switched on, run the GitHub organisation two-factor check or the AWS root MFA check. These cover only GitHub and the AWS root user, not the identity provider."
  },
  "steps": 2,
  "tool_uses": [
@@ -41,20 +41,20 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115",
-    "policy:97731d47-432a-4025-a8a5-0f0f86e50ce5",
-    "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb"
+    "policy:77f07ac4-59d2-4754-aa2d-80768c194425",
+    "policy:3a710478-4485-43d6-98a3-cd03f7831c2b",
+    "answer:4d437afb-9d49-44f2-b4a5-e6618b4974b0"
    ]
   }
  ],
  "seen_sources": {
-  "policy:1ee52c7b-af55-4bca-bc39-8a17f8d51115": [
+  "policy:77f07ac4-59d2-4754-aa2d-80768c194425": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "policy:97731d47-432a-4025-a8a5-0f0f86e50ce5": [
+  "policy:3a710478-4485-43d6-98a3-cd03f7831c2b": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:b00012be-5566-4c0f-91e7-ec2abab04dcb": [
+  "answer:4d437afb-9d49-44f2-b4a5-e6618b4974b0": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ]
  },
@@ -65,20 +65,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 324,
+   "input_tokens": 321,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 933,
-  "output_tokens": 516,
+  "input_tokens": 927,
+  "output_tokens": 456,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5469
+  "cache_read_input_tokens": 5634
  },
- "cost_usd": 0.014183900000000001,
+ "cost_usd": 0.0129824,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

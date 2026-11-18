@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,42 +27,42 @@
   "status": "answered",
   "answer": "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well.",
   "citations": [
-   "answer:6a2901fd-a6ba-476c-8046-713a61e4d358"
+   "answer:67344679-6c24-4b1a-9ad8-dff1b9b9ef92"
   ],
-  "note": "This is the approved answer for control CC8.1, word for word. It is owned by security@harborlight.example and valid until 2027-11-17. It covers changes to the default branch only. It does not say whether other branches have the same rule."
+  "note": "This reuses the approved answer for control CC8.1 word for word. The owner is security@harborlight.example and it is valid until 2027-11-18. The answer covers changes to the default branch only. It doesn't say whether other branches have the same rule."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review requirement harborlight/app repository administrators"
+    "query": "code review requirement repository administrators branch protection"
    },
    "is_error": false,
    "source_ids": [
-    "answer:6a2901fd-a6ba-476c-8046-713a61e4d358",
-    "answer:2ed63772-b50a-4d66-a697-2db35526e60a",
-    "answer:c8d08dc2-be56-4427-bd3f-5193d761ad0b",
-    "answer:939a0ee6-6b70-4ecb-aa60-e50d92ed5cc5",
-    "answer:bd0e4a45-6af9-4d88-9ab4-8cf83462cfdc"
+    "answer:67344679-6c24-4b1a-9ad8-dff1b9b9ef92",
+    "answer:5abcb1e5-1368-40e3-b23c-d71ea78e387c",
+    "answer:b703643b-b1b8-48c9-bdba-132a60461831",
+    "answer:4219fa9a-3582-4809-9a5d-485d28f920da",
+    "answer:72deb6d8-e9e8-43c8-9b49-691b5535c8d3"
    ]
   }
  ],
  "seen_sources": {
-  "answer:6a2901fd-a6ba-476c-8046-713a61e4d358": [
+  "answer:67344679-6c24-4b1a-9ad8-dff1b9b9ef92": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:2ed63772-b50a-4d66-a697-2db35526e60a": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:c8d08dc2-be56-4427-bd3f-5193d761ad0b": [
+  "answer:5abcb1e5-1368-40e3-b23c-d71ea78e387c": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:939a0ee6-6b70-4ecb-aa60-e50d92ed5cc5": [
-   "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
+  "answer:b703643b-b1b8-48c9-bdba-132a60461831": [
+   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:bd0e4a45-6af9-4d88-9ab4-8cf83462cfdc": [
-   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  "answer:4219fa9a-3582-4809-9a5d-485d28f920da": [
+   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  ],
+  "answer:72deb6d8-e9e8-43c8-9b49-691b5535c8d3": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ]
  },
  "check_turn": {
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 564,
+   "input_tokens": 550,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1581,
-  "output_tokens": 266,
+  "input_tokens": 1562,
+  "output_tokens": 274,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.011042699999999999,
+ "cost_usd": 0.0111712,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about a bug bounty programme or a vulnerability disclosure policy, so I've left the answer blank. I searched for 'bug bounty programme' and for vulnerability disclosure and reports from security researchers. The closest approved answers cover other topics: weekly vulnerability scanning with fix times (answer:a0eae82c-4ab2-439a-a867-fcfa6551569d) and an annual penetration test by an independent firm (answer:82f03fe9-a426-4d03-9242-276c50e82cd2). Neither says whether a bug bounty exists. The security owner (security@harborlight.example) needs to supply and approve an answer. If a short reply is needed now, one option is to answer with the approved penetration testing and scanning wording, but don't use that to say whether there is a bug bounty."
+  "note": "I couldn't find an approved answer or policy text about a bug bounty programme or vulnerability disclosure policy, so this question needs an answer from the security owner (security@harborlight.example). I searched twice: once for 'bug bounty programme' and once for vulnerability disclosure and reports from outside researchers. Two approved answers are close but don't answer the question: weekly vulnerability scanning with fix times (answer:b21a9e22-ef2c-49f9-b945-67a550dd9cc0) and a yearly penetration test by an independent firm (answer:cfb1c37b-f521-4b1c-aac4-a59e2fdf3d21). Neither says whether a bug bounty exists, so they shouldn't be used to suggest one does or doesn't."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,56 +38,58 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:a0eae82c-4ab2-439a-a867-fcfa6551569d",
-    "answer:82f03fe9-a426-4d03-9242-276c50e82cd2",
-    "answer:db545555-de01-4df3-aead-9ea47448d28a"
+    "answer:b21a9e22-ef2c-49f9-b945-67a550dd9cc0",
+    "answer:cfb1c37b-f521-4b1c-aac4-a59e2fdf3d21",
+    "answer:af1ecfbe-6a7f-4ee5-8c12-b974f78bda90"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "vulnerability disclosure policy security researchers report vulnerabilities"
+    "query": "vulnerability disclosure policy external researchers report security issues"
    },
    "is_error": false,
    "source_ids": [
-    "answer:a0eae82c-4ab2-439a-a867-fcfa6551569d",
-    "answer:82f03fe9-a426-4d03-9242-276c50e82cd2",
-    "answer:2711ec18-d4d3-45de-ae14-4162a421f2b7",
-    "answer:371f31d0-a608-4e00-8fa8-6222a3d3c7ef",
-    "policy:3228fc73-f2e0-4787-b953-652f125f9eb5"
+    "answer:b21a9e22-ef2c-49f9-b945-67a550dd9cc0",
+    "answer:cfb1c37b-f521-4b1c-aac4-a59e2fdf3d21",
+    "answer:dbc668c0-5fa7-40f7-bb75-0556915b32c2",
+    "answer:c8ff8f60-1e36-4e50-8b63-01650feb5857",
+    "policy:414a28cb-ea4a-4607-b3d4-08d0998bb0ed"
    ]
   }
  ],
  "seen_sources": {
-  "answer:a0eae82c-4ab2-439a-a867-fcfa6551569d": [
+  "answer:b21a9e22-ef2c-49f9-b945-67a550dd9cc0": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days.",
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:82f03fe9-a426-4d03-9242-276c50e82cd2": [
+  "answer:cfb1c37b-f521-4b1c-aac4-a59e2fdf3d21": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA.",
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:db545555-de01-4df3-aead-9ea47448d28a": [
+  "answer:af1ecfbe-6a7f-4ee5-8c12-b974f78bda90": [
    "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
   ],
-  "answer:2711ec18-d4d3-45de-ae14-4162a421f2b7": [
-   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
-  ],
-  "answer:371f31d0-a608-4e00-8fa8-6222a3d3c7ef": [
+  "answer:dbc668c0-5fa7-40f7-bb75-0556915b32c2": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "policy:3228fc73-f2e0-4787-b953-652f125f9eb5": [
+  "answer:c8ff8f60-1e36-4e50-8b63-01650feb5857": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "policy:414a28cb-ea4a-4607-b3d4-08d0998bb0ed": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 2038,
-  "output_tokens": 435,
+  "input_tokens": 2071,
+  "output_tokens": 405,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.018091,
+ "cost_usd": 0.017623,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "with hardware security keys",
      "source_id": "LIB-MFA",
-     "explanation": "The cited source requires multi-factor authentication through the identity provider and excludes SMS, but it does not say hardware security keys are required."
+     "explanation": "The cited source says multi-factor authentication is required through the identity provider and excludes SMS, but it does not say hardware security keys are required."
     }
    ]
   },
   "usage": {
    "input_tokens": 140,
-   "output_tokens": 104,
+   "output_tokens": 105,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 7.939e-05,
+ "cost_usd": 8.154000000000001e-05,
  "check_model": "claude-haiku-5-5"
 }

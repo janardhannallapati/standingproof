@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "contradicted",
      "quote": "has multi-factor authentication",
      "source_id": "evidence:EV-ROOT-OFF",
-     "explanation": "The observed source shows the root user of AWS account 111122223333 does not have multi-factor authentication, and the observation outweighs the document saying it does."
+     "explanation": "The observed look at 2026-11-10 09:12 UTC found that the root user of AWS account 111122223333 does not have multi-factor authentication, which conflicts with the draft's claim."
     }
    ]
   },
   "usage": {
-   "input_tokens": 206,
-   "output_tokens": 119,
+   "input_tokens": 210,
+   "output_tokens": 133,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 9.349e-05,
+ "cost_usd": 0.00010254,
  "check_model": "claude-haiku-5-5"
 }

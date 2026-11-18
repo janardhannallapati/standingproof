@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,30 +27,34 @@
   "status": "answered",
   "answer": "Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service.",
   "citations": [
-   "answer:b67e4b4c-3724-45b9-99dd-4053600ff011"
+   "answer:868a7874-abf0-4cd8-88cd-1f97e51a2d6f"
   ],
-  "note": "This uses the approved answer for CC6.7 (valid until 2027-11-17) word for word. That answer doesn't say which data stores are covered, how keys are rotated or which cipher mode is used, so none of that is included. If the customer wants more detail, check with security@harborlight.example. I didn't run a live check (for example, default EBS encryption) because it would only show part of the setup."
+  "note": "This uses the approved answer for 'Is customer data encrypted at rest?' (owner security@harborlight.example, control CC6.7, valid until 2027-11-18). That answer names the algorithm (AES-256) and says the cloud provider's key management service manages the keys. It does not give more detail, such as which storage types it covers, the encryption mode, or how often keys are rotated. No policy section with that detail came up, so the answer doesn't add any. I didn't run a live check (aws.ebs_default_encryption covers only EBS disk default encryption, and no AWS account ID was given), so the answer relies on the approved wording, not on a live check."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "encryption of customer data at rest algorithm"
+    "query": "encryption at rest of customer data algorithm"
    },
    "is_error": false,
    "source_ids": [
-    "answer:b67e4b4c-3724-45b9-99dd-4053600ff011",
-    "answer:4283806d-0f5e-47be-a864-b9157d424956"
+    "answer:868a7874-abf0-4cd8-88cd-1f97e51a2d6f",
+    "answer:9441d435-8d4b-4412-a828-649c9e488fc8",
+    "policy:7af5889a-0af0-4433-9bfb-6ffcb7bdbd57"
    ]
   }
  ],
  "seen_sources": {
-  "answer:b67e4b4c-3724-45b9-99dd-4053600ff011": [
+  "answer:868a7874-abf0-4cd8-88cd-1f97e51a2d6f": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:4283806d-0f5e-47be-a864-b9157d424956": [
+  "answer:9441d435-8d4b-4412-a828-649c9e488fc8": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "policy:7af5889a-0af0-4433-9bfb-6ffcb7bdbd57": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ]
  },
  "check_turn": {
@@ -60,20 +64,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 255,
+   "input_tokens": 341,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 813,
-  "output_tokens": 294,
+  "input_tokens": 1013,
+  "output_tokens": 383,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5469
+  "cache_read_input_tokens": 5634
  },
- "cost_usd": 0.009401900000000001,
+ "cost_usd": 0.0118264,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

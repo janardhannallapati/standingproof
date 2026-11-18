@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. I ran two searches. 'cyber liability insurance coverage limit' returned nothing. 'insurance policy' returned only unrelated Access Control Policy sections (accounts, authentication and leavers). Please send this question to the person who owns insurance details (for example Finance, Legal or Risk) so they can confirm whether the company has this cover and what the limit is."
+  "note": "I couldn't find an approved answer or policy text about cyber liability insurance or its coverage limit. I searched for 'cyber liability insurance coverage limit' and found nothing. A broader search for 'insurance policy' found only unrelated Access Control Policy sections: leavers, authentication and accounts. The live-setting checks only look at GitHub and AWS settings, so they can't answer an insurance question. Whoever owns insurance, probably finance or legal, needs to provide and approve the answer, including whether the company has cyber cover, the carrier if it's to be shared, and the coverage limit."
  },
  "steps": 3,
  "tool_uses": [
@@ -46,31 +46,33 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:00792d0b-23b1-4e11-9ecb-a51b1e0af8b9",
-    "policy:0c1fcb73-7f42-4bcf-a37f-e14eb107ff01",
-    "policy:b828afba-a246-474c-906b-640ec2be0abc"
+    "policy:e1577994-ea7d-405f-a6b4-949b05afe531",
+    "policy:a4482a9a-8e01-4697-adf0-d7ef7d1d5876",
+    "policy:a8b741f7-074c-43ab-b5f4-b87b68ad5547"
    ]
   }
  ],
  "seen_sources": {
-  "policy:00792d0b-23b1-4e11-9ecb-a51b1e0af8b9": [
+  "policy:e1577994-ea7d-405f-a6b4-949b05afe531": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "policy:0c1fcb73-7f42-4bcf-a37f-e14eb107ff01": [
-   "Every workforce member has a named account. Shared accounts are not permitted."
-  ],
-  "policy:b828afba-a246-474c-906b-640ec2be0abc": [
+  "policy:a4482a9a-8e01-4697-adf0-d7ef7d1d5876": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
+  ],
+  "policy:a8b741f7-074c-43ab-b5f4-b87b68ad5547": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 882,
-  "output_tokens": 296,
+  "input_tokens": 881,
+  "output_tokens": 341,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.010687,
+ "cost_usd": 0.011583,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

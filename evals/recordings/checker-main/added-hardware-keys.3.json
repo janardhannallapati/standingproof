@@ -4,9 +4,9 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "with hardware security keys",
      "source_id": "LIB-MFA",
-     "explanation": "The source requires MFA through the identity provider and only excludes SMS; it never says hardware security keys are the required factor."
+     "explanation": "The source says MFA is required through the identity provider and that SMS is not accepted, but never says hardware security keys are the required factor."
     }
    ]
   },
   "usage": {
    "input_tokens": 140,
-   "output_tokens": 99,
+   "output_tokens": 102,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0014039,
+ "cost_usd": 0.0014504000000000001,
  "check_model": "claude-sonnet-5-5"
 }

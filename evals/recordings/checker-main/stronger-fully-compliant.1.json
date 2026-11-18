@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "We are fully compliant with encryption requirements",
      "source_id": "LIB-ENC",
-     "explanation": "The source only states that data is encrypted at rest with AES-256 and says nothing about compliance with any encryption requirements."
+     "explanation": "The source only says customer data is encrypted at rest with AES-256 and says nothing about compliance with any encryption requirements."
     }
    ]
   },
   "usage": {
    "input_tokens": 138,
-   "output_tokens": 107,
+   "output_tokens": 108,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0014799000000000001,
+ "cost_usd": 0.0015064000000000002,
  "check_model": "claude-sonnet-5-5"
 }

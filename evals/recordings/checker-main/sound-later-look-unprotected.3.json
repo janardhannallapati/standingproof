@@ -1,0 +1,31 @@
+{
+ "kind": "checker",
+ "case": "sound-later-look-unprotected",
+ "run": 3,
+ "variant": "main",
+ "fingerprint": {
+  "checker.prompt": "309798862f3b605c",
+  "checker.schema": "ada35d8e371229d7",
+  "checker.request": "81a90d4cdd785a51",
+  "checker.model": "claude-sonnet-5-5",
+  "checker.effort": "medium",
+  "checker.max_tokens": "8000",
+  "case": "b65e87063bc80b59"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "supported",
+   "findings": []
+  },
+  "usage": {
+   "input_tokens": 243,
+   "output_tokens": 18,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1504
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0008164,
+ "check_model": "claude-sonnet-5-5"
+}

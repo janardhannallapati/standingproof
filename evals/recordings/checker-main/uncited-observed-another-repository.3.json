@@ -4,9 +4,9 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -18,27 +18,27 @@
    "verdict": "not_supported",
    "findings": [
     {
-     "kind": "contradicted",
-     "quote": "secret scanning is switched on for harborlight/docs",
-     "source_id": "LIB-SS-APP",
-     "explanation": "The question asks about the application repository (harborlight/app), which LIB-SS-APP says does not have secret scanning on, while the draft reports on harborlight/docs, a different repository."
-    },
-    {
      "kind": "not_answered",
      "quote": "",
-     "source_id": "",
-     "explanation": "The draft never states whether secret scanning is on for the application repository harborlight/app, which is what was asked."
+     "source_id": "LIB-SS-APP",
+     "explanation": "The question asks about the application repository (harborlight/app), but the draft only reports harborlight/docs, and the cited observation says nothing about harborlight/app."
+    },
+    {
+     "kind": "contradicted",
+     "quote": "Yes.",
+     "source_id": "LIB-SS-APP",
+     "explanation": "The document says secret scanning is not yet switched on for the application repository harborlight/app, which conflicts with the draft's affirmative answer, and no observation of that repository outweighs it."
     }
    ]
   },
   "usage": {
-   "input_tokens": 207,
-   "output_tokens": 193,
+   "input_tokens": 211,
+   "output_tokens": 206,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0024779,
+ "cost_usd": 0.0026324,
  "check_model": "claude-sonnet-5-5"
 }

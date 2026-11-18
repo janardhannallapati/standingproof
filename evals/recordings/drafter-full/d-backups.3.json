@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "answered",
   "answer": "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region.",
   "citations": [
-   "answer:1306a39c-1708-4d3d-9cfa-9b624e3e3388"
+   "answer:f1a2e72e-9156-4952-a605-2415e63617e1"
   ],
-  "note": "I used the approved answer for control A1.2 word for word. It is owned by security@harborlight.example and valid until 2027-11-17. It only covers production databases. If the customer is also asking about other systems, such as file storage or config, this answer doesn't cover those."
+  "note": "This is the approved answer for control A1.2 (owner security@harborlight.example, valid until 2027-11-18), used word for word. It covers production databases only. It does not say how often or how long other systems are backed up, so check that this scope is enough for the customer."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,28 +40,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:1306a39c-1708-4d3d-9cfa-9b624e3e3388",
-    "answer:13a4b4ad-1230-4106-88d7-70f38753a253",
-    "answer:fa6722cd-9937-463e-8afa-6e5233f10750",
-    "policy:b415adcc-f3ca-4fb7-8de7-bc3e4e94c2bc",
-    "answer:f81f9009-82bb-4c42-b088-961997816d7a"
+    "answer:f1a2e72e-9156-4952-a605-2415e63617e1",
+    "answer:9087cbf6-f8af-4eaf-a7f0-2d53c66d5404",
+    "answer:4088598a-99f8-4495-bb36-46588776c7a1",
+    "policy:606349f8-a67d-4c52-8eda-881167c33fc1",
+    "answer:42e35a24-02fe-46e1-87f7-ac35999d6d9e"
    ]
   }
  ],
  "seen_sources": {
-  "answer:1306a39c-1708-4d3d-9cfa-9b624e3e3388": [
+  "answer:f1a2e72e-9156-4952-a605-2415e63617e1": [
    "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region."
   ],
-  "answer:13a4b4ad-1230-4106-88d7-70f38753a253": [
+  "answer:9087cbf6-f8af-4eaf-a7f0-2d53c66d5404": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:fa6722cd-9937-463e-8afa-6e5233f10750": [
+  "answer:4088598a-99f8-4495-bb36-46588776c7a1": [
    "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
   ],
-  "policy:b415adcc-f3ca-4fb7-8de7-bc3e4e94c2bc": [
+  "policy:606349f8-a67d-4c52-8eda-881167c33fc1": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "answer:f81f9009-82bb-4c42-b088-961997816d7a": [
+  "answer:42e35a24-02fe-46e1-87f7-ac35999d6d9e": [
    "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
   ]
  },
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 477,
+   "input_tokens": 475,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1399,
-  "output_tokens": 246,
+  "input_tokens": 1395,
+  "output_tokens": 241,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5469
+  "cache_read_input_tokens": 5634
  },
- "cost_usd": 0.010341900000000001,
+ "cost_usd": 0.0102464,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "A check of our AWS account (111122223333) on 2026-11-17 found that new EBS disks are not encrypted by default in the us-east-1 region.",
+  "answer": "A live check of our production AWS account (111122223333) on 2026-11-18 found that new EBS disks are not encrypted by default in the us-east-1 region.",
   "citations": [
-   "evidence:7d2df7e8-61d6-46c8-aac6-3e32df41a899"
+   "evidence:38be56c5-d6e1-438a-a122-0890176f4461"
   ],
-  "note": "Please review before sending: the approved answer and the live account don't match. The approved answer (answer:e075f518-ab35-420e-ba9d-31d0fda1e285, owned by security@harborlight.example, valid until 2027-11-17) says: \"Yes. New EBS disks in our AWS account (111122223333) are encrypted by default.\" But a live check of that account at 2026-11-17T01:07:02Z found that new disks are not encrypted by default in us-east-1. I did not reuse the approved \"Yes\" because the live result contradicts it. The draft states only what the check observed. Two limits: the check covers only the configured region (us-east-1), not other regions, and nothing says whether 111122223333 is the account the customer means by \"production account\". Next step: ask the answer owner (security@harborlight.example) to either fix the setting and run the check again, or update or withdraw the approved answer. Then decide what to tell the customer."
+  "note": "Please review this before it is sent. The live setting contradicts our approved answer. The approved answer (answer:bee5088f-0b58-4724-8bc1-c335b68787e4, owner security@harborlight.example, valid until 2027-11-18, control CC6.7) says: \"Yes. New EBS disks in our AWS account (111122223333) are encrypted by default.\" But a live check of that account (evidence:38be56c5-d6e1-438a-a122-0890176f4461, observed 2026-11-18T03:35:43Z) found that EBS default encryption is off in us-east-1. I did not reuse the approved 'Yes' because the current setting contradicts it. The check only looked at us-east-1, so it doesn't show the setting in any other region. Before replying to the customer, the answer owner should either turn on EBS default encryption and re-run the check, or update the approved answer. You may also choose not to send this draft as written until that's settled."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "EBS disk encryption by default at rest"
+    "query": "EBS disk encryption by default"
    },
    "is_error": false,
    "source_ids": [
-    "answer:e075f518-ab35-420e-ba9d-31d0fda1e285",
-    "answer:bd77ac19-6f5d-4a4c-94ab-207ba59182d4",
-    "answer:64024f27-c98a-4785-a172-195b83019ea7",
-    "answer:4005ec8c-5a43-4a6f-9013-0ccdad231c9e",
-    "answer:1da15f1e-4650-42f5-aecd-cad3a3144d42"
+    "answer:bee5088f-0b58-4724-8bc1-c335b68787e4",
+    "answer:6eaddf9a-850e-43eb-a3cc-74faf992e93a",
+    "answer:bcaca8a3-829b-45ca-9c5f-61c2919621bc",
+    "answer:7fe7a0cd-0c5f-4b47-a478-6a7ca02ec7c1",
+    "answer:fd5c5b75-c743-47b7-8dbc-facbf8ea390e"
    ]
   },
   {
@@ -55,28 +55,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:7d2df7e8-61d6-46c8-aac6-3e32df41a899"
+    "evidence:38be56c5-d6e1-438a-a122-0890176f4461"
    ]
   }
  ],
  "seen_sources": {
-  "answer:e075f518-ab35-420e-ba9d-31d0fda1e285": [
+  "answer:bee5088f-0b58-4724-8bc1-c335b68787e4": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:bd77ac19-6f5d-4a4c-94ab-207ba59182d4": [
+  "answer:6eaddf9a-850e-43eb-a3cc-74faf992e93a": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:64024f27-c98a-4785-a172-195b83019ea7": [
+  "answer:bcaca8a3-829b-45ca-9c5f-61c2919621bc": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ],
-  "answer:4005ec8c-5a43-4a6f-9013-0ccdad231c9e": [
+  "answer:7fe7a0cd-0c5f-4b47-a478-6a7ca02ec7c1": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ],
-  "answer:1da15f1e-4650-42f5-aecd-cad3a3144d42": [
-   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  "answer:fd5c5b75-c743-47b7-8dbc-facbf8ea390e": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "evidence:7d2df7e8-61d6-46c8-aac6-3e32df41a899": [
-   "New EBS disks in AWS account 111122223333 are not encrypted by default in us-east-1. Observed 2026-11-17 01:07 UTC."
+  "evidence:38be56c5-d6e1-438a-a122-0890176f4461": [
+   "New EBS disks in AWS account 111122223333 are not encrypted by default in us-east-1. Observed 2026-11-18 03:35 UTC."
   ]
  },
  "check_turn": {
@@ -89,17 +89,19 @@
    "input_tokens": 630,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
   "input_tokens": 2728,
-  "output_tokens": 833,
+  "output_tokens": 744,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0275049,
+ "cost_usd": 0.025741399999999998,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches. The first returned only the authentication section of the Access Control Policy. The second returned approved answers on penetration testing, vulnerability scanning and encryption at rest, but none of them mention ISO 27001 or any certification. Since nothing supports a claim either way, I haven't said whether the company is certified and haven't given a certificate number. Someone who owns certifications, such as security@harborlight.example, needs to provide an approved answer before this question can be answered."
+  "note": "I couldn't find an approved answer or policy text that mentions ISO 27001 certification or a certificate number. I ran two searches: 'ISO 27001 certification certificate number' and 'information security certifications audits attestations'. They only returned unrelated items: the access-control policy on authentication (policy:f555addf-7c96-4285-9be3-130d193cbb25) and approved answers on penetration testing, vulnerability scanning and encryption at rest. None of these mentions ISO 27001 or any certification. Because of that, the answer doesn't say whether the company is certified or give a certificate number. The security owner (security@harborlight.example) needs to confirm the certification status and, if there is a certificate, supply an approved answer with the number. The approved penetration-test answer (answer:a7e8a04c-e873-4b04-af55-a68d369ef056) could go alongside it as related assurance, but it doesn't answer this question."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,7 +38,7 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:97e7b295-92b4-4d24-be90-0cdb3d0519bf"
+    "policy:f555addf-7c96-4285-9be3-130d193cbb25"
    ]
   },
   {
@@ -48,34 +48,36 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:2746e85f-ac48-4a38-a8c0-f195dbc95a4b",
-    "answer:01b4ff9d-f80f-4ff3-964c-42b3ad2e66aa",
-    "answer:634f1736-3869-4683-8bd6-bc01ec0d147e"
+    "answer:a7e8a04c-e873-4b04-af55-a68d369ef056",
+    "answer:24961e3f-9f40-4a15-b53f-2f32b9587da8",
+    "answer:bfa7461c-a7db-48b6-b751-af0e7ad996b5"
    ]
   }
  ],
  "seen_sources": {
-  "policy:97e7b295-92b4-4d24-be90-0cdb3d0519bf": [
+  "policy:f555addf-7c96-4285-9be3-130d193cbb25": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:2746e85f-ac48-4a38-a8c0-f195dbc95a4b": [
+  "answer:a7e8a04c-e873-4b04-af55-a68d369ef056": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:01b4ff9d-f80f-4ff3-964c-42b3ad2e66aa": [
+  "answer:24961e3f-9f40-4a15-b53f-2f32b9587da8": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:634f1736-3869-4683-8bd6-bc01ec0d147e": [
+  "answer:bfa7461c-a7db-48b6-b751-af0e7ad996b5": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1194,
-  "output_tokens": 354,
+  "input_tokens": 1181,
+  "output_tokens": 474,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.013094999999999999,
+ "cost_usd": 0.015442999999999998,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

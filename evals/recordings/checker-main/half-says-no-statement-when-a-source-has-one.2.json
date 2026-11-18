@@ -4,9 +4,9 @@
  "run": 2,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "contradicted",
      "quote": "We have no approved statement about sharing the full report.",
      "source_id": "LIB-PEN-SHARE",
-     "explanation": "The uncited source LIB-PEN-SHARE states that the full report is not shared with customers and that a summary letter is available under NDA, so an approved statement does exist."
+     "explanation": "LIB-PEN-SHARE states that the full report is not shared with customers and a summary letter is available under NDA, so an approved statement does exist."
     }
    ]
   },
   "usage": {
    "input_tokens": 192,
-   "output_tokens": 128,
+   "output_tokens": 122,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0017979,
+ "cost_usd": 0.0017544000000000001,
  "check_model": "claude-sonnet-5-5"
 }

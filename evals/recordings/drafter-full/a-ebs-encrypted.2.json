@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,27 +25,28 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Yes. New EBS disks in our production AWS account (111122223333) are encrypted by default. A live check on 2026-11-17 confirmed this for the us-east-1 region.",
+  "answer": "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default. A live check of that account on 2026-11-18 confirmed that new EBS disks are encrypted by default in the us-east-1 region.",
   "citations": [
-   "answer:b9a5decc-579d-45d0-8f48-3b1174f901d8",
-   "evidence:7b12887a-8594-4439-b283-acfe2eec86a2"
+   "answer:c7ee68d6-b90f-4c5a-8786-abe23cc56fb4",
+   "evidence:13387641-3f22-486a-bb5e-28f909f3c52c",
+   "answer:aed0e270-aa9a-4b9a-ae3c-e89735c046fd"
   ],
-  "note": "The answer reuses the approved wording, which runs until 2027-11-17. The approved answer says 'our AWS account' without calling it production. The production label comes from a separate approved answer about root-user MFA, which names the same account (111122223333) as production. The live check covered only us-east-1, which is the configured region. Other regions were not checked, so the answer should not be read as covering every region."
+  "note": "The approved disk-encryption answer (owner security@harborlight.example, valid until 2027-11-18) names account 111122223333 but does not call it the production account. A separate approved answer, about root-account MFA, is what identifies 111122223333 as our production AWS account, so it is cited too. The live check covered one region only (us-east-1). Encryption by default is set per region in AWS, so this answer says nothing about other regions. A reviewer should confirm whether production uses any other regions before the answer is read as covering all of them."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "EBS disk encryption by default production AWS account"
+    "query": "EBS disk encryption by default"
    },
    "is_error": false,
    "source_ids": [
-    "answer:b9a5decc-579d-45d0-8f48-3b1174f901d8",
-    "answer:84f78e5e-7032-4f8f-9703-ad3149816a60",
-    "answer:2009ace9-173e-4da4-98ce-03c96d3a1a22",
-    "answer:9bd180d6-0c72-45d2-9817-8305a554df24",
-    "answer:17d57c21-d14c-43a8-a7f1-8ada35acf41e"
+    "answer:c7ee68d6-b90f-4c5a-8786-abe23cc56fb4",
+    "answer:3be6ded5-d655-44cd-8248-99e0ad502019",
+    "answer:636ce255-9cec-4c63-9db4-2f111f199e2d",
+    "answer:d16a88a1-85e5-46fa-8232-e1ff17e5b723",
+    "answer:aed0e270-aa9a-4b9a-ae3c-e89735c046fd"
    ]
   },
   {
@@ -56,28 +57,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:7b12887a-8594-4439-b283-acfe2eec86a2"
+    "evidence:13387641-3f22-486a-bb5e-28f909f3c52c"
    ]
   }
  ],
  "seen_sources": {
-  "answer:b9a5decc-579d-45d0-8f48-3b1174f901d8": [
+  "answer:c7ee68d6-b90f-4c5a-8786-abe23cc56fb4": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:84f78e5e-7032-4f8f-9703-ad3149816a60": [
-   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
-  ],
-  "answer:2009ace9-173e-4da4-98ce-03c96d3a1a22": [
+  "answer:3be6ded5-d655-44cd-8248-99e0ad502019": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:9bd180d6-0c72-45d2-9817-8305a554df24": [
+  "answer:636ce255-9cec-4c63-9db4-2f111f199e2d": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
+  ],
+  "answer:d16a88a1-85e5-46fa-8232-e1ff17e5b723": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ],
-  "answer:17d57c21-d14c-43a8-a7f1-8ada35acf41e": [
-   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
+  "answer:aed0e270-aa9a-4b9a-ae3c-e89735c046fd": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "evidence:7b12887a-8594-4439-b283-acfe2eec86a2": [
-   "New EBS disks in AWS account 111122223333 are encrypted by default in us-east-1. Observed 2026-11-17 01:10 UTC."
+  "evidence:13387641-3f22-486a-bb5e-28f909f3c52c": [
+   "New EBS disks in AWS account 111122223333 are encrypted by default in us-east-1. Observed 2026-11-18 03:39 UTC."
   ]
  },
  "check_turn": {
@@ -87,20 +88,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 627,
+   "input_tokens": 648,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2725,
-  "output_tokens": 491,
+  "input_tokens": 2734,
+  "output_tokens": 627,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.020658899999999997,
+ "cost_usd": 0.0233894,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

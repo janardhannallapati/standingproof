@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,11 +25,11 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Customer data is encrypted at rest using AES-256, with keys managed by our cloud provider's key management service.",
+  "answer": "Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service.",
   "citations": [
-   "answer:c6c5b96b-02c0-49ad-b0ce-cab87fc690f0"
+   "answer:8d426d05-8561-4138-ae62-48afe68eb676"
   ],
-  "note": "This uses the approved answer for 'Is customer data encrypted at rest?' (control CC6.7, owner security@harborlight.example, valid until 2027-11-17). That answer doesn't say which storage types it covers, such as databases, backups, object storage or disks, or how keys are rotated. I didn't add those details. If the customer wants more on the method, the owner will need to supply it. I didn't run a live check of encryption settings."
+  "note": "This uses the approved answer for 'Is customer data encrypted at rest?' (control CC6.7, owner security@harborlight.example, valid until 2027-11-18). That answer names the algorithm (AES-256) and says the cloud provider's key management service manages the keys. It gives no other details, such as which storage types are covered, the key rotation schedule or the encryption mode, so none were added. No policy section came back to give more detail. I didn't run a live check: the only relevant one (aws.ebs_default_encryption) covers just new EBS disks in one region, so it couldn't confirm encryption of all stored customer data. If you want that partial live evidence, a reviewer can run it with the AWS account ID."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,16 +40,16 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:c6c5b96b-02c0-49ad-b0ce-cab87fc690f0",
-    "answer:6b1b48e2-9c4f-4855-ba58-dc4362ee8ee4"
+    "answer:8d426d05-8561-4138-ae62-48afe68eb676",
+    "answer:0b77df07-af1e-4cc3-b790-8c4119a44fad"
    ]
   }
  ],
  "seen_sources": {
-  "answer:c6c5b96b-02c0-49ad-b0ce-cab87fc690f0": [
+  "answer:8d426d05-8561-4138-ae62-48afe68eb676": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:6b1b48e2-9c4f-4855-ba58-dc4362ee8ee4": [
+  "answer:0b77df07-af1e-4cc3-b790-8c4119a44fad": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ]
  },
@@ -60,20 +60,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 267,
+   "input_tokens": 257,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 837,
-  "output_tokens": 314,
+  "input_tokens": 817,
+  "output_tokens": 397,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 5469
+  "cache_read_input_tokens": 5634
  },
- "cost_usd": 0.0098739,
+ "cost_usd": 0.011490400000000001,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

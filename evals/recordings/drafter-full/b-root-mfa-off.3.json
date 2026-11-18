@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -25,26 +25,26 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "No. As of 2026-11-17, the root user of our production AWS account (111122223333) does not have multi-factor authentication.",
+  "answer": "No. When we checked on 2026-11-18, the root user of our production AWS account (111122223333) did not have multi-factor authentication.",
   "citations": [
-   "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227"
+   "evidence:d8574bd4-2180-43bb-b8a6-7f3d5a115fb2"
   ],
-  "note": "This answer must not go out without review because the live account and the approved answer disagree. The approved answer (answer:fff72d41-811c-4362-8344-3afeb13b5749, owner security@harborlight.example, valid until 2027-11-17) says yes: the root user of AWS account 111122223333 has multi-factor authentication. A live check of that account at 2026-11-17T01:17:11Z found it does not (root_mfa_enabled: false). I used the live check instead of the approved wording because sending 'Yes' would be a false statement. Before sending: (1) Ask security@harborlight.example to confirm whether root MFA is meant to be on, and switch it on if so. (2) Once it is on, run the check again and go back to the approved 'Yes' answer. (3) Until then, have someone with authority decide whether to send this 'No' or delay the response. The approved answer also needs to be corrected or withdrawn."
+  "note": "Please review before sending: the approved answer and the live account disagree. The approved answer (answer:d9826d32-3374-4ac9-9328-e7f89b68eafd, owner security@harborlight.example, valid until 2027-11-18) says yes, the root user has MFA. But a live check of account 111122223333 at 2026-11-18T03:47:47Z (evidence:d8574bd4-2180-43bb-b8a6-7f3d5a115fb2) found MFA was not set up for the root user. I didn't use the approved 'Yes' because the live check contradicts it. Next steps: 1) ask security@harborlight.example to turn on root MFA, 2) run the check again, 3) update the answer. If MFA is confirmed before this goes out, the approved wording could be used instead. Also, the approved answer may need correcting or retiring."
  },
  "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "root user multi-factor authentication production cloud account"
+    "query": "root user MFA production cloud account"
    },
    "is_error": false,
    "source_ids": [
-    "answer:fff72d41-811c-4362-8344-3afeb13b5749",
-    "answer:931d3149-9cfd-4601-aec5-916b76161efd",
-    "policy:f4ea9fa9-a1c6-4721-9539-6fdc6d9fb0bf",
-    "answer:6de65635-7653-458c-aa4c-fba9865adfa5",
-    "answer:7df0077d-598f-4b09-8303-5824824acf5b"
+    "answer:d9826d32-3374-4ac9-9328-e7f89b68eafd",
+    "policy:eb2489d5-8382-4e2f-9a87-6d13411f7204",
+    "answer:3a05194a-0786-4032-8adf-a9a28d455870",
+    "answer:215b8f01-77ac-4075-ae77-787d5a4a0fb8",
+    "answer:ff37af54-d049-42b4-959e-6418c2dbe555"
    ]
   },
   {
@@ -55,28 +55,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227"
+    "evidence:d8574bd4-2180-43bb-b8a6-7f3d5a115fb2"
    ]
   }
  ],
  "seen_sources": {
-  "answer:fff72d41-811c-4362-8344-3afeb13b5749": [
+  "answer:d9826d32-3374-4ac9-9328-e7f89b68eafd": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:931d3149-9cfd-4601-aec5-916b76161efd": [
-   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  "policy:eb2489d5-8382-4e2f-9a87-6d13411f7204": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "policy:f4ea9fa9-a1c6-4721-9539-6fdc6d9fb0bf": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "answer:6de65635-7653-458c-aa4c-fba9865adfa5": [
-   "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
-  ],
-  "answer:7df0077d-598f-4b09-8303-5824824acf5b": [
+  "answer:3a05194a-0786-4032-8adf-a9a28d455870": [
    "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "evidence:fdf2f5a0-115a-46fa-98dc-7470e67b1227": [
-   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-17 01:17 UTC."
+  "answer:215b8f01-77ac-4075-ae77-787d5a4a0fb8": [
+   "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:ff37af54-d049-42b4-959e-6418c2dbe555": [
+   "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
+  ],
+  "evidence:d8574bd4-2180-43bb-b8a6-7f3d5a115fb2": [
+   "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-18 03:47 UTC."
   ]
  },
  "check_turn": {
@@ -86,20 +86,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 609,
+   "input_tokens": 602,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 2656,
-  "output_tokens": 819,
+  "input_tokens": 2595,
+  "output_tokens": 700,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 7534
+  "cache_read_input_tokens": 7699
  },
- "cost_usd": 0.0269789,
+ "cost_usd": 0.0243854,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

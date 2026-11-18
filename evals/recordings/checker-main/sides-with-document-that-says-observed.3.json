@@ -4,9 +4,9 @@
  "run": 3,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "contradicted",
      "quote": "needs 2 approving reviews before it can be merged",
      "source_id": "evidence:EV-BP1",
-     "explanation": "The observed source for the same branch of harborlight/app says a change needs 1 approving review, and an observed source outweighs the document that says 2."
+     "explanation": "The only observed look of harborlight/app main says 1 approving review is required, and a document stating 2 does not outweigh an observation of the same setting in the same place."
     }
    ]
   },
   "usage": {
-   "input_tokens": 254,
-   "output_tokens": 118,
+   "input_tokens": 258,
+   "output_tokens": 124,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0018219,
+ "cost_usd": 0.0019064000000000002,
  "check_model": "claude-sonnet-5-5"
 }

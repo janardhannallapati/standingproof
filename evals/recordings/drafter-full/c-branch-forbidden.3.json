@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved source to answer this, so I've left the answer blank. No approved answer or policy text covers branch protection, required reviews or merge rules. I searched twice. The second search only returned unrelated entries about MFA and vulnerability scanning. I also tried to check the live branch protection setting on harborlight/app, but our credential was refused access (forbidden), so nothing was seen and I can't say whether protection is on or off. To answer this, a reviewer could give the check credential read access so it can be run again, or have the owner approve an answer about branch protection."
+  "note": "I couldn't find anything to support an answer about branch protection on harborlight/app. The approved answers and policy text have nothing on branch protection, pull-request reviews or approvals before merging. Two searches only returned unrelated entries on vulnerability scanning and encryption at rest. I also tried a live read-only check of branch protection on harborlight/app, but our credential was refused access, so I couldn't see the setting either way. Next step: someone with access should check the repository settings, or the security team (security@harborlight.example) should approve an answer."
  },
  "steps": 3,
  "tool_uses": [
@@ -51,35 +51,33 @@
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "pull request approval required before merge"
+    "query": "pull request approval before merge change management"
    },
    "is_error": false,
    "source_ids": [
-    "answer:69b59a99-69b7-4338-9420-1dc5b6f722d1",
-    "policy:656ff130-1b54-4644-8f7a-a7d7d953aad1",
-    "answer:b3f04a1f-46c6-4449-9417-db55d34721bf"
+    "answer:acb2c1a9-695f-4c88-8b89-b470766270e2",
+    "answer:701bac82-8b4d-4ed0-89a4-9ce4b0811212"
    ]
   }
  ],
  "seen_sources": {
-  "answer:69b59a99-69b7-4338-9420-1dc5b6f722d1": [
-   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
-  ],
-  "policy:656ff130-1b54-4644-8f7a-a7d7d953aad1": [
-   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
-  ],
-  "answer:b3f04a1f-46c6-4449-9417-db55d34721bf": [
+  "answer:acb2c1a9-695f-4c88-8b89-b470766270e2": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  ],
+  "answer:701bac82-8b4d-4ed0-89a4-9ce4b0811212": [
+   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1369,
-  "output_tokens": 427,
+  "input_tokens": 1261,
+  "output_tokens": 417,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.015255000000000001,
+ "cost_usd": 0.014623,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }
