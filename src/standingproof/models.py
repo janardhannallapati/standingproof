@@ -535,11 +535,14 @@ class DriftEvent(Base):
 
 
 class AnswerReopening(Base):
-    """One answer put back in front of a reviewer by one drift event. Append-only."""
+    """One answer put back in front of a reviewer by one drift event. Append-only.
+
+    One row for each wait: the same change can reopen an answer again after a decision
+    closed the first wait, and that wait keeps a record of its own."""
 
     __tablename__ = "answer_reopenings"
     __table_args__ = (
-        UniqueConstraint("drift_event_id", "run_question_id", name="uq_answer_reopenings_once"),
+        Index("ix_answer_reopenings_event", "drift_event_id", "run_question_id"),
         Index("ix_answer_reopenings_question", "run_question_id", "seq"),
     )
 

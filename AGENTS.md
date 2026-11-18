@@ -216,6 +216,10 @@ live system settings, and reopens them when those settings drift.
   tells it how busy the others are. Never put a `seq` in a response.
 - `run_questions.reopened_seq` is set and cleared with `reopened_at`. "The reopenings of
   this wait" are those with `seq >= reopened_seq`.
+- A reopening is recorded once for a change in a wait, and again when the same change
+  reopens the answer in a later wait (a redraft that rests on an older observation). Only
+  `_reopen` in `drift/examine.py` decides that; the table has no unique rule for it. Code
+  that lists a change's answers lists each answer once.
 - `run_check` with `max_age` of zero always looks. It never asks the clock whether an
   earlier observation is recent enough.
 - A new table with a `tenant_id` needs, in its migration: `ENABLE` and `FORCE ROW LEVEL

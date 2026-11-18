@@ -201,11 +201,17 @@ async def changes_page(
                 AnswerReopening.tenant_id == tenant_id,
                 AnswerReopening.drift_event_id.in_([event.id for event in events]),
             )
-            .order_by(Run.created_at.desc(), Run.id, RunQuestion.position)
+            .order_by(Run.created_at.desc(), Run.id, RunQuestion.position, AnswerReopening.seq)
         )
     ).all()
     by_event: dict[uuid.UUID, list[tuple[AnswerReopening, RunQuestion, str, str]]] = {}
+    listed: set[tuple[uuid.UUID, uuid.UUID]] = set()
     for reopening, item, text, filename in reopened:
+        # A change can reopen an answer in more than one wait. It is listed once, with the
+        # first record: what the answer rested on when the change was first seen.
+        if (reopening.drift_event_id, item.id) in listed:
+            continue
+        listed.add((reopening.drift_event_id, item.id))
         by_event.setdefault(reopening.drift_event_id, []).append((reopening, item, text, filename))
     wanted: set[uuid.UUID] = set()
     for event in events:
