@@ -13,8 +13,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from evals.cases import CheckerCase, CheckerSet, DrafterSet
-from evals.graders import GradedCheck, GradedDraft
+from evals.cases import CheckerCase, CheckerSet, DrafterSet, ReaderSet
+from evals.graders import GradedCheck, GradedDraft, GradedReading
 from standingproof.agent.steps import check_draft
 from standingproof.agent.types import AnswerDraft
 
@@ -52,14 +52,16 @@ def _majority(grades: Sequence[str]) -> str:
     return max(_WORST_FIRST, key=lambda grade: (counts[grade], -_WORST_FIRST.index(grade)))
 
 
-def _by_case[G: (GradedDraft, GradedCheck)](graded: Sequence[G]) -> dict[str, list[G]]:
+def _by_case[G: (GradedDraft, GradedCheck, GradedReading)](
+    graded: Sequence[G],
+) -> dict[str, list[G]]:
     grouped: dict[str, list[G]] = {}
     for item in graded:
         grouped.setdefault(item.case, []).append(item)
     return grouped
 
 
-def _missing[G: (GradedDraft, GradedCheck)](
+def _missing[G: (GradedDraft, GradedCheck, GradedReading)](
     names: Sequence[str], grouped: dict[str, list[G]], runs: int
 ) -> list[str]:
     """Cases that do not have exactly runs 1 to `runs`, each once."""
@@ -85,6 +87,8 @@ class DrafterScore:
     missing: list[str]
     # Cases with a drafted answer that no checker read (the check was skipped or cut short).
     unchecked: list[str]
+    # Cases with an answer whose wording a reader should have read and did not.
+    unread: list[str]
 
 
 def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int) -> DrafterScore:
@@ -123,6 +127,11 @@ def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int
             case.name
             for case in cases.cases
             if any(g.check == "not_checked" for g in grouped.get(case.name, []))
+        ],
+        unread=[
+            case.name
+            for case in cases.cases
+            if any(g.read is False for g in grouped.get(case.name, []))
         ],
     )
 
@@ -222,6 +231,10 @@ class Baseline(BaseModel):
     drafter_right_cases: int
     checker_missed_cases: list[str]
     checker_false_alarm_cases: int
+    # The reader of wordings, on its labelled sentences. Absent from a baseline accepted
+    # before there was one.
+    reader_stale_passed: list[str] = []
+    reader_correct_refused: int = 0
     accepted_on: str
     note: str
 
@@ -230,8 +243,17 @@ def load_baseline(path: Path = BASELINE) -> Baseline | None:
     return Baseline.model_validate(json.loads(path.read_text())) if path.exists() else None
 
 
-def as_baseline(drafter: DrafterScore, checker: CheckerScore, *, on: str, note: str) -> Baseline:
+def as_baseline(
+    drafter: DrafterScore,
+    checker: CheckerScore,
+    *,
+    on: str,
+    note: str,
+    reader: "ReaderScore | None" = None,
+) -> Baseline:
     return Baseline(
+        reader_stale_passed=reader.stale_passed if reader else [],
+        reader_correct_refused=len(reader.correct_refused) if reader else 0,
         runs=drafter.runs,
         drafter_wrong_cases=drafter.wrong_cases,
         drafter_right_cases=drafter.right_cases,
@@ -255,13 +277,20 @@ def unread(drafter: DrafterScore, checker: CheckerScore) -> list[str]:
         problems.append(
             f"a drafted answer's check did not finish, in: {', '.join(drafter.unchecked)}"
         )
+    if drafter.unread:
+        problems.append(f"a drafted answer's wording was not read, in: {', '.join(drafter.unread)}")
     return problems
 
 
-def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> list[str]:
+def gate(
+    baseline: Baseline,
+    drafter: DrafterScore,
+    checker: CheckerScore,
+    reader: "ReaderScore | None" = None,
+) -> list[str]:
     """Why this result may not replace the baseline's. Empty when it may."""
     problems: list[str] = []
-    missing = [*drafter.missing, *checker.missing]
+    missing = [*drafter.missing, *checker.missing, *(reader.missing if reader else [])]
     if missing:
         problems.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
     if (drafter.runs, checker.runs) != (baseline.runs, baseline.runs):
@@ -282,5 +311,82 @@ def gate(baseline: Baseline, drafter: DrafterScore, checker: CheckerScore) -> li
         problems.append(
             f"the checker objects to {len(checker.false_alarm_cases)} sound drafts, against "
             f"{baseline.checker_false_alarm_cases} in the baseline (one case of slack)"
+        )
+    if reader is not None:
+        problems += _reader_gate(baseline, reader)
+    return problems
+
+
+@dataclass(frozen=True)
+class ReaderScore:
+    sentences: int
+    runs: int
+    # By majority of a sentence's runs. A run that was not read counts against the reader
+    # either way: as "current" for a stale sentence, as "stale" for a correct one.
+    # Stale sentences the comparison took for stating the present value. The harmful
+    # direction: it would let a ready and wrong answer be graded right.
+    stale_passed: list[str]
+    # Correct sentences it refused: a right answer would be reported ready and wrong.
+    correct_refused: list[str]
+    # Per part of the set: (stale passed, stale sentences) and (correct refused, correct).
+    by_part: dict[str, dict[str, tuple[int, int]]]
+    not_read_runs: int
+    missing: list[str]
+
+
+def score_reader(
+    sentences: ReaderSet, graded: Sequence[GradedReading], *, runs: int
+) -> ReaderScore:
+    grouped = _by_case(graded)
+    mistaken: dict[str, bool] = {}
+    for sentence in sentences.sentences:
+        mine = grouped.get(sentence.name, [])
+        # No recording counts as a mistake: a sentence nobody read measures nothing.
+        mistaken[sentence.name] = sum(not g.correct for g in mine) * 2 > len(mine) or not mine
+    stale = [s for s in sentences.sentences if s.label == "does_not"]
+    correct = [s for s in sentences.sentences if s.label == "states_now"]
+    by_part: dict[str, dict[str, tuple[int, int]]] = {}
+    for part in sorted({s.part for s in sentences.sentences}):
+        by_part[part] = {
+            "stale": (
+                sum(mistaken[s.name] for s in stale if s.part == part),
+                sum(s.part == part for s in stale),
+            ),
+            "correct": (
+                sum(mistaken[s.name] for s in correct if s.part == part),
+                sum(s.part == part for s in correct),
+            ),
+        }
+    wanted = {s.name: list(range(1, (runs if s.part == "held_out" else 1) + 1)) for s in stale}
+    wanted |= {s.name: list(range(1, (runs if s.part == "held_out" else 1) + 1)) for s in correct}
+    return ReaderScore(
+        sentences=len(sentences.sentences),
+        runs=runs,
+        stale_passed=[s.name for s in stale if mistaken[s.name]],
+        correct_refused=[s.name for s in correct if mistaken[s.name]],
+        by_part=by_part,
+        not_read_runs=sum(g.outcome == "not_read" for g in graded),
+        missing=[
+            s.name
+            for s in sentences.sentences
+            if sorted(g.run for g in grouped.get(s.name, [])) != wanted[s.name]
+        ],
+    )
+
+
+def _reader_gate(baseline: Baseline, reader: ReaderScore) -> list[str]:
+    problems: list[str] = []
+    newly = sorted(set(reader.stale_passed) - set(baseline.reader_stale_passed))
+    if newly:
+        problems.append(f"the reader took a stale sentence for a current one: {', '.join(newly)}")
+    if len(reader.correct_refused) > baseline.reader_correct_refused + SOFT_SLACK:
+        problems.append(
+            f"the reader refuses {len(reader.correct_refused)} correct sentences, against "
+            f"{baseline.reader_correct_refused} in the baseline (one of slack)"
+        )
+    if reader.not_read_runs:
+        problems.append(
+            f"{reader.not_read_runs} readings by the reader did not finish: "
+            "an unread sentence measures nothing"
         )
     return problems

@@ -20,10 +20,11 @@ from typing import Any, Literal, cast
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from evals.cases import CheckerCase, DrafterCase, DrafterSet
+from evals import reader
+from evals.cases import CheckerCase, DrafterCase, DrafterSet, Sentence, State
 from standingproof.agent import prompts
 from standingproof.agent.checker import check_messages
-from standingproof.agent.model import AnthropicChecker, AnthropicModel
+from standingproof.agent.model import AnthropicChecker, AnthropicModel, AnthropicStructured
 from standingproof.agent.tools import OBSERVED_PREFIX, ToolRegistry
 from standingproof.agent.types import AnswerDraft, CheckVerdict
 from standingproof.checks.service import CheckBackends
@@ -79,6 +80,9 @@ class Config:
     max_cost_usd: float
     max_seconds: float
     cheaper_check_model: str = "claude-haiku-5-5"
+    # The reader of wordings (evals/reader.py). Not the drafter's model.
+    read_model: str = "claude-sonnet-5-5"
+    read_effort: str = "low"
 
     @classmethod
     def current(cls) -> "Config":
@@ -133,6 +137,30 @@ def _checker_parts(config: Config, variant: CheckerVariant) -> dict[str, str]:
     }
 
 
+def _reader_parts(config: Config) -> dict[str, str]:
+    sample = [State(check="github.branch_protection", scope="o/r", facts=["protected", "reviews"])]
+    return {
+        # Looked up at the time of asking, so a changed instruction is seen.
+        "reader.prompt": _sha(reader.READER_PROMPT),
+        "reader.schema": _sha(reader.Reading.model_json_schema()),
+        "reader.request": _sha(reader.read_messages("Q?", "A.", sample)),
+        "reader.model": config.read_model,
+        "reader.effort": config.read_effort,
+        "reader.max_tokens": _max_tokens(AnthropicStructured),
+    }
+
+
+def of_sentence(sentence: Sentence, case: DrafterCase, config: Config) -> dict[str, str]:
+    """What a reading of a labelled sentence depends on: the reader, the sentence, and what
+    its case asks the reader about. Not the case's world: that is compared afterwards."""
+    asked = {
+        "sentence": sentence.model_dump(mode="json"),
+        "question": case.question,
+        "states": [state.model_dump(mode="json") for state in case.expect.states],
+    }
+    return {**_reader_parts(config), "case": _sha(asked)}
+
+
 def of_drafter_case(
     cases: DrafterSet, case: DrafterCase, variant: DrafterVariant, config: Config
 ) -> dict[str, str]:
@@ -155,6 +183,8 @@ def of_drafter_case(
     )
     return {
         **redraft,
+        # Only where the wording is read by a model.
+        **(_reader_parts(config) if case.expect.states else {}),
         "drafter.prompt": _sha(prompts.SYSTEM_PROMPT),
         "drafter.tools": _sha(tool_definitions(variant)),
         "drafter.schema": _sha(AnswerDraft.model_json_schema()),

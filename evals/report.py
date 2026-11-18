@@ -93,6 +93,54 @@ def _labels(result: Result) -> list[str]:
     ]
 
 
+def _reader(result: Result) -> list[str]:
+    """How the reader of wordings did on sentences a person labelled."""
+    r = result.reader
+    if r is None:
+        return []
+    config = result.config
+    out = [
+        "## The reader of wordings",
+        "",
+        "Where a setting changes between a draft and its redraft, a pattern cannot tell a "
+        'stale answer from a right one ("two reviews" against "the policy asks for two, but '
+        f'main is not protected"). There `{config.read_model}` ({config.read_effort}) is '
+        "asked what the answer says each fact reads now. It is shown the question, the answer "
+        "and the names of the facts, and nothing of the world or of what is expected; code "
+        "compares its reading with the case's world. Below, the same path on labelled "
+        f'sentences. "Held out" sentences were written without sight of the reader\'s '
+        f"instructions and read {r.runs} times each; a sentence counts by most of its runs.",
+        "",
+    ]
+    names = {"held_out": "Held out", "open": "Open (the instructions were written against these)"}
+    out += _table(
+        ["Sentences", "Stale, taken for current", "Correct, refused"],
+        [
+            [names[part], _of(*counts["stale"]), _of(*counts["correct"])]
+            for part, counts in r.by_part.items()
+        ],
+    )
+    by_name = result.reader_set.by_name
+    for title, missed in (
+        ("Stale sentences taken for current", r.stale_passed),
+        ("Correct sentences refused", r.correct_refused),
+    ):
+        out += [f"{title}: {len(missed)}.", ""]
+        for name in missed:
+            said = sorted(
+                {reason for g in result.graded_readings if g.case == name for reason in g.reasons}
+            )
+            why = f" ({'; '.join(said)})" if said else ""
+            out += [f'- `{name}` ({by_name[name].part}): "{by_name[name].answer}"{why}']
+        out += [""] if missed else []
+    out += [
+        f"Readings that did not finish: {r.not_read_runs}. The sentences and their labels were "
+        "written by the system's author and by an agent, not by an outside reader.",
+        "",
+    ]
+    return out
+
+
 def render(result: Result, baseline: Baseline | None) -> str:
     d, c, config = result.drafter, result.checker, result.config
     defects = sum(case.label == "not_supported" for case in result.checker_set.cases)
@@ -211,6 +259,7 @@ def render(result: Result, baseline: Baseline | None) -> str:
         cm = result.cheaper.matrix
         rows.append([f"`{config.cheaper_check_model}`, one run", cm["missed"], cm["false_alarm"]])
     out += _table(["Checker", f"Defects missed of {defects}", f"False alarms of {sound}"], rows)
+    out += _reader(result)
     out += ["## Every miss", "", *_misses(result), ""]
     out += ["## Whose labels", "", *_labels(result)]
     out += [

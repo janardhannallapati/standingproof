@@ -5,20 +5,29 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from evals.cases import CheckerSet, DrafterSet
-from evals.fingerprint import Config, differences, of_checker_case, of_drafter_case
-from evals.graders import GradedCheck, GradedDraft, grade_check, grade_draft
+from evals.cases import CheckerSet, DrafterSet, ReaderSet
+from evals.fingerprint import Config, differences, of_checker_case, of_drafter_case, of_sentence
+from evals.graders import (
+    GradedCheck,
+    GradedDraft,
+    GradedReading,
+    grade_check,
+    grade_draft,
+    grade_reading,
+)
 from evals.plan import RUNS, Manifest, load_manifest
 from evals.score import (
     Baseline,
     CheckerScore,
     DrafterScore,
+    ReaderScore,
     gate,
     score_checker,
     score_drafter,
+    score_reader,
     unread,
 )
-from evals.transcript import DrafterRun, read_all
+from evals.transcript import CheckerRun, DrafterRun, read_all
 
 OWNER_LABELS = "owner-labels.json"
 
@@ -42,11 +51,22 @@ class Result:
     cost_usd: float
     recordings: int
     owner_labels: dict[str, str] | None
+    # The reader of wordings on its labelled sentences. None when the set has none.
+    reader_set: ReaderSet = ReaderSet()
+    graded_readings: tuple[GradedReading, ...] = ()
+    reader: ReaderScore | None = None
 
 
 def load_result(
-    root: Path, drafter_set: DrafterSet, checker_set: CheckerSet, sets: Path, runs: int = RUNS
+    root: Path,
+    drafter_set: DrafterSet,
+    checker_set: CheckerSet,
+    sets: Path,
+    runs: int = RUNS,
+    reader_set: ReaderSet | None = None,
 ) -> Result:
+    sentences = reader_set or ReaderSet()
+    readings: list[GradedReading] = []
     config = Config.current()
     recordings = read_all(root)
     changed: Counter[str] = Counter()
@@ -64,13 +84,21 @@ def load_result(
             graded[run.variant].append(grade_draft(case, run))
             if run.variant == "full":
                 drafts.append(run)
-        else:
+        elif isinstance(run, CheckerRun):
             labelled = checker_set.by_name.get(run.case)
             if labelled is None:
                 unknown.add(run.case)
                 continue
             today = of_checker_case(labelled, run.variant, config)
             checks[run.variant].append(grade_check(labelled, run))
+        else:
+            sentence = sentences.by_name.get(run.case)
+            if sentence is None:
+                unknown.add(run.case)
+                continue
+            about = drafter_set.by_name[sentence.case]
+            today = of_sentence(sentence, about, config)
+            readings.append(grade_reading(sentence, about, run))
         changed.update(differences(run.fingerprint, today))
     stale = [
         f"{count} recordings were made with a different `{part}`: run the eval again"
@@ -98,6 +126,9 @@ def load_result(
         cost_usd=sum(run.cost_usd for run in recordings),
         recordings=len(recordings),
         owner_labels=json.loads(labels.read_text()) if labels.exists() else None,
+        reader_set=sentences,
+        graded_readings=tuple(readings),
+        reader=score_reader(sentences, readings, runs=runs) if sentences.sentences else None,
     )
 
 
@@ -111,7 +142,7 @@ def problems(result: Result, baseline: Baseline | None) -> list[str]:
     found = list(result.stale)
     if baseline is None:
         return [*found, "there is no baseline: run the eval and `python -m evals accept`"]
-    return [*found, *gate(baseline, result.drafter, result.checker)]
+    return [*found, *gate(baseline, result.drafter, result.checker, result.reader)]
 
 
 def not_whole(result: Result) -> list[str]:
@@ -119,10 +150,13 @@ def not_whole(result: Result) -> list[str]:
     found = list(result.stale)
     if result.manifest is None or not result.manifest.complete:
         found.append("the last run did not finish, so its numbers are not a result")
-    missing = [*result.drafter.missing, *result.checker.missing]
+    reader_missing = result.reader.missing if result.reader else []
+    missing = [*result.drafter.missing, *result.checker.missing, *reader_missing]
     if missing:
         found.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
     found += unread(result.drafter, result.checker)
+    if result.reader is not None and result.reader.not_read_runs:
+        found.append(f"{result.reader.not_read_runs} readings by the reader did not finish")
     compared: list[GradedDraft | GradedCheck] = [
         *result.graded_docs_only,
         *result.graded_cheaper,

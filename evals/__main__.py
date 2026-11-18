@@ -3,6 +3,7 @@
 uv run python -m evals estimate [--smoke]     what a run would cost; calls nothing
 uv run python -m evals run [--smoke]          the paid run; asks first, stops at a ceiling
 uv run python -m evals run --family G --runs 1    one kind of drafter case only
+uv run python -m evals run --only-reader      only the reader's labelled sentences
 uv run python -m evals score                  grade the recordings against the baseline (CI)
 uv run python -m evals accept --note "..."    make the recorded result the baseline
 uv run python -m evals report                 write evals/REPORT.md from the recordings
@@ -19,7 +20,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from evals.cases import SETS, load_checker, load_drafter
+from evals.cases import SETS, ReaderSet, load_checker, load_drafter, load_reader
 from evals.fingerprint import Config, settings
 from evals.plan import Plan, approved, estimate, plan_for
 from evals.report import render
@@ -47,14 +48,22 @@ def provider_client(key: str) -> "anthropic.AsyncAnthropic":
     return anthropic.AsyncAnthropic(api_key=key, base_url=PROVIDER, timeout=120.0, max_retries=0)
 
 
-def real_run(plan: Plan, *, ceiling: float, root: Path, out: Callable[[str], None]) -> int:
+def real_run(
+    plan: Plan,
+    *,
+    ceiling: float,
+    root: Path,
+    out: Callable[[str], None],
+    reader: ReaderSet | None = None,
+) -> int:
     """Start a throwaway Postgres, the real embedding model and the real clients, and run."""
     from alembic.config import Config as AlembicConfig
     from testcontainers.postgres import PostgresContainer
 
     from alembic import command
+    from evals.reader import ProviderReader, Reading
     from evals.run import Clients, run_plan
-    from standingproof.agent.model import AnthropicChecker, AnthropicModel
+    from standingproof.agent.model import AnthropicChecker, AnthropicModel, AnthropicStructured
     from standingproof.config import Settings, get_settings
     from standingproof.db import build_engine, build_session_factory
     from standingproof.library.embedding import build_embedder
@@ -89,7 +98,16 @@ def real_run(plan: Plan, *, ceiling: float, root: Path, out: Callable[[str], Non
                         model=config.cheaper_check_model,
                         effort=config.check_effort,  # type: ignore[arg-type]
                     ),
+                    reader=ProviderReader(
+                        AnthropicStructured(
+                            client,
+                            model=config.read_model,
+                            effort=config.read_effort,  # type: ignore[arg-type]
+                            output=Reading,
+                        )
+                    ),
                 ),
+                reader=reader,
                 config=config,
                 ceiling=ceiling,
                 root=root,
@@ -139,12 +157,14 @@ def main(
         sub.add_argument("--approved-usd", type=float, help="the ceiling a person agreed to")
         sub.add_argument("--family", choices=list("ABCDEFG"), help="only this kind of case")
         sub.add_argument("--runs", type=int, choices=[1, 2, 3], help="with --family: runs each")
+        sub.add_argument("--only-reader", action="store_true", help="only the reader's sentences")
     commands.add_parser("score")
     commands.add_parser("report")
     commands.add_parser("accept").add_argument("--note", required=True)
     args = parser.parse_args(argv)
 
     drafter, checker = load_drafter(sets / "drafter.json"), load_checker(sets / "checker.json")
+    sentences = load_reader(sets / "reader.json", drafter)
     if args.command in ("estimate", "run"):
         if args.runs is not None and args.family is None:
             out("--runs goes with --family: a full run is always three of each case")
@@ -152,7 +172,18 @@ def main(
         if args.smoke and args.family is not None:
             out("--smoke and --family are two different short runs: give one of them")
             return NOT_APPROVED
-        plan = plan_for(drafter, checker, smoke=args.smoke, family=args.family, runs=args.runs or 3)
+        if args.only_reader and (args.smoke or args.family is not None):
+            out("--only-reader is a short run of its own: give it without --smoke or --family")
+            return NOT_APPROVED
+        plan = plan_for(
+            drafter,
+            checker,
+            smoke=args.smoke,
+            family=args.family,
+            runs=args.runs or 3,
+            reader=sentences,
+            only_reader=args.only_reader,
+        )
         ceiling = SMOKE_CEILING if args.smoke else CEILING
         if args.ceiling is not None:
             ceiling = args.ceiling
@@ -168,10 +199,10 @@ def main(
         if not agreed:
             out("not approved: nothing was sent. Type yes at a terminal, or pass --approved-usd")
             return NOT_APPROVED
-        return real_run(plan, ceiling=ceiling, root=root, out=out)
+        return real_run(plan, ceiling=ceiling, root=root, out=out, reader=sentences)
 
     try:
-        result = load_result(root, drafter, checker, sets)
+        result = load_result(root, drafter, checker, sets, reader_set=sentences)
     except MisplacedError as error:
         out(f"FAIL: {error}")
         return 1
@@ -185,6 +216,12 @@ def main(
         f"{len(d.wrong_cases)} ready and wrong; checker: {len(c.missed_cases)} defects "
         f"agreed with, {len(c.false_alarm_cases)} sound drafts objected to"
     )
+    if result.reader is not None:
+        r = result.reader
+        out(
+            f"reader: {len(r.stale_passed)} stale sentences taken for current, "
+            f"{len(r.correct_refused)} correct ones refused, of {r.sentences}"
+        )
     if args.command == "accept":
         found = not_whole(result)
         for problem in found:
@@ -192,7 +229,7 @@ def main(
         if found:
             return 1
         today = dt.datetime.now(dt.UTC).date().isoformat()
-        accepted = as_baseline(d, c, on=today, note=args.note)
+        accepted = as_baseline(d, c, on=today, note=args.note, reader=result.reader)
         baseline.write_text(json.dumps(accepted.model_dump(), indent=1) + "\n")
         out(f"wrote {baseline}")
         return 0

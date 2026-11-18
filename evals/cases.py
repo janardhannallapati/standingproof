@@ -318,6 +318,39 @@ class CheckerSet(_Strict):
         return {case.name: case for case in self.cases}
 
 
+class Sentence(_Strict):
+    """A wording a person labelled: does it state what its case's settings read now?
+
+    These measure the reader (evals/reader.py) before, and while, it grades real answers.
+    "open" sentences may be looked at while the reader's instructions are written.
+    "held_out" ones were written without sight of those instructions and are never used
+    to change them.
+    """
+
+    name: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    part: Literal["open", "held_out"]
+    # A drafter case that names `states`: the sentence is read as an answer to it.
+    case: str
+    answer: str = Field(min_length=1)
+    label: Literal["states_now", "does_not"]
+
+
+class ReaderSet(_Strict):
+    sentences: list[Sentence] = []
+
+    @model_validator(mode="after")
+    def _consistent(self) -> Self:
+        _unique([sentence.name for sentence in self.sentences])
+        wordings = [(sentence.case, sentence.answer) for sentence in self.sentences]
+        if len(set(wordings)) != len(wordings):
+            raise ValueError("two sentences for one case have the same wording")
+        return self
+
+    @property
+    def by_name(self) -> dict[str, Sentence]:
+        return {sentence.name: sentence for sentence in self.sentences}
+
+
 def _unique(names: list[str]) -> None:
     repeated = sorted({name for name in names if names.count(name) > 1})
     if repeated:
@@ -330,3 +363,15 @@ def load_drafter(path: Path = SETS / "drafter.json") -> DrafterSet:
 
 def load_checker(path: Path = SETS / "checker.json") -> CheckerSet:
     return CheckerSet.model_validate(json.loads(path.read_text()))
+
+
+def load_reader(path: Path = SETS / "reader.json", drafter: DrafterSet | None = None) -> ReaderSet:
+    """The labelled sentences. None at all when the file is not there."""
+    if not path.exists():
+        return ReaderSet()
+    sentences = ReaderSet.model_validate(json.loads(path.read_text()))
+    cases = (drafter or load_drafter()).by_name
+    for sentence in sentences.sentences:
+        if sentence.case not in cases or not cases[sentence.case].expect.states:
+            raise ValueError(f"{sentence.name}: case {sentence.case!r} asks for no reading")
+    return sentences

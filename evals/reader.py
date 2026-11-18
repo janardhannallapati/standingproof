@@ -11,11 +11,13 @@ sources or what is expected, so it has nothing to agree with.
 """
 
 import re
+from collections.abc import Sequence
 from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
-from evals.cases import READABLE, DrafterCase
+from evals.cases import READABLE, DrafterCase, State
+from standingproof.agent.model import AnthropicStructured
 from standingproof.agent.prompts import wrap
 from standingproof.agent.types import Usage
 
@@ -110,7 +112,7 @@ def _outside(tag: str, text: str) -> str:
     return wrap(tag, _FACTS_TAG.sub("&lt;", text))
 
 
-def read_messages(question: str, answer: str, case: DrafterCase) -> list[dict[str, Any]]:
+def read_messages(question: str, answer: str, states: Sequence[State]) -> list[dict[str, Any]]:
     """The reader's whole request. The only place one is built.
 
     Left out on purpose: the case's world and what it expects, the sources, the first
@@ -119,7 +121,7 @@ def read_messages(question: str, answer: str, case: DrafterCase) -> list[dict[st
     """
     lines = [
         f"{state.check} | {state.scope} | {fact} | {READABLE[state.check][fact]}"
-        for state in case.expect.states
+        for state in states
         for fact in state.facts
     ]
     facts = "<facts>\n" + "\n".join(lines) + "\n</facts>"
@@ -173,3 +175,23 @@ def states_now(case: DrafterCase, reading: Reading) -> list[str]:
         if not stated:
             problems.append(f"does not state what {state.check} of {state.scope} reads now")
     return problems
+
+
+def finished(turn: ReadTurn | None) -> Reading | None:
+    """The reading, when the reader finished its turn and gave one."""
+    if turn is None or turn.stop_reason != "end_turn":
+        return None
+    return turn.reading
+
+
+class ProviderReader:
+    """The reader on the real provider: one structured, tool-less request per reading."""
+
+    def __init__(self, inner: AnthropicStructured[Reading]) -> None:
+        self._inner = inner
+
+    async def read(self, *, system: str, messages: list[dict[str, Any]]) -> ReadTurn:
+        got = await self._inner.ask(system=system, messages=messages)
+        return ReadTurn(
+            stop_reason=got.stop_reason, reading=got.parsed, usage=got.usage, model=got.model
+        )

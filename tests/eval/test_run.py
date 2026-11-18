@@ -15,6 +15,7 @@ from standingproof.agent.loop import ModelCallError
 from standingproof.agent.types import AnswerDraft, CheckTurn, ModelTurn, ToolCall, Usage
 from tests.agent.fakes import checker_says, disputes, finishes, wants_tools
 from tests.conftest import Db
+from tests.eval.readings import ReadsPlainly
 from tests.fakes import FakeEmbedder
 
 DRAFTER = load_drafter()
@@ -70,19 +71,24 @@ SMALL = Plan(
 )
 
 
-def clients(model: Any = None, checker: Any = None, cheaper: Any = None) -> Clients:
+def clients(
+    model: Any = None, checker: Any = None, cheaper: Any = None, reader: Any = None
+) -> Clients:
     return Clients(
         model=model or LooksThenAnswers(),
         checker=checker or Agrees(),
         cheaper_checker=cheaper or Agrees(checker_says("not_supported", disputes("daily"))),
+        reader=reader or ReadsPlainly(),
     )
 
 
 def go(db: Db, root: Path, plan: Plan = SMALL, ceiling: float = 4.0, **kinds: Any):  # type: ignore[no-untyped-def]
+    sentences = kinds.pop("sentences", None)
     used = clients(**kinds)
     manifest = db.run(
         run_plan(
             plan,
+            reader=sentences,
             sessions=db.sessions,
             embedder=FakeEmbedder(),
             clients=used,
@@ -101,24 +107,24 @@ def test_the_full_plan_and_its_estimate() -> None:
     cost = estimate(plan)
 
     assert (len(plan.drafter), len(plan.docs_only), len(plan.checker), len(plan.cheaper)) == (
-        108,
+        111,
         18,
         168,
         56,
     )
     # A redraft case is two rounds, so it is counted on its own line at twice the price.
-    assert [line.calls for line in cost.lines] == [96, 12, 18, 168, 56]
-    assert 2.9 < cost.total < 3.4
+    assert [line.calls for line in cost.lines] == [96, 15, 18, 168, 56, 0]
+    assert 2.9 < cost.total < 3.6
 
 
 def test_one_family_can_be_run_alone_and_fewer_times() -> None:
     plan = plan_for(DRAFTER, CHECKER, smoke=False, family="G", runs=1)
 
-    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("GGGG")
+    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("GGGGG")
     assert {number for _, number in plan.drafter} == {1}
     assert (plan.docs_only, plan.checker, plan.cheaper) == ([], [], [])
-    assert [line.calls for line in estimate(plan).lines] == [0, 4, 0, 0, 0]
-    assert estimate(plan).total < 0.25
+    assert [line.calls for line in estimate(plan).lines] == [0, 5, 0, 0, 0, 0]
+    assert estimate(plan).total < 0.30
 
 
 def test_the_smoke_plan_is_one_case_of_each_family_and_six_drafts() -> None:
