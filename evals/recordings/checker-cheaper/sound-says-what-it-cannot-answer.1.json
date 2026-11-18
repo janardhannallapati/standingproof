@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -21,18 +21,18 @@
      "kind": "unsupported",
      "quote": "we have no approved statement about sharing the full report",
      "source_id": "",
-     "explanation": "No source says whether an approved statement about sharing the full penetration test report exists, so this claim about the company's approvals is not supported."
+     "explanation": "The only source, LIB-PEN, says nothing about whether the full penetration test report is shared, so the draft's claim that no approved statement exists is not supported by any source."
     }
    ]
   },
   "usage": {
    "input_tokens": 156,
-   "output_tokens": 427,
+   "output_tokens": 428,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00024249000000000002,
+ "cost_usd": 0.00024463999999999996,
  "check_model": "claude-haiku-5-5"
 }

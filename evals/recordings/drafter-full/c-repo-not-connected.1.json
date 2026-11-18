@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find anything that supports an answer. I searched the approved answers and policy text for branch protection, code review and approval before merging. Nothing matched. The only results were unrelated approved answers on vulnerability scanning and encryption at rest. I also tried a live, read-only branch protection check on partnerco/widgets. It returned 'scope_not_connected', so that repository isn't connected to the company's GitHub account and nothing was observed. The repository name suggests it belongs to a third party rather than to Harborlight. A reviewer should confirm two things: whether this question is meant to cover our own repositories, and if so, which of our repositories to check."
+  "note": "I couldn't find anything that supports an answer. I searched the approved answers and policy text twice, for branch protection on the default branch and for pull request approval before merging. Nothing came back about branch protection. The only result was an unrelated answer about encryption at rest. I also tried to check the repository's live branch protection setting directly, but partnerco/widgets isn't connected to the live checks, so nothing was seen. partnerco/widgets may not be one of the company's own repositories. A reviewer should confirm who owns the repository and, if it belongs to the company, connect it so the check can run, or supply an approved answer on branch protection."
  },
- "steps": 4,
+ "steps": 3,
  "tool_uses": [
   {
    "name": "search_approved_answers",
@@ -40,17 +40,6 @@
    "source_ids": []
   },
   {
-   "name": "search_approved_answers",
-   "arguments": {
-    "query": "source code change management pull request approval before merge"
-   },
-   "is_error": false,
-   "source_ids": [
-    "answer:8bc0f8b9-00e7-4674-ab0a-f480cab1c58b",
-    "answer:46b441bc-9b5b-4c39-b12a-96c8bbba3173"
-   ]
-  },
-  {
    "name": "check_live_setting",
    "arguments": {
     "check": "github.branch_protection",
@@ -58,24 +47,33 @@
    },
    "is_error": true,
    "source_ids": []
+  },
+  {
+   "name": "search_approved_answers",
+   "arguments": {
+    "query": "change management pull request approval before merge"
+   },
+   "is_error": false,
+   "source_ids": [
+    "answer:a246006d-74d2-4e1e-ba82-b332a7be1d0d"
+   ]
   }
  ],
  "seen_sources": {
-  "answer:8bc0f8b9-00e7-4674-ab0a-f480cab1c58b": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
-  ],
-  "answer:46b441bc-9b5b-4c39-b12a-96c8bbba3173": [
+  "answer:a246006d-74d2-4e1e-ba82-b332a7be1d0d": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 2030,
-  "output_tokens": 712,
+  "input_tokens": 1211,
+  "output_tokens": 510,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 8260
+  "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.024012,
+ "cost_usd": 0.016283,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

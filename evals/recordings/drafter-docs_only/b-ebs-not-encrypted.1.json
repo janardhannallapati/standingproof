@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,41 +27,41 @@
   "status": "answered",
   "answer": "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default.",
   "citations": [
-   "answer:9a57ac42-b7b4-445b-ab6d-517ba64e29f4"
+   "answer:6a3e1860-4381-4aaa-bdbb-1b44cb72916a"
   ],
-  "note": "This uses the approved answer's wording without changes. The question asks about the 'production account', but that answer only names AWS account 111122223333 and doesn't call it production. A separate approved answer about root-account MFA (answer:d76c40ea-c20c-4f69-9538-52f8b4e5baa3) does call 111122223333 'our production AWS account', so they appear to be the same account. Please confirm that before sending. The default-encryption claim covers new EBS disks only, so nothing is said about any existing disks."
+  "note": "This reuses the approved answer word for word (owner security@harborlight.example, valid until 2027-11-18, control CC6.7). That answer doesn't call account 111122223333 the 'production' account. A separate approved answer (answer:7d083f25-c168-4288-9053-4e06ac9f3900, about root-account multi-factor authentication) does call it 'our production AWS account', so the two match. I left the word 'production' out to keep the cited wording unchanged. The approved answer only covers EBS disks in that one account, not other storage types or other accounts."
  },
  "steps": 2,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "default encryption of new cloud disks in production"
+    "query": "cloud disk encryption by default production"
    },
    "is_error": false,
    "source_ids": [
-    "answer:9a57ac42-b7b4-445b-ab6d-517ba64e29f4",
-    "answer:ebf6394b-59a3-48c1-85f7-afcd97dd9387",
-    "answer:d76c40ea-c20c-4f69-9538-52f8b4e5baa3",
-    "answer:1100feca-94cf-406f-a19c-6e0b6517dce6",
-    "answer:ef1f4b9e-ba1b-4c43-b0ec-d2ac2f0f19f1"
+    "answer:6a3e1860-4381-4aaa-bdbb-1b44cb72916a",
+    "answer:b3f26eb3-3928-4a07-a1da-c3229fa732d6",
+    "answer:7d083f25-c168-4288-9053-4e06ac9f3900",
+    "answer:8fbecd63-d446-4850-8b0d-85c8e51eb6ca",
+    "answer:f7882204-0a8e-4e06-adb7-f14dedb0dc22"
    ]
   }
  ],
  "seen_sources": {
-  "answer:9a57ac42-b7b4-445b-ab6d-517ba64e29f4": [
+  "answer:6a3e1860-4381-4aaa-bdbb-1b44cb72916a": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:ebf6394b-59a3-48c1-85f7-afcd97dd9387": [
+  "answer:b3f26eb3-3928-4a07-a1da-c3229fa732d6": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:d76c40ea-c20c-4f69-9538-52f8b4e5baa3": [
+  "answer:7d083f25-c168-4288-9053-4e06ac9f3900": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:1100feca-94cf-406f-a19c-6e0b6517dce6": [
+  "answer:8fbecd63-d446-4850-8b0d-85c8e51eb6ca": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ],
-  "answer:ef1f4b9e-ba1b-4c43-b0ec-d2ac2f0f19f1": [
+  "answer:f7882204-0a8e-4e06-adb7-f14dedb0dc22": [
    "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ]
  },
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 516,
+   "input_tokens": 508,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1506,
-  "output_tokens": 399,
+  "input_tokens": 1488,
+  "output_tokens": 393,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.0134987,
+ "cost_usd": 0.013339199999999999,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,20 +19,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "blocks all public access to S3 buckets account-wide",
+     "quote": "Our AWS account blocks all public access to S3 buckets account-wide.",
      "source_id": "evidence:EV-S3-OFF",
-     "explanation": "The observed source for AWS account 111122223333 states that the account does not block all public access to S3 buckets account-wide, which conflicts with the draft and outweighs the approved document."
+     "explanation": "The observed look on 2026-11-10 found that AWS account 111122223333 does not block all public access to S3 buckets account-wide, which conflicts with the draft's statement."
     }
    ]
   },
   "usage": {
-   "input_tokens": 210,
-   "output_tokens": 134,
+   "input_tokens": 214,
+   "output_tokens": 141,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00010139,
+ "cost_usd": 0.00010694000000000002,
  "check_model": "claude-haiku-5-5"
 }

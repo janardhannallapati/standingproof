@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "answered",
   "answer": "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide.",
   "citations": [
-   "answer:4c941897-6221-4586-bb94-f58476e6823b"
+   "answer:0bb5bb86-6b8b-47c4-9c46-b228f8391b3f"
   ],
-  "note": "This is the approved answer for CC6.6 word for word. Its owner is security@harborlight.example and it is valid until 2027-11-17. It names one AWS account only. It doesn't say whether the company has other AWS accounts or uses object storage outside S3, so it may not cover every bucket the question is about. The answer also gives the AWS account ID (111122223333). Please check that it's OK to share this ID with the customer before sending."
+  "note": "This is the approved answer for control CC6.6, used word for word. Its owner is security@harborlight.example and it is valid until 2027-11-18. It covers one AWS account (111122223333) and S3 only. It doesn't say whether the company has other AWS accounts or other object storage, so please check that before sending. The wording also gives the customer the AWS account ID. You may want to remove it before sending."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,29 +40,29 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:4c941897-6221-4586-bb94-f58476e6823b",
-    "policy:e2b598c5-ff8c-4626-ba0a-c46534fe1ea3",
-    "answer:89132d22-ad85-4b90-8dbf-a68c2bda7703",
-    "policy:27e13012-488e-4a1c-b0f6-e19c255d7328",
-    "answer:63a1c411-12af-4e6a-908d-406a3449c55a"
+    "answer:0bb5bb86-6b8b-47c4-9c46-b228f8391b3f",
+    "policy:6f72c519-1329-48da-b0bf-252a6560bb6d",
+    "answer:527ff434-2632-4e8c-b687-bf1816896463",
+    "answer:18306a54-fe8b-4595-ace3-976f8d291bc6",
+    "answer:8b007ce6-2d31-4cbe-847c-acad73188336"
    ]
   }
  ],
  "seen_sources": {
-  "answer:4c941897-6221-4586-bb94-f58476e6823b": [
+  "answer:0bb5bb86-6b8b-47c4-9c46-b228f8391b3f": [
    "Yes. Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
   ],
-  "policy:e2b598c5-ff8c-4626-ba0a-c46534fe1ea3": [
+  "policy:6f72c519-1329-48da-b0bf-252a6560bb6d": [
    "Every workforce member has a named account. Shared accounts are not permitted."
   ],
-  "answer:89132d22-ad85-4b90-8dbf-a68c2bda7703": [
-   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
+  "answer:527ff434-2632-4e8c-b687-bf1816896463": [
+   "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
   ],
-  "policy:27e13012-488e-4a1c-b0f6-e19c255d7328": [
-   "Access is removed within 24 hours of a person's last working day."
-  ],
-  "answer:63a1c411-12af-4e6a-908d-406a3449c55a": [
+  "answer:18306a54-fe8b-4595-ace3-976f8d291bc6": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
+  ],
+  "answer:8b007ce6-2d31-4cbe-847c-acad73188336": [
+   "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ]
  },
  "check_turn": {
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 462,
+   "input_tokens": 484,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1344,
-  "output_tokens": 407,
+  "input_tokens": 1414,
+  "output_tokens": 444,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.0131187,
+ "cost_usd": 0.014111199999999999,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

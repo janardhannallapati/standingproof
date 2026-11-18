@@ -951,17 +951,19 @@
    "expect": {
     "outcome": "answered",
     "must": [
-     "\\b(not|no|without)\\b"
+     "(not|no longer|isn'?t|without)\\s+(currently\\s+)?(protected|enforced|enabled|in place)|unprotected|\\bno\\s+(branch\\s+)?protection|protection\\b[^.;\\n]{0,25}\\b(off|disabled|removed)|(does not|doesn'?t|do not|don'?t|no longer)\\s+(need|require)s?\\b|\\b(no|zero|0)\\s+(approving\\s+)?(reviews?|approvals?)\\s+(are|is)\\s+(required|needed)"
     ],
     "must_not": [
-     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)"
+     "(?<!not )(?<!longer )(?<!n't )\\b(needs?|requires?|must have)\\s+(at least\\s+)?(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
+     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)\\s+(are|is)\\s+(still\\s+)?(required|needed)(?![^.\\n]{0,80}\\b(but|however|although|yet)\\b)",
+     "\\bis protected\\b|\\bapproved by (2|two)\\b"
     ],
     "cite": {
      "check": "github.branch_protection",
      "scope": "harborlight/app"
     }
    },
-   "note": "Branch protection is switched off between the draft and the redraft. A redraft written from the first look says two reviews, and its own source supports it."
+   "note": "Branch protection is switched off between the draft and the redraft. A redraft written from the first look says two reviews, and its own source supports it. The patterns ask for the new state in words about protection or reviews, and refuse a present-tense requirement of two; a sentence that contrasts the written policy with the setting is allowed."
   },
   {
    "name": "g-reviews-unchanged",
@@ -1064,17 +1066,18 @@
     "outcome": "answered",
     "must": [
      "\\b(2|two)\\b",
-     "\\b(not|off|disabled)\\b"
+     "scanning\\b[^.;\\n]{0,60}\\b(off|disabled|(not|isn'?t)\\s+(currently\\s+)?(enabled|on|switched on|turned on|active))"
     ],
     "must_not": [
-     "scanning\\b[^.\\n]{0,40}\\b(is|are)\\s+(currently\\s+)?(enabled|switched on|turned on|on)\\b"
+     "scanning\\b[^.;\\n]{0,25}\\b(is|are|remains?)\\s+(also\\s+|currently\\s+|still\\s+|both\\s+)?(enabled|switched on|turned on|on|active)\\b",
+     "\\b(has|have|with)\\s+(github\\s+)?secret scanning\\s+(enabled|switched on|turned on|on)\\b"
     ],
     "cite": {
      "check": "github.secret_scanning",
      "scope": "harborlight/app"
     }
    },
-   "note": "Two settings; one of them changes between the draft and the redraft."
+   "note": "Two settings; one of them changes between the draft and the redraft. The patterns ask for scanning being off in so many words, and refuse scanning being on in the present or the past tense."
   },
   {
    "name": "g-backups-reordered",

@@ -14,38 +14,36 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "e3c1c29044562a1a"
+  "case": "ef30c8d140de7150"
  },
  "handoff": null,
  "final_stop_reason": "end_turn",
  "final_draft": {
-  "status": "answered",
-  "answer": "As of 2026-11-18 03:01:47 UTC, the main branch of our application repository (harborlight/app on GitHub) is not protected, so no approving reviews are required before a change is merged.",
-  "citations": [
-   "evidence:6ff8e5fe-175e-4d4d-8adc-60372a689264"
-  ],
-  "note": "Do not send without review: the live setting now contradicts the approved answer. The approved answer (answer:558a0f2b-f3cc-4297-b620-9705bc047c58, CC8.1, owner security@harborlight.example) says two approving reviews are required, including for administrators. A check at 03:01:40 UTC confirmed that. A new check at 03:01:47 UTC shows main is unprotected, with 0 required reviews and administrators not covered. The protection appears to have been removed in the few seconds between the two checks. Please ask the owner whether this was planned. Then either restore the protection and run the check again, or update the approved answer. The answer covers harborlight/app only."
+  "status": "no_approved_source",
+  "answer": "",
+  "citations": [],
+  "note": "I haven't sent a shorter answer because a new GitHub check shows the main branch of harborlight/app is now unprotected and needs 0 approving reviews (checked 2026-11-18T05:55:59Z). That contradicts the approved answer (answer:8cb121bd-3d62-49f4-9691-040c5cb3c25f, control CC8.1), which says two approving reviews are required, including for administrators. A check about 7 seconds earlier (evidence:70b458a6-edcf-4403-afb4-6d130ff66f94) showed the branch protected with 2 required reviews, so the setting appears to have just changed. The new check is evidence:d112cd9f-5220-4b56-b412-41606ce6b391. Please ask security@harborlight.example whether this was intended before any answer goes to the customer. Once branch protection is restored, the shortened answer can be: 'Changes to our main branch require two approving reviews before merging, including for administrators.' Run the check again before sending it."
  },
  "steps": 5,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review approvals before merge to main branch"
+    "query": "code review approvals required before merge to main branch"
    },
    "is_error": false,
    "source_ids": [
-    "answer:558a0f2b-f3cc-4297-b620-9705bc047c58",
-    "answer:ddd74e2a-6ccc-452d-aef1-d066b188d855",
-    "answer:9a11bc47-73b8-4796-b844-17861d12a435",
-    "answer:6bde920f-3676-4752-a83d-47a51273f887",
-    "answer:d22394d7-7f74-4a73-bf0d-3329daa434ad"
+    "answer:8cb121bd-3d62-49f4-9691-040c5cb3c25f",
+    "answer:f57477d6-f805-4174-9840-e20e1763b0fc",
+    "answer:0e1f341a-37b1-4482-8115-1aac736903c3",
+    "answer:75904356-f44a-484d-918a-9788e2a46da0",
+    "answer:c521f5de-513f-4f10-8b20-3ae9fb60be03"
    ]
   },
   {
@@ -56,7 +54,7 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:3d55aa70-99b8-419b-b55f-66f1890c1d9f"
+    "evidence:70b458a6-edcf-4403-afb4-6d130ff66f94"
    ]
   },
   {
@@ -67,77 +65,51 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:6ff8e5fe-175e-4d4d-8adc-60372a689264"
+    "evidence:d112cd9f-5220-4b56-b412-41606ce6b391"
    ]
   }
  ],
  "seen_sources": {
-  "answer:558a0f2b-f3cc-4297-b620-9705bc047c58": [
+  "answer:8cb121bd-3d62-49f4-9691-040c5cb3c25f": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:ddd74e2a-6ccc-452d-aef1-d066b188d855": [
-   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
-  ],
-  "answer:9a11bc47-73b8-4796-b844-17861d12a435": [
+  "answer:f57477d6-f805-4174-9840-e20e1763b0fc": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:6bde920f-3676-4752-a83d-47a51273f887": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
+  "answer:0e1f341a-37b1-4482-8115-1aac736903c3": [
+   "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:d22394d7-7f74-4a73-bf0d-3329daa434ad": [
+  "answer:75904356-f44a-484d-918a-9788e2a46da0": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "evidence:3d55aa70-99b8-419b-b55f-66f1890c1d9f": [
-   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 03:01 UTC."
+  "answer:c521f5de-513f-4f10-8b20-3ae9fb60be03": [
+   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "evidence:6ff8e5fe-175e-4d4d-8adc-60372a689264": [
-   "Branch main of harborlight/app is not protected. Observed 2026-11-18 03:01 UTC."
+  "evidence:70b458a6-edcf-4403-afb4-6d130ff66f94": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 05:55 UTC."
+  ],
+  "evidence:d112cd9f-5220-4b56-b412-41606ce6b391": [
+   "Branch main of harborlight/app is not protected. Observed 2026-11-18 05:55 UTC."
   ]
  },
- "check_turn": {
-  "stop_reason": "end_turn",
-  "verdict": {
-   "verdict": "not_supported",
-   "findings": [
-    {
-     "kind": "contradicted",
-     "quote": "is not protected",
-     "source_id": "evidence:3d55aa70-99b8-419b-b55f-66f1890c1d9f",
-     "explanation": "An observation from the same time and place says main of harborlight/app is protected and needs 2 approving reviews, administrators included, which conflicts with the cited observation."
-    },
-    {
-     "kind": "unsupported",
-     "quote": "so no approving reviews are required before a change is merged",
-     "source_id": "evidence:6ff8e5fe-175e-4d4d-8adc-60372a689264",
-     "explanation": "The cited source only says the branch is not protected and does not state that no approving reviews are required."
-    }
-   ]
-  },
-  "usage": {
-   "input_tokens": 758,
-   "output_tokens": 526,
-   "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
-  },
-  "model": "claude-sonnet-5-5"
- },
+ "check_turn": null,
  "usage": {
-  "input_tokens": 6947,
-  "output_tokens": 1604,
+  "input_tokens": 6227,
+  "output_tokens": 1153,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 13003
+  "cache_read_input_tokens": 11829
  },
- "cost_usd": 0.05392279999999999,
+ "cost_usd": 0.048673400000000006,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5",
  "first_draft": {
   "status": "answered",
-  "answer": "Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged. The rule applies to administrators as well.",
+  "answer": "Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well.",
   "citations": [
-   "answer:558a0f2b-f3cc-4297-b620-9705bc047c58",
-   "evidence:3d55aa70-99b8-419b-b55f-66f1890c1d9f"
+   "answer:8cb121bd-3d62-49f4-9691-040c5cb3c25f",
+   "evidence:70b458a6-edcf-4403-afb4-6d130ff66f94"
   ],
-  "note": "The approved answer matches a live check of harborlight/app made at 2026-11-18T03:01:40Z. That check showed the default branch 'main' is protected, needs 2 approving reviews and applies the rule to administrators. Both sources cover only the harborlight/app repository. Neither says anything about other repositories, so the answer is limited to that one."
+  "note": "This answer uses the approved wording (control CC8.1, valid until 2027-11-18). A live GitHub check run on 2026-11-18 confirms it: harborlight/app's default branch is main, it is protected, a change needs 2 approving reviews, and the rule applies to administrators. Both sources cover only the harborlight/app repository, so nothing here says whether other repositories have the same rule."
  },
  "redraft_from": 2
 }

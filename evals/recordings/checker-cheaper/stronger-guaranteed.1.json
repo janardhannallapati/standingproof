@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,26 +19,20 @@
    "findings": [
     {
      "kind": "unsupported",
-     "quote": "guaranteed",
+     "quote": "guaranteed to be fixed",
      "source_id": "LIB-VUL",
-     "explanation": "The source says critical findings are fixed within 7 days, not that the fix is guaranteed."
-    },
-    {
-     "kind": "unsupported",
-     "quote": "Critical findings",
-     "source_id": "LIB-VUL",
-     "explanation": "The source limits the 7-day fix commitment to infrastructure and container image findings, while the draft applies it to all critical findings."
+     "explanation": "The cited document says critical findings are fixed within 7 days but does not say the fix is guaranteed."
     }
    ]
   },
   "usage": {
    "input_tokens": 134,
-   "output_tokens": 388,
+   "output_tokens": 97,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00022079000000000003,
+ "cost_usd": 7.693999999999999e-05,
  "check_model": "claude-haiku-5-5"
 }

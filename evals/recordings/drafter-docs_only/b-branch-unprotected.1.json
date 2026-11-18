@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "answered",
   "answer": "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well.",
   "citations": [
-   "answer:bf683139-ce7c-4124-9a4e-c0f01b023a4a"
+   "answer:c5c6babb-45ca-4c11-a503-c20d03f99ba2"
   ],
-  "note": "This is a partial match. The approved answer (CC8.1) was written for a question about code review, not about branch protection. It says the default branch of harborlight/app needs two approving reviews before a merge and that the rule also applies to administrators. It doesn't use the words 'branch protection' or name any other protection settings, such as required status checks, blocking force pushes or blocking branch deletion. If the customer expects any of those, a reviewer should confirm them with security@harborlight.example before they are added."
+  "note": "This is a partial match. The approved answer was written for a question about code review. It describes a rule on the default branch: two approving reviews are required before a merge, and administrators are not exempt. It does not use the term \"branch protection\" and does not mention other protection settings, such as status checks, blocking force-pushes or blocking deletion. The answer is kept to the approved wording. If the customer expects other settings to be covered, check them with the owner (security@harborlight.example)."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,28 +40,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:bf683139-ce7c-4124-9a4e-c0f01b023a4a",
-    "answer:db917385-a4ba-46ed-ae85-260d5957dfc6",
-    "answer:83e42a58-9839-4a45-9e3b-075bc1aa4cd0",
-    "answer:f585259d-82a3-44be-976f-1c44e7a5a6db",
-    "answer:12771935-02e0-49d1-a69d-de3848ce759d"
+    "answer:c5c6babb-45ca-4c11-a503-c20d03f99ba2",
+    "answer:6598071e-9ba4-4872-afca-bf84c2192f41",
+    "answer:4662a7b3-8833-49fc-8ad8-3daf9ff59d2d",
+    "answer:83842c09-8330-4890-a78b-df042bc93276",
+    "answer:996525d3-7e25-4e3a-9967-6e99b3f2efd2"
    ]
   }
  ],
  "seen_sources": {
-  "answer:bf683139-ce7c-4124-9a4e-c0f01b023a4a": [
+  "answer:c5c6babb-45ca-4c11-a503-c20d03f99ba2": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:db917385-a4ba-46ed-ae85-260d5957dfc6": [
+  "answer:6598071e-9ba4-4872-afca-bf84c2192f41": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:83e42a58-9839-4a45-9e3b-075bc1aa4cd0": [
+  "answer:4662a7b3-8833-49fc-8ad8-3daf9ff59d2d": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:f585259d-82a3-44be-976f-1c44e7a5a6db": [
+  "answer:83842c09-8330-4890-a78b-df042bc93276": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "answer:12771935-02e0-49d1-a69d-de3848ce759d": [
+  "answer:996525d3-7e25-4e3a-9967-6e99b3f2efd2": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ]
  },
@@ -75,17 +75,19 @@
    "input_tokens": 533,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
   "input_tokens": 1518,
-  "output_tokens": 426,
+  "output_tokens": 410,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.0140527,
+ "cost_usd": 0.013749200000000001,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

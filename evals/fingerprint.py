@@ -24,7 +24,7 @@ from evals.cases import CheckerCase, DrafterCase, DrafterSet
 from standingproof.agent import prompts
 from standingproof.agent.checker import check_messages
 from standingproof.agent.model import AnthropicChecker, AnthropicModel
-from standingproof.agent.tools import ToolRegistry
+from standingproof.agent.tools import OBSERVED_PREFIX, ToolRegistry
 from standingproof.agent.types import AnswerDraft, CheckVerdict
 from standingproof.checks.service import CheckBackends
 from standingproof.checks.tools import check_tool
@@ -114,7 +114,19 @@ def _checker_parts(config: Config, variant: CheckerVariant) -> dict[str, str]:
     return {
         "checker.prompt": _sha(prompts.CHECKER_PROMPT),
         "checker.schema": _sha(CheckVerdict.model_json_schema()),
-        "checker.request": _sha(check_messages("Q?", sample, {"S-1": ["T."], "S-2": ["U."]})),
+        # A cited document, an uncited one and two looks: every way a source is marked.
+        "checker.request": _sha(
+            check_messages(
+                "Q?",
+                sample,
+                {
+                    "S-1": ["T."],
+                    "S-2": ["U."],
+                    f"{OBSERVED_PREFIX}S-3": ["V."],
+                    f"{OBSERVED_PREFIX}S-4": ["W."],
+                },
+            )
+        ),
         "checker.model": config.check_model if variant == "main" else config.cheaper_check_model,
         "checker.effort": config.check_effort,
         "checker.max_tokens": _max_tokens(AnthropicChecker),
@@ -155,7 +167,16 @@ def of_drafter_case(
 
 
 def of_checker_case(case: CheckerCase, variant: CheckerVariant, config: Config) -> dict[str, str]:
-    return {**_checker_parts(config, variant), "case": _sha(case.model_dump(mode="json"))}
+    # The case is hashed with its keys sorted, so the order of its sources is not in that
+    # hash. For two looks the order is what says which is later. It is a part of its own,
+    # and only where it means something, so that a case without two looks hashes as before.
+    looks = [source_id for source_id in case.sources if source_id.startswith(OBSERVED_PREFIX)]
+    order = {"case.looks": _sha(looks)} if len(looks) > 1 else {}
+    return {
+        **_checker_parts(config, variant),
+        **order,
+        "case": _sha(case.model_dump(mode="json")),
+    }
 
 
 def differences(recorded: dict[str, str], today: dict[str, str]) -> list[str]:

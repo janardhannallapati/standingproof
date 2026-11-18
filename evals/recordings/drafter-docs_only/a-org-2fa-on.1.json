@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,9 +27,9 @@
   "status": "answered",
   "answer": "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members.",
   "citations": [
-   "answer:9613ddd8-a4e0-4ffc-a9c8-cefc0e1b8341"
+   "answer:bb5425c2-7191-41bc-845a-7e0692e928a7"
   ],
-  "note": "This reuses the approved answer word for word. It is owned by security@harborlight.example and is valid until 2027-11-17 (control CC6.1). It only covers members of the harborlight GitHub organisation. It doesn't say whether outside collaborators are included, so please confirm that before sending if the customer means everyone with access."
+  "note": "This reuses the approved answer word for word. That answer is owned by security@harborlight.example and is valid until 2027-11-18 (control CC6.1). It covers members of the GitHub organisation (harborlight). It does not say anything about outside collaborators or other accounts that are not members."
  },
  "steps": 2,
  "tool_uses": [
@@ -40,28 +40,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:9613ddd8-a4e0-4ffc-a9c8-cefc0e1b8341",
-    "policy:23fe4927-9262-4660-8f07-2584a9f27712",
-    "answer:23470a6d-9652-4a5a-b077-7b636b5063a7",
-    "answer:d4c385fa-b96c-40f8-8d6e-5dcf8bf27eb5",
-    "answer:e6e384b8-cd1f-4f4a-803a-671e2586b72e"
+    "answer:bb5425c2-7191-41bc-845a-7e0692e928a7",
+    "policy:54311ac2-0f03-4c32-8b6e-0a8449b74669",
+    "answer:3d73aeff-d8ed-4987-bc86-fccaaf2e1194",
+    "answer:ef9810a9-9480-48e5-8119-6f009a896306",
+    "answer:c9adb761-2c89-4f13-b4f3-623aa7c72880"
    ]
   }
  ],
  "seen_sources": {
-  "answer:9613ddd8-a4e0-4ffc-a9c8-cefc0e1b8341": [
+  "answer:bb5425c2-7191-41bc-845a-7e0692e928a7": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "policy:23fe4927-9262-4660-8f07-2584a9f27712": [
+  "policy:54311ac2-0f03-4c32-8b6e-0a8449b74669": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:23470a6d-9652-4a5a-b077-7b636b5063a7": [
+  "answer:3d73aeff-d8ed-4987-bc86-fccaaf2e1194": [
    "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
   ],
-  "answer:d4c385fa-b96c-40f8-8d6e-5dcf8bf27eb5": [
+  "answer:ef9810a9-9480-48e5-8119-6f009a896306": [
    "Yes. The root user of our production AWS account (111122223333) has multi-factor authentication."
   ],
-  "answer:e6e384b8-cd1f-4f4a-803a-671e2586b72e": [
+  "answer:c9adb761-2c89-4f13-b4f3-623aa7c72880": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ]
  },
@@ -72,20 +72,22 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 507,
+   "input_tokens": 498,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 1477,
-  "output_tokens": 284,
+  "input_tokens": 1459,
+  "output_tokens": 266,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 4203
+  "cache_read_input_tokens": 4368
  },
- "cost_usd": 0.0111007,
+ "cost_usd": 0.010703200000000001,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

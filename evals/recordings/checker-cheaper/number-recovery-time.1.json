@@ -4,9 +4,9 @@
  "run": 1,
  "variant": "cheaper",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,7 +19,7 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "recovery time objective of two hours",
+     "quote": "met the recovery time objective of two hours",
      "source_id": "LIB-DR",
      "explanation": "The cited document says the last test met a recovery time objective of four hours, not two hours."
     }
@@ -27,12 +27,12 @@
   },
   "usage": {
    "input_tokens": 134,
-   "output_tokens": 90,
+   "output_tokens": 92,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 7.178999999999999e-05,
+ "cost_usd": 7.444e-05,
  "check_model": "claude-haiku-5-5"
 }

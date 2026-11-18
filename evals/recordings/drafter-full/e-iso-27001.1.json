@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I searched for ISO 27001 and for certifications, audits and attestations in general. The results only covered unrelated controls: second-factor sign-in, yearly penetration testing, weekly vulnerability scanning and encryption at rest. None of these support saying we are or aren't certified, so I left the answer blank. Please ask the security team (security@harborlight.example) or the compliance owner whether we hold ISO 27001 certification. If we do, they should add an approved answer with the certificate number, the certifying body and the scope."
+  "note": "I couldn't find an approved answer or policy text about ISO 27001 certification or a certificate number. I ran two searches. The only results were an Access Control Policy section on second-factor sign-in (policy:4bba22d0-f289-4199-8af5-d2f16888d19f) and an approved answer on yearly independent penetration tests (answer:dfafd401-5aa6-420c-a1e3-3814bd59bead). Neither says whether the company is ISO 27001 certified, so I can't say yes or no or give a certificate number. The security team (security@harborlight.example) or the compliance owner should confirm the certification status. If the company is certified, they should supply an approved answer with the certificate number and issuing body. They could also say whether the yearly penetration test summary, which is available under NDA, would be useful to the customer instead."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,44 +38,38 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:dae0edf9-1d69-419f-82a1-9a2e969dba1c"
+    "policy:4bba22d0-f289-4199-8af5-d2f16888d19f"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "information security certifications audits attestations"
+    "query": "information security certifications audits ISMS"
    },
    "is_error": false,
    "source_ids": [
-    "answer:5d9aec68-3d03-446d-a045-e4f4dfd0c813",
-    "answer:2b33268a-bdf4-4098-90d5-e18c069f9fe9",
-    "answer:4446faa1-2a27-4cc7-99ba-2d634dbdeb9f"
+    "answer:dfafd401-5aa6-420c-a1e3-3814bd59bead"
    ]
   }
  ],
  "seen_sources": {
-  "policy:dae0edf9-1d69-419f-82a1-9a2e969dba1c": [
+  "policy:4bba22d0-f289-4199-8af5-d2f16888d19f": [
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:5d9aec68-3d03-446d-a045-e4f4dfd0c813": [
+  "answer:dfafd401-5aa6-420c-a1e3-3814bd59bead": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
-  ],
-  "answer:2b33268a-bdf4-4098-90d5-e18c069f9fe9": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
-  ],
-  "answer:4446faa1-2a27-4cc7-99ba-2d634dbdeb9f": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1195,
-  "output_tokens": 371,
+  "input_tokens": 888,
+  "output_tokens": 440,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.013439,
+ "cost_usd": 0.013590999999999999,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

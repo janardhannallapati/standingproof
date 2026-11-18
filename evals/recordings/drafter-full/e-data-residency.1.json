@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or policy text on data residency, hosting locations, or keeping customer data only in Swiss data centres. I searched for 'data residency Switzerland data centre location' and 'where is customer data hosted region hosting location'. Neither search returned anything on where data is hosted or whether customers can choose a country or region. One related point for the reviewer: the approved backup answer (answer:6f795f80-eb2d-44e7-a31c-bfa405565d0f) says 'Backups are kept for 35 days and stored in a second region.' It doesn't name the regions, so it doesn't answer the question. Whether a Switzerland-only setup could still store backups in a second region needs confirming with the owner. The owner of hosting and infrastructure, or Legal for data residency, should write and approve an answer."
+  "note": "I couldn't find an approved answer or policy section on where customer data is hosted, data residency, or Switzerland. Two searches came back with only unrelated entries, such as encryption, vulnerability scanning and access control. One related point: the approved backup answer (answer:54c44049-42e0-4018-b4f0-c3ba6d1a1a3a) says production database backups are 'stored in a second region', but it doesn't name either region. Because of that, I can't confirm or rule out keeping data only in Switzerland. The owner of hosting and infrastructure, or security@harborlight.example, needs to provide an approved answer on data residency."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,48 +38,58 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:4839e816-2952-4df7-bf7e-3ac9cead5a1c",
-    "answer:a67b4c06-dc60-457a-acbe-35c8c8e1ed73",
-    "answer:6b3bd0f9-20e8-4599-ad95-ca5529a59332"
+    "answer:02e70c32-5e86-4f06-a1ca-da66f1719fe2",
+    "answer:88e2282c-a67c-4578-bc09-723182f5c42c",
+    "answer:6ff6b2b3-887a-4cb9-8c95-f8b3f50d8ac9"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "where is customer data hosted region hosting location"
+    "query": "where is customer data hosted region, data residency options"
    },
    "is_error": false,
    "source_ids": [
-    "answer:6b3bd0f9-20e8-4599-ad95-ca5529a59332",
-    "answer:4839e816-2952-4df7-bf7e-3ac9cead5a1c",
-    "answer:6f795f80-eb2d-44e7-a31c-bfa405565d0f"
+    "answer:6ff6b2b3-887a-4cb9-8c95-f8b3f50d8ac9",
+    "answer:02e70c32-5e86-4f06-a1ca-da66f1719fe2",
+    "answer:54c44049-42e0-4018-b4f0-c3ba6d1a1a3a",
+    "policy:408108a6-c0b1-463b-9588-686c2ce0a388",
+    "policy:15ad2dd4-052d-4a27-aa9a-2bb0304e01f8"
    ]
   }
  ],
  "seen_sources": {
-  "answer:4839e816-2952-4df7-bf7e-3ac9cead5a1c": [
+  "answer:02e70c32-5e86-4f06-a1ca-da66f1719fe2": [
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer.",
    "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ],
-  "answer:a67b4c06-dc60-457a-acbe-35c8c8e1ed73": [
+  "answer:88e2282c-a67c-4578-bc09-723182f5c42c": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:6b3bd0f9-20e8-4599-ad95-ca5529a59332": [
+  "answer:6ff6b2b3-887a-4cb9-8c95-f8b3f50d8ac9": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service.",
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:6f795f80-eb2d-44e7-a31c-bfa405565d0f": [
+  "answer:54c44049-42e0-4018-b4f0-c3ba6d1a1a3a": [
    "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region."
+  ],
+  "policy:408108a6-c0b1-463b-9588-686c2ce0a388": [
+   "Every workforce member has a named account. Shared accounts are not permitted."
+  ],
+  "policy:15ad2dd4-052d-4a27-aa9a-2bb0304e01f8": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1830,
-  "output_tokens": 467,
+  "input_tokens": 2048,
+  "output_tokens": 400,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.017898999999999998,
+ "cost_usd": 0.017431000000000002,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

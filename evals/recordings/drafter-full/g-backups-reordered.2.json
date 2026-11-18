@@ -14,9 +14,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -28,9 +28,9 @@
   "status": "answered",
   "answer": "Backups are kept for 35 days and stored in a second region. Production databases are backed up daily.",
   "citations": [
-   "answer:0fc574f4-c5ba-4b2e-b121-ced59564a5e7"
+   "answer:e0368806-d8c6-4764-8e4c-9bb26d0adf82"
   ],
-  "note": "Redrafted as the reviewer asked: the retention period now comes first. The wording is the approved answer for control A1.2 with its two sentences swapped and nothing else changed (owner security@harborlight.example, valid until 2027-11-18). That answer only mentions production databases, so the schedule and retention for other systems still need a reviewer to confirm them if the customer needs that wider scope. The answer doesn't state or cite any live setting, so there was nothing to re-check."
+  "note": "As the reviewer asked, the 35-day retention period now comes first; the approved wording is unchanged. The source is the approved answer for control A1.2, owned by security@harborlight.example and valid until 2027-11-18. It only covers production databases and says nothing about other systems. No live setting is stated or cited, because none of the available checks looks at backups, so no check was run."
  },
  "steps": 3,
  "tool_uses": [
@@ -41,28 +41,28 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:0fc574f4-c5ba-4b2e-b121-ced59564a5e7",
-    "answer:ec81faff-d9ea-4e90-91c4-6a26b5786685",
-    "answer:f3b20e51-b4a1-4b78-bc3a-2689d1379cac",
-    "policy:38024caa-9d92-456e-9b04-17e6d0e6ea42",
-    "answer:15981b1e-246e-4f55-8bc8-674229c5bd24"
+    "answer:e0368806-d8c6-4764-8e4c-9bb26d0adf82",
+    "answer:deccd171-6480-41b4-9002-f0d0289df95f",
+    "answer:15e1b341-90b1-4edd-a4c8-308102113876",
+    "policy:f8762df8-3a59-4d36-a0e0-b80280e1b324",
+    "answer:d80b4c6a-e746-48e3-a632-b702a1af807f"
    ]
   }
  ],
  "seen_sources": {
-  "answer:0fc574f4-c5ba-4b2e-b121-ced59564a5e7": [
+  "answer:e0368806-d8c6-4764-8e4c-9bb26d0adf82": [
    "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region."
   ],
-  "answer:ec81faff-d9ea-4e90-91c4-6a26b5786685": [
+  "answer:deccd171-6480-41b4-9002-f0d0289df95f": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:f3b20e51-b4a1-4b78-bc3a-2689d1379cac": [
+  "answer:15e1b341-90b1-4edd-a4c8-308102113876": [
    "We test our disaster recovery plan annually. The last test was in March 2026 and met the recovery time objective of four hours."
   ],
-  "policy:38024caa-9d92-456e-9b04-17e6d0e6ea42": [
+  "policy:f8762df8-3a59-4d36-a0e0-b80280e1b324": [
    "Access is removed within 24 hours of a person's last working day."
   ],
-  "answer:15981b1e-246e-4f55-8bc8-674229c5bd24": [
+  "answer:d80b4c6a-e746-48e3-a632-b702a1af807f": [
    "Accounts of people who leave are disabled within 24 hours of their last day, through the identity provider."
   ]
  },
@@ -73,29 +73,29 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 481,
+   "input_tokens": 472,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 3055,
-  "output_tokens": 620,
+  "input_tokens": 2988,
+  "output_tokens": 546,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 8873
+  "cache_read_input_tokens": 9203
  },
- "cost_usd": 0.0238428,
+ "cost_usd": 0.022163799999999997,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5",
  "first_draft": {
   "status": "answered",
   "answer": "Production databases are backed up daily. Backups are kept for 35 days and stored in a second region.",
   "citations": [
-   "answer:0fc574f4-c5ba-4b2e-b121-ced59564a5e7"
+   "answer:e0368806-d8c6-4764-8e4c-9bb26d0adf82"
   ],
-  "note": "This uses the approved answer for control A1.2 word for word (owner security@harborlight.example, valid until 2027-11-18). That answer only mentions production databases. It doesn't say how often other systems or data stores are backed up, or how long those backups are kept. If the customer wants that wider scope, a reviewer needs to confirm it first. Backups weren't checked against live settings because no available check covers them."
+  "note": "This answer reuses the approved answer for control A1.2 word for word. It is owned by security@harborlight.example and valid until 2027-11-18. It only covers production databases. It says nothing about other systems or file storage, so it should not be read as covering them. No live check was run because none of the available checks looks at backups."
  },
  "redraft_from": 1
 }

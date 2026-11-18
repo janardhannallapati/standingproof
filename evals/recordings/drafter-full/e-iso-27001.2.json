@@ -13,9 +13,9 @@
   "drafter.limits": "8/0.5/120.0",
   "drafter.max_tokens": "16000",
   "world.embedding": "BAAI/bge-small-en-v1.5",
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -27,7 +27,7 @@
   "status": "no_approved_source",
   "answer": "",
   "citations": [],
-  "note": "I couldn't find an approved answer or any policy text about ISO 27001 certification or a certificate number. I searched for 'ISO 27001 certification certificate number' and for 'information security certifications audits attestation'. Neither search returned anything that says whether the company holds ISO 27001 certification. The closest results were about other topics: second-factor sign-in (Access Control Policy 4.2), the yearly independent penetration test, vulnerability scanning and encryption at rest. None of these supports a claim about certification, so I have given no answer. The security team (security@harborlight.example) needs to confirm whether the company is certified and, if it is, provide an approved answer with the certificate number."
+  "note": "I couldn't find an approved answer or policy text on ISO 27001 certification or a certificate number. I ran two searches. They returned only unrelated sources: the Access Control Policy section on authentication, the approved answer on penetration testing, and the approved answer on encryption in transit. None of these says the company is or isn't ISO 27001 certified, so no answer was drafted. The certificate status and number need to come from the person who owns compliance, such as security@harborlight.example. Once they confirm, an approved answer should be added."
  },
  "steps": 3,
  "tool_uses": [
@@ -38,44 +38,44 @@
    },
    "is_error": false,
    "source_ids": [
-    "policy:de7e9908-55a1-4906-9924-c175de4c6179"
+    "policy:302b3cee-debd-478e-83cf-3a7919326cc6"
    ]
   },
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "information security certifications audits attestation"
+    "query": "information security certifications audits SOC 2 ISO"
    },
    "is_error": false,
    "source_ids": [
-    "answer:50c2b914-9e2a-4403-afa0-3982c35798db",
-    "answer:638ebd8a-eb14-4a91-ba90-0c06ac955741",
-    "answer:24e3c25d-a76f-4708-ad20-b6b63c7049d3"
+    "policy:302b3cee-debd-478e-83cf-3a7919326cc6",
+    "answer:d1b57185-6373-487b-a7c8-81f39667e60a",
+    "answer:3e0a259d-baa3-4dc1-a6fc-d28a341973c3"
    ]
   }
  ],
  "seen_sources": {
-  "policy:de7e9908-55a1-4906-9924-c175de4c6179": [
+  "policy:302b3cee-debd-478e-83cf-3a7919326cc6": [
+   "All workforce members must authenticate with a second factor. SMS is not an accepted factor.",
    "All workforce members must authenticate with a second factor. SMS is not an accepted factor."
   ],
-  "answer:50c2b914-9e2a-4403-afa0-3982c35798db": [
+  "answer:d1b57185-6373-487b-a7c8-81f39667e60a": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:638ebd8a-eb14-4a91-ba90-0c06ac955741": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
-  ],
-  "answer:24e3c25d-a76f-4708-ad20-b6b63c7049d3": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  "answer:3e0a259d-baa3-4dc1-a6fc-d28a341973c3": [
+   "Yes. All connections use TLS 1.2 or higher. Older protocol versions are disabled at the load balancer."
   ]
  },
  "check_turn": null,
  "usage": {
-  "input_tokens": 1180,
-  "output_tokens": 390,
+  "input_tokens": 1135,
+  "output_tokens": 344,
   "cache_creation_input_tokens": 0,
   "cache_read_input_tokens": 6195
  },
- "cost_usd": 0.013759,
+ "cost_usd": 0.012659,
  "draft_model": "claude-opus-5-5",
- "check_model": "claude-sonnet-5-5"
+ "check_model": "claude-sonnet-5-5",
+ "first_draft": null,
+ "redraft_from": null
 }

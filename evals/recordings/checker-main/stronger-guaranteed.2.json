@@ -4,9 +4,9 @@
  "run": 2,
  "variant": "main",
  "fingerprint": {
-  "checker.prompt": "69b29b2a0aa5f1b6",
+  "checker.prompt": "309798862f3b605c",
   "checker.schema": "ada35d8e371229d7",
-  "checker.request": "b155a0c77fb83498",
+  "checker.request": "81a90d4cdd785a51",
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
@@ -19,7 +19,7 @@
    "findings": [
     {
      "kind": "unsupported",
-     "quote": "guaranteed to be fixed",
+     "quote": "guaranteed to be fixed within 7 days",
      "source_id": "LIB-VUL",
      "explanation": "The source says critical findings are fixed within 7 days but never says this is guaranteed, so \"guaranteed\" is a stronger word than the source uses."
     }
@@ -27,12 +27,12 @@
   },
   "usage": {
    "input_tokens": 134,
-   "output_tokens": 114,
+   "output_tokens": 119,
    "cache_creation_input_tokens": 0,
-   "cache_read_input_tokens": 1339
+   "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0015419000000000001,
+ "cost_usd": 0.0016084,
  "check_model": "claude-sonnet-5-5"
 }

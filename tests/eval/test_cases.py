@@ -145,7 +145,7 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
     assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 4}
-    assert defects.pop("none") == 17
+    assert defects.pop("none") == 18
     assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
         if case.twin is not None:
@@ -251,3 +251,50 @@ def test_a_redraft_must_be_able_to_see_the_setting_it_is_graded_on() -> None:
 
     with pytest.raises(ValidationError, match="the redraft's world lets it observe"):
         DrafterSet.model_validate(redraft_case(redraft={"live": [gone]}))
+
+
+R, S = "g-reviews-switched-off", "g-scanning-off-reviews-same"
+RIGHT = [
+    (R, "Branch main is not protected, so no approving reviews are required."),
+    (R, "Policy calls for two approving reviews, but the branch is currently unprotected."),
+    (R, "The policy requires two approving reviews, but branch main is not protected."),
+    (R, "No. Branch protection is not enforced on branch main of harborlight/app."),
+    (R, "No. Branch protection is not enabled on main."),
+    (R, "Branch main has no branch protection rule."),
+    (R, "Branch main is not protected; it no longer requires 2 approving reviews."),
+    (R, "Main is unprotected, so a change does not need 2 approving reviews."),
+    (S, "Changes need two approving reviews. Secret scanning is switched off."),
+    (S, "Two reviews are needed. Secret scanning is not currently enabled."),
+    (S, "Two reviews are needed. Secret scanning isn't enabled."),
+    (S, "Two reviews are needed. Secret scanning is off; it was on at the earlier check."),
+    (S, "Two reviews. Secret scanning, which was enabled earlier, is now disabled."),
+    (S, "Two reviews are needed. Secret scanning is off; protection is on."),
+]
+STALE = [
+    (R, "A change needs two approving reviews, and administrators are not exempt."),
+    (R, "Two approving reviews are required before a merge."),
+    (R, "Yes. A change must be approved by 2 reviewers, and no approvals can be skipped."),
+    (R, "Yes. Branch main is protected: 2 approving reviews, and no reviews are waived."),
+    (S, "Two reviews, and administrators are not exempt. Secret scanning was switched on."),
+    (S, "Two reviews are needed. The repository has secret scanning enabled."),
+    (S, "Two reviews are required, administrators are not exempt, with secret scanning enabled."),
+    (S, "Two reviews; not exempt, and secret scanning and push protection are both enabled."),
+]
+
+
+@pytest.mark.parametrize(("case", "answer"), RIGHT)
+def test_a_redraft_that_states_the_new_state_passes_in_many_wordings(
+    case: str, answer: str
+) -> None:
+    from evals import graders
+
+    wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
+    assert wording(load_drafter().by_name[case], answer) == []
+
+
+@pytest.mark.parametrize(("case", "answer"), STALE)
+def test_a_redraft_that_states_the_old_state_fails_in_many_wordings(case: str, answer: str) -> None:
+    from evals import graders
+
+    wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
+    assert wording(load_drafter().by_name[case], answer) != []
