@@ -26,73 +26,133 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "79f0c169a39a782f"
+  "case": "a4005526c40ab57f"
  },
  "handoff": null,
  "final_stop_reason": "end_turn",
  "final_draft": {
-  "status": "no_approved_source",
-  "answer": "",
-  "citations": [],
-  "note": "I found no approved answer or policy text on code review approvals or branch protection, and I didn't run the live branch-protection check because no source names the repository. To answer this, the security owner (security@harborlight.example) needs to give the repository name for that check or write an approved answer."
+  "status": "answered",
+  "answer": "As of 2026-11-18 14:40:27 UTC, the default branch (main) of harborlight/app was not protected, so no approving reviews were required before a change could be merged.",
+  "citations": [
+   "evidence:5aacdd41-24b2-45c1-943b-a832682f237b"
+  ],
+  "note": "The answer has changed: a check 8 seconds earlier (evidence:288bae46-a496-424a-a794-fd9b25d72b66, 14:40:19 UTC) showed main protected, with 2 approving reviews required and the rule applying to administrators. The setting changed between the two checks, so it's worth finding out why before sending this answer. The search found no approved answer or policy text on code review or branch protection, so this answer comes only from the live check."
  },
  "steps": 4,
  "tool_uses": [
   {
    "name": "search_approved_answers",
    "arguments": {
-    "query": "code review approvals required before merge to main branch"
+    "query": "code review approvals before merge default branch protection"
    },
    "is_error": false,
    "source_ids": [
-    "answer:fa49166b-6308-4c8f-a858-aa062e879426",
-    "answer:9b71ff3c-5316-41b3-a5d3-6feea6ca6c43",
-    "answer:19c2603f-9675-4cdc-92d4-9374bf94b469"
+    "answer:75b02d68-c4cb-4b5f-8c72-4a04580e85a7",
+    "answer:0ce6387a-3752-4eb7-94c8-f2ebada44ecc"
    ]
   },
   {
-   "name": "search_approved_answers",
+   "name": "check_live_setting",
    "arguments": {
-    "query": "branch protection pull request review change management"
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
    },
    "is_error": false,
    "source_ids": [
-    "answer:9b71ff3c-5316-41b3-a5d3-6feea6ca6c43",
-    "answer:fe48346e-f948-4a99-b675-41e46bc695ba"
+    "evidence:288bae46-a496-424a-a794-fd9b25d72b66"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:5aacdd41-24b2-45c1-943b-a832682f237b"
    ]
   }
  ],
  "seen_sources": {
-  "answer:fa49166b-6308-4c8f-a858-aa062e879426": [
+  "answer:75b02d68-c4cb-4b5f-8c72-4a04580e85a7": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:9b71ff3c-5316-41b3-a5d3-6feea6ca6c43": [
-   "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days.",
+  "answer:0ce6387a-3752-4eb7-94c8-f2ebada44ecc": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:19c2603f-9675-4cdc-92d4-9374bf94b469": [
-   "Yes. Multi-factor authentication is required for all employee accounts through our identity provider. SMS is not an accepted factor."
+  "evidence:288bae46-a496-424a-a794-fd9b25d72b66": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 14:40 UTC."
   ],
-  "answer:fe48346e-f948-4a99-b675-41e46bc695ba": [
-   "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
+  "evidence:5aacdd41-24b2-45c1-943b-a832682f237b": [
+   "Branch main of harborlight/app is not protected. Observed 2026-11-18 14:40 UTC."
   ]
  },
- "check_turn": null,
- "usage": {
-  "input_tokens": 3140,
-  "output_tokens": 596,
-  "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 8260
+ "check_turn": {
+  "stop_reason": "end_turn",
+  "verdict": {
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "unsupported",
+     "quote": "so no approving reviews were required before a change could be merged",
+     "source_id": "evidence:5aacdd41-24b2-45c1-943b-a832682f237b",
+     "explanation": "The cited source only says main is not protected; it does not state that no approving reviews are required, which is an inference beyond what it says."
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 500,
+   "output_tokens": 130,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1504
+  },
+  "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.026131999999999996,
+ "usage": {
+  "input_tokens": 4456,
+  "output_tokens": 928,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 11268
+ },
+ "cost_usd": 0.0350068,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5",
  "first_draft": {
-  "status": "no_approved_source",
-  "answer": "",
-  "citations": [],
-  "note": "I couldn't find an approved answer or policy text on code review approvals or branch protection. I ran two searches: 'code review approvals required before merge to main branch' and 'branch protection pull request review change management'. They only returned unrelated answers on penetration testing, vulnerability scanning, MFA and encryption at rest. A live branch-protection check can show whether the main branch is protected and how many approving reviews are required. I didn't run it because it needs a repository name, and none of the sources gave one. Next step: the security owner (security@harborlight.example) should give the repository so the live check can be run and cited, or write an approved answer on code review."
+  "status": "answered",
+  "answer": "Two. As of 2026-11-18 14:40 UTC, the default branch (main) of harborlight/app was protected. A change needed 2 approving reviews before it could be merged, and this rule also applied to administrators.",
+  "citations": [
+   "evidence:288bae46-a496-424a-a794-fd9b25d72b66"
+  ],
+  "note": "This answer comes only from a read-only check of the repository's live settings, taken at the time shown. No approved answer or policy text about code review or branch protection came up in the search; the only results were about penetration testing and vulnerability scanning. It describes the setting at that moment, not a written policy. A reviewer may want to add an approved answer for this control."
  },
  "redraft_from": 2,
- "reading": null
+ "reading": {
+  "stop_reason": "end_turn",
+  "reading": {
+   "facts": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "fact": "protected",
+     "says": "value",
+     "value": "false"
+    },
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "fact": "reviews",
+     "says": "value",
+     "value": "0"
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 194,
+   "output_tokens": 95,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1292
+  },
+  "model": "claude-sonnet-5-5"
+ }
 }
