@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "ca63a84af633f897"
+  "case.looks": "e1fe453ecf70e50c",
+  "case": "e6f22a89e0ea4d57"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "Changes to branch main of harborlight/app need 2 approving reviews before they can be merged",
-     "source_id": "evidence:EV-BP-LATER",
-     "explanation": "The later observation (look 2) of the same branch in the same repository reads that main is not protected, so the earlier look the draft relies on is out of date."
+     "source_id": "evidence:EV-BP-3",
+     "explanation": "The later observation (look 2) of the same branch in the same repository reads that main is not protected, so the earlier look the draft relies on is outdated."
     }
    ]
   },
   "usage": {
-   "input_tokens": 270,
-   "output_tokens": 135,
+   "input_tokens": 264,
+   "output_tokens": 133,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0020404,
+ "cost_usd": 0.0020084,
  "check_model": "claude-sonnet-5-5"
 }

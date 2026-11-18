@@ -2,7 +2,7 @@
 
 Written by `python -m evals report` from the files in `evals/recordings`. Do not edit.
 
-Run finished 2026-11-18. 342 recordings, $2.82. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
+Run finished 2026-11-18. 342 recordings, $2.83. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
 
 ## Result
 
@@ -13,7 +13,7 @@ Run finished 2026-11-18. 342 recordings, $2.82. Drafter `claude-opus-5-5` (mediu
 | Planted defects the checker agreed with in any run | 0 of 36 |
 | Sound drafts the checker objected to in most runs | 0 of 18 |
 
-Baseline accepted 2026-11-18: A full run after two changes. (1) The checker is told which of two looks at one setting came later, and that the later one is what the setting reads now; two labelled drafts were added, one each way, and all six readings of them are correct. (2) The two redraft cases where the setting changes got tighter wording patterns. Every recording was made again. Against the last baseline: the redraft case with two settings is now right (2 of 3 runs; in the third the redraft did not look again and the checker objected, as it should). The case where branch protection is switched off is still safe: in all three runs the drafter said there is no source to answer from. One earlier case, b-root-mfa-off, went from right in 2 of 3 runs to right in 1 of 3 with no checker objection; the drafter was not changed, so this is run-to-run difference. Not a first look: both changes were made after reading earlier runs of these cases.
+Baseline accepted 2026-11-18: After the review of the checker change, 14 recordings were made again; the other 328 are from the full run earlier the same day. (1) The two labelled drafts with two looks at one setting now have source ids that do not say which look is later, so only the look number can tell the checker; all eight readings of them are correct (the stale draft is objected to as contradicted by the later look, the sound one is passed). (2) The two redraft cases where the setting changes got a third version of their wording patterns, tested against correct and stale sentences the reviewer wrote. Their six runs: with two settings, the redraft looked again in 3 of 3 and is right in 2 of 3 (in the third it left the scanning part out and the checker objected, so it is safe); where branch protection is switched off, the redraft looked again in 3 of 3 and said there is no source to answer from, which is safe. Counts are unchanged: 31 of 36 right, none ready and wrong. Not a first look: the patterns and ids were changed after reading earlier runs of these cases.
 
 ## Method
 
