@@ -124,11 +124,21 @@ def _checker_parts(config: Config, variant: CheckerVariant) -> dict[str, str]:
 def of_drafter_case(
     cases: DrafterSet, case: DrafterCase, variant: DrafterVariant, config: Config
 ) -> dict[str, str]:
+    # A case with no redraft is hashed as it was before cases could have one, so that a
+    # recording made then still answers for it.
+    left_out = {"note"} if case.redraft is not None else {"note", "redraft"}
     world = {
-        "case": case.model_dump(mode="json", exclude={"note"}),
+        "case": case.model_dump(mode="json", exclude=left_out),
         "library": cases.library(case.library).model_dump(mode="json"),
     }
+    redraft = (
+        {}
+        if case.redraft is None
+        # What a redraft adds to the request: our fixed words, and how the reviewer's are put.
+        else {"drafter.redraft": _sha([prompts.REDRAFT_REQUEST, prompts.reviewer_section("I")])}
+    )
     return {
+        **redraft,
         "drafter.prompt": _sha(prompts.SYSTEM_PROMPT),
         "drafter.tools": _sha(tool_definitions(variant)),
         "drafter.schema": _sha(AnswerDraft.model_json_schema()),

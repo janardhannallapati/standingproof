@@ -168,3 +168,17 @@ def test_the_eval_cannot_reach_a_real_github_or_aws(
     for module in Path(inspect.getfile(evals)).parent.glob("*.py"):
         source = module.read_text()
         assert "build_backends" not in source and "import boto3" not in source, module.name
+
+
+def test_a_worlds_settings_can_change_between_two_looks(db: Db) -> None:
+    case = CASES.by_name["g-reviews-switched-off"]
+    assert case.redraft is not None
+    world = world_of(db, case.name)
+
+    before = json.loads(look(db, world, "github.branch_protection", "harborlight/app").content)
+    world.becomes(case.redraft.live)
+    after = json.loads(look(db, world, "github.branch_protection", "harborlight/app").content)
+
+    assert before["facts"]["protected"] is True and "2 approving reviews" in before["statement"]
+    assert after["facts"]["protected"] is False and "not protected" in after["statement"]
+    assert before["id"] != after["id"]

@@ -15,7 +15,14 @@ from evals.transcript import MANIFEST
 
 RUNS = 3
 # What one unit has cost on this project so far (spend.md), in US dollars.
-EACH = {"drafter": 0.022, "docs_only": 0.015, "checker": 0.0019, "cheaper": 0.0003}
+# A redraft case is two rounds, each with its check: twice a drafter case, not yet measured.
+EACH = {
+    "drafter": 0.022,
+    "redraft": 0.044,
+    "docs_only": 0.015,
+    "checker": 0.0019,
+    "cheaper": 0.0003,
+}
 
 
 @dataclass(frozen=True)
@@ -26,9 +33,30 @@ class Plan:
     docs_only: list[str]
     checker: list[tuple[str, int]]
     cheaper: list[str]
+    # The names in `drafter` that are redraft cases: two rounds each.
+    redraft: frozenset[str] = frozenset()
 
 
-def plan_for(drafter: DrafterSet, checker: CheckerSet, *, smoke: bool, runs: int = RUNS) -> Plan:
+def plan_for(
+    drafter: DrafterSet,
+    checker: CheckerSet,
+    *,
+    smoke: bool,
+    runs: int = RUNS,
+    family: str | None = None,
+) -> Plan:
+    redraft = frozenset(case.name for case in drafter.cases if case.redraft is not None)
+    if family is not None:
+        # One kind of drafter case and nothing else: a look at a family before, or without,
+        # the full run. What it records is replaced by the next full run.
+        chosen = [case.name for case in drafter.cases if case.family == family]
+        return Plan(
+            drafter=[(name, n) for n in range(1, runs + 1) for name in chosen],
+            docs_only=[],
+            checker=[],
+            cheaper=[],
+            redraft=redraft & set(chosen),
+        )
     if smoke:
         families = {case.family: case.name for case in reversed(drafter.cases)}
         defects = {case.defect: case.name for case in reversed(checker.cases)}
@@ -37,6 +65,7 @@ def plan_for(drafter: DrafterSet, checker: CheckerSet, *, smoke: bool, runs: int
             docs_only=[],
             checker=[(name, 1) for name in list(defects.values())[::-1][:6]],
             cheaper=[],
+            redraft=redraft & set(families.values()),
         )
     numbers = range(1, runs + 1)
     return Plan(
@@ -45,6 +74,7 @@ def plan_for(drafter: DrafterSet, checker: CheckerSet, *, smoke: bool, runs: int
         docs_only=[case.name for case in drafter.cases if case.family in "ABC"],
         checker=[(case.name, n) for n in numbers for case in checker.cases],
         cheaper=[case.name for case in checker.cases],
+        redraft=redraft,
     )
 
 
@@ -69,9 +99,11 @@ class Estimate:
 
 
 def estimate(plan: Plan) -> Estimate:
+    twice = sum(name in plan.redraft for name, _ in plan.drafter)
     return Estimate(
         [
-            Line("drafter cases, each with its check", len(plan.drafter), EACH["drafter"]),
+            Line("drafter cases, each with its check", len(plan.drafter) - twice, EACH["drafter"]),
+            Line("redraft cases, two rounds each", twice, EACH["redraft"]),
             Line("the same without the check tool", len(plan.docs_only), EACH["docs_only"]),
             Line("labelled drafts read by the checker", len(plan.checker), EACH["checker"]),
             Line("the same read by the cheaper model", len(plan.cheaper), EACH["cheaper"]),

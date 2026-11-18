@@ -31,6 +31,10 @@ def test_the_interval_on_30_of_32_is_wide() -> None:
     assert wilson(0, 0) == (0.0, 1.0)
 
 
+# However many cases the committed set has: these tests are about counting, not the count.
+N = len(DRAFTER.cases)
+
+
 def draft(name: str, grade: str, run: int = 1) -> GradedDraft:
     return GradedDraft(name, run, grade, grade != "safe", None, None, None, None, ())  # type: ignore[arg-type]
 
@@ -46,8 +50,8 @@ def test_a_case_wrong_in_any_run_is_a_wrong_case() -> None:
     score = score_drafter(DRAFTER, graded, runs=3)
 
     assert score.wrong_cases == [DRAFTER.cases[0].name]
-    assert (score.right_cases, score.cases, score.missing) == (32, 32, [])
-    assert score.runs_by_grade == {"right": 95, "safe": 0, "wrong": 1}
+    assert (score.right_cases, score.cases, score.missing) == (N, N, [])
+    assert score.runs_by_grade == {"right": 3 * N - 1, "safe": 0, "wrong": 1}
 
 
 def test_a_case_is_right_by_majority_and_a_tie_goes_to_the_worse_grade() -> None:
@@ -57,10 +61,11 @@ def test_a_case_is_right_by_majority_and_a_tie_goes_to_the_worse_grade() -> None
     two_of_three = [draft(name, "right", 1), draft(name, "right", 2), draft(name, "safe", 3)]
     one_of_three = [draft(name, "right", 1), draft(name, "safe", 2), draft(name, "safe", 3)]
 
-    assert score_drafter(DRAFTER, graded + two_of_three, runs=3).right_cases == 32
-    assert score_drafter(DRAFTER, graded + one_of_three, runs=3).right_cases == 31
+    assert score_drafter(DRAFTER, graded + two_of_three, runs=3).right_cases == N
+    assert score_drafter(DRAFTER, graded + one_of_three, runs=3).right_cases == N - 1
     tie = [draft(name, "right", 1), draft(name, "safe", 2)]
-    assert score_drafter(DRAFTER, [g for g in graded if g.run < 3] + tie, runs=2).right_cases == 31
+    two_runs = [g for g in graded if g.run < 3] + tie
+    assert score_drafter(DRAFTER, two_runs, runs=2).right_cases == N - 1
 
 
 def test_a_case_with_too_few_recordings_is_missing() -> None:

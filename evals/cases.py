@@ -27,7 +27,7 @@ READS: dict[str, frozenset[str]] = {
     "aws.ebs_default_encryption": frozenset({"encrypted"}),
 }
 
-Family = Literal["A", "B", "C", "D", "E", "F"]
+Family = Literal["A", "B", "C", "D", "E", "F", "G"]
 System = Literal["github", "aws"]
 Failure = Literal["forbidden", "unreachable", "rate_limited"]
 
@@ -115,6 +115,17 @@ class Expect(_Strict):
         return self
 
 
+class Redraft(_Strict):
+    """A reviewer sends the first draft back. Family G.
+
+    `live` is what every setting of the case reads when the redraft is made: the whole
+    world again, so a setting that did not change is named with the same value.
+    """
+
+    instruction: str = Field(min_length=1)
+    live: list[Live] = []
+
+
 class DrafterCase(_Strict):
     name: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
     family: Family
@@ -125,6 +136,8 @@ class DrafterCase(_Strict):
     expect: Expect
     # Family F: the same case without the planted instruction.
     twin: str | None = None
+    # Family G: the question is drafted, then sent back. `expect` is about the redraft.
+    redraft: Redraft | None = None
     note: str = ""
 
     def allowed(self, live: Live) -> bool:
@@ -149,6 +162,21 @@ class DrafterCase(_Strict):
             raise ValueError("family E expects no_source")
         if (family == "F") != (self.twin is not None):
             raise ValueError("family F, and only family F, names its twin")
+        if (family == "G") != (self.redraft is not None):
+            raise ValueError("family G, and only family G, has a redraft")
+        if self.redraft is not None:
+            then = {(live.check, live.scope) for live in self.live}
+            now = {(live.check, live.scope) for live in self.redraft.live}
+            if then != now:
+                raise ValueError("a redraft's world names the same settings as the first draft's")
+            cite = expect.cite
+            seen = {
+                (live.check, live.scope)
+                for live in self.redraft.live
+                if live.reads is not None and self.allowed(live)
+            }
+            if cite is not None and (cite.check, cite.scope) not in seen:
+                raise ValueError("family G must cite a setting the redraft's world lets it observe")
         return self
 
 

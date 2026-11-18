@@ -63,6 +63,8 @@ from standingproof.agent.types import (
     Usage,
 )
 from standingproof.library.embedding import Embedder
+from standingproof.workflow.graph import build_graph, run_question
+from standingproof.workflow.state import ExactMatch, Outcome, QuestionContext
 
 # The most one request could cost, in US dollars. Drafter: its output limit of 16,000 tokens
 # at $20 a million is $0.32, and 20,000 tokens of input, far more than any case here sends,
@@ -182,6 +184,8 @@ async def _draft(
     config: Config,
     meter: Meter,
 ) -> DrafterRun:
+    if case.redraft is not None:
+        return await _redraft(sessions, cases, case, number, clients, embedder, config, meter)
     world = await build_world(sessions, cases, case, embedder=embedder, variant=variant)
     model = _LastTurn(clients.model, meter)
     checker = _LastCheck(clients.checker, meter)
@@ -217,6 +221,87 @@ async def _draft(
         cost_usd=result.cost_usd,
         draft_model=config.draft_model,
         check_model=config.check_model,
+    )
+
+
+async def _no_exact_match(_question: str) -> ExactMatch | None:
+    """Every eval case is drafted by the model, as in the other families."""
+    return None
+
+
+def _provider_failed(outcome: Outcome, checker: _LastCheck) -> bool:
+    return outcome.reason == HandoffReason.MODEL_ERROR or (checker.asked and checker.turn is None)
+
+
+async def _redraft(
+    sessions: async_sessionmaker[AsyncSession],
+    cases: DrafterSet,
+    case: DrafterCase,
+    number: int,
+    clients: Clients,
+    embedder: Embedder,
+    config: Config,
+    meter: Meter,
+) -> DrafterRun:
+    """A family G case: draft, change the world, send the draft back, and record the redraft.
+
+    Through the product's own graph, because that is where a redraft is made: the saved
+    conversation, our fixed request, and the reviewer's words in the system message.
+    """
+    from langgraph.checkpoint.memory import InMemorySaver
+
+    assert case.redraft is not None  # noqa: S101 - the caller checked
+    world = await build_world(sessions, cases, case, embedder=embedder)
+    model = _LastTurn(clients.model, meter)
+    checker = _LastCheck(clients.checker, meter)
+    registry = _Recorded(world.registry)
+    context = QuestionContext(
+        model=model,
+        registry=cast(ToolRegistry, registry),
+        limits=Limits(config.max_steps, config.max_cost_usd, config.max_seconds),
+        find_exact=_no_exact_match,
+        checker=checker,
+    )
+    graph = build_graph(InMemorySaver())
+    thread = f"{case.name}.{number}"
+    try:
+        first = await run_question(graph, thread_id=thread, question=case.question, context=context)
+        if _provider_failed(first, checker):
+            raise _ProviderFailedError
+        redraft_from = len(registry.uses)
+        # What the redraft leaves behind must be the redraft's own: a round that ends
+        # without a model turn or a check must not be recorded with the first round's.
+        model.last, checker.turn, checker.asked = None, None, False
+        world.becomes(case.redraft.live)
+        result = await run_question(
+            graph,
+            thread_id=thread,
+            question=case.question,
+            context=context,
+            resume={"decision": "redraft", "instruction": case.redraft.instruction},
+        )
+    finally:
+        await world.aclose()
+    if _provider_failed(result, checker):
+        raise _ProviderFailedError
+    return DrafterRun(
+        case=case.name,
+        run=number,
+        variant="full",
+        fingerprint=of_drafter_case(cases, case, "full", config),
+        handoff=result.reason if result.draft is None else None,
+        final_stop_reason=model.last.stop_reason if model.last else None,
+        final_draft=model.last.draft if model.last else None,
+        steps=result.steps,
+        tool_uses=registry.uses,
+        seen_sources=registry.sources,
+        check_turn=checker.turn,
+        usage=result.usage,
+        cost_usd=result.cost_usd,
+        draft_model=config.draft_model,
+        check_model=config.check_model,
+        first_draft=first.draft,
+        redraft_from=redraft_from,
     )
 
 

@@ -41,6 +41,7 @@ _FAMILY = {
     "D": "an approved answer exists",
     "E": "nothing supports an answer",
     "F": "an instruction is planted in the question or the library",
+    "G": "a reviewer sends the draft back; the grade is the redraft's",
 }
 
 
@@ -146,10 +147,10 @@ def render(result: Result, baseline: Baseline | None) -> str:
         "## Drafter, by kind of case",
         "",
     ]
-    families = _families(result.graded_drafts, result, "ABCDEF")
+    families = _families(result.graded_drafts, result, "ABCDEFG")
     out += _table(
         ["Kind", "Runs right", "Safe", "Wrong"],
-        [[f"{f}: {_FAMILY[f]}", *(families[f][g] for g in _GRADES)] for f in "ABCDEF"],
+        [[f"{f}: {_FAMILY[f]}", *(families[f][g] for g in _GRADES)] for f in "ABCDEFG"],
     )
     out += [
         f"Of the answered drafts about a live setting, {_of(*d.looked)} cite a look at it.",

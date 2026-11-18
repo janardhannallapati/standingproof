@@ -2,6 +2,7 @@
 
 uv run python -m evals estimate [--smoke]     what a run would cost; calls nothing
 uv run python -m evals run [--smoke]          the paid run; asks first, stops at a ceiling
+uv run python -m evals run --family G --runs 1    one kind of drafter case only
 uv run python -m evals score                  grade the recordings against the baseline (CI)
 uv run python -m evals accept --note "..."    make the recorded result the baseline
 uv run python -m evals report                 write evals/REPORT.md from the recordings
@@ -136,6 +137,8 @@ def main(
         sub.add_argument("--smoke", action="store_true", help="one case of each kind")
         sub.add_argument("--ceiling", type=float, help="stop before spending more than this")
         sub.add_argument("--approved-usd", type=float, help="the ceiling a person agreed to")
+        sub.add_argument("--family", choices=list("ABCDEFG"), help="only this kind of case")
+        sub.add_argument("--runs", type=int, choices=[1, 2, 3], help="with --family: runs each")
     commands.add_parser("score")
     commands.add_parser("report")
     commands.add_parser("accept").add_argument("--note", required=True)
@@ -143,7 +146,10 @@ def main(
 
     drafter, checker = load_drafter(sets / "drafter.json"), load_checker(sets / "checker.json")
     if args.command in ("estimate", "run"):
-        plan = plan_for(drafter, checker, smoke=args.smoke)
+        if args.runs is not None and args.family is None:
+            out("--runs goes with --family: a full run is always three of each case")
+            return NOT_APPROVED
+        plan = plan_for(drafter, checker, smoke=args.smoke, family=args.family, runs=args.runs or 3)
         ceiling = SMOKE_CEILING if args.smoke else CEILING
         if args.ceiling is not None:
             ceiling = args.ceiling

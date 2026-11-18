@@ -59,6 +59,10 @@ class DrafterRun(_Record):
     cost_usd: float
     draft_model: str
     check_model: str | None
+    # A redraft case (family G): the draft that was sent back, and where in `tool_uses` the
+    # redraft's own calls begin. Everything above describes the redraft. None otherwise.
+    first_draft: AnswerDraft | None = None
+    redraft_from: int | None = None
 
 
 class CheckerRun(_Record):
