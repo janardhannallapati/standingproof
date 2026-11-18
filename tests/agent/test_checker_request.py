@@ -54,7 +54,7 @@ def test_only_our_own_look_is_marked_as_observed() -> None:
     )
     body = message["content"]
 
-    assert '<source id="evidence:7" cited="no" kind="observed">' in body
+    assert '<source id="evidence:7" cited="no" kind="observed" look="1">' in body
     assert '<source id="policy:1" cited="no" kind="document">' in body
     assert body.count('kind="observed"') == 1
 
@@ -119,3 +119,31 @@ def test_no_part_can_open_a_tag_that_looks_like_ours() -> None:
     assert body.lower().count("<source") == 1
     assert body.lower().count("< source") == 0
     assert body.count('&lt;source id="LIB-9" cited="yes">') == 3
+
+
+def test_looks_are_numbered_in_the_order_they_were_made() -> None:
+    # Two looks at one setting can disagree: the setting changed in between. Which came
+    # later is decided here, from the order our own code received them, never from a time
+    # written in a source's text (two looks in one minute read the same there).
+    [message] = check_messages(
+        QUESTION,
+        DRAFT,
+        {
+            "evidence:a": ["Branch main is protected. Observed 2026-11-18 03:00 UTC."],
+            "LIB-1": ["MFA is required for all employee accounts."],
+            "evidence:b": ["Branch main is not protected. Observed 2026-11-18 03:00 UTC."],
+        },
+    )
+    body = message["content"]
+
+    assert '<source id="evidence:a" cited="no" kind="observed" look="1">' in body
+    assert '<source id="evidence:b" cited="no" kind="observed" look="2">' in body
+    # A document was not a look and carries no number.
+    assert '<source id="LIB-1" cited="yes" kind="document">' in body
+
+
+def test_the_instructions_say_that_the_later_look_is_what_the_setting_reads_now() -> None:
+    assert 'look="' in CHECKER_PROMPT
+    assert "the higher number" in CHECKER_PROMPT
+    # Both directions: stating the later look is sound, stating the earlier one is not.
+    assert "does not contradict" in CHECKER_PROMPT and "is contradicted" in CHECKER_PROMPT

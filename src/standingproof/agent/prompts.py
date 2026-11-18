@@ -98,6 +98,14 @@ it states. The document it set aside does
 not contradict the draft. A draft that states what a document states against an observed
 source is contradicted.
 
+Observed sources are numbered in the order the looks were made (look="1" is the earliest).
+When two observed sources are about the same setting in the same place and disagree, the
+setting changed between the two looks: the one with the higher number is what it reads now,
+and the earlier one is what it read before. A draft that cites the later one and states what
+it states is not contradicted by the earlier one; the earlier look does not contradict it.
+A draft that states what the earlier look states against the later one is contradicted,
+whether or not it cites the later one.
+
 For each finding give `kind`; `quote`, the shortest run of words that carries the problem,
 copied exactly from the draft (a few words, not the whole sentence; leave it empty for
 not_answered); `source_id`, the id of the source the finding rests

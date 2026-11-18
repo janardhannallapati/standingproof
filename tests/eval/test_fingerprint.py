@@ -193,3 +193,19 @@ def test_a_recording_made_before_cases_could_have_a_redraft_still_answers_for_it
     today = of_drafter_case(cases, cases.by_name["a-reviews-two"], "full", Config.current())
 
     assert differences(recorded["fingerprint"], today) == []
+
+
+def test_how_an_observation_is_marked_for_the_checker_is_part_of_every_recording(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evals.cases import load_checker
+    from standingproof.agent import checker as product
+
+    case = load_checker().cases[0]
+    config = Config.current()
+    before = of_checker_case(case, "main", config)
+
+    # As if the mark our code gives a look were changed.
+    monkeypatch.setattr(product, "OBSERVED_PREFIX", "seen:")
+
+    assert differences(before, of_checker_case(case, "main", config)) == ["checker.request"]

@@ -31,6 +31,7 @@ def check_messages(
     agree with it.
     """
     parts = [wrap("question", question), wrap("draft", draft.answer)]
+    looks = 0
     for source_id, texts in sources.items():
         cited = "yes" if source_id in draft.citations else "no"
         # The same source can come back from two searches; one copy is enough.
@@ -38,6 +39,12 @@ def check_messages(
         # Decided here from the id our own code gave the source, never from its text.
         kind = "observed" if source_id.startswith(OBSERVED_PREFIX) else "document"
         attributes = f' id="{escape(source_id)}" cited="{cited}" kind="{kind}"'
+        if kind == "observed":
+            # Which look came later, from the order our own code received them. Two looks
+            # at one setting can disagree because the setting changed in between, and the
+            # time in a source's text is to the minute: two looks can share it.
+            looks += 1
+            attributes += f' look="{looks}"'
         parts.append(wrap("source", text, attributes))
     return [{"role": "user", "content": "\n\n".join(parts)}]
 
