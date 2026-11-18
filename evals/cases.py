@@ -233,6 +233,16 @@ class DrafterCase(_Strict):
             }
             if cite is not None and (cite.check, cite.scope) not in seen:
                 raise ValueError("family G must cite a setting the redraft's world lets it observe")
+            before = {(live.check, live.scope): live.reads for live in self.live}
+            changed = any(
+                live.reads is not None and before.get((live.check, live.scope)) != live.reads
+                for live in self.redraft.live
+            )
+            if changed and not expect.states:
+                raise ValueError(
+                    "a redraft that changes a setting names in `states` the facts its answer "
+                    "is read for"
+                )
         return self
 
 

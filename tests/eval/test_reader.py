@@ -126,6 +126,17 @@ def test_every_fact_a_changed_setting_case_changes_is_one_its_answer_is_read_for
             assert changed <= read, (c.name, live.check, changed - read)
 
 
+def test_a_redraft_whose_world_changes_must_say_which_facts_its_answer_is_read_for() -> None:
+    # A changed-setting case with wording patterns, or none, is what the reader replaced.
+    data = json.loads((SETS / "drafter.json").read_text())
+    base = copy.deepcopy(next(c for c in data["cases"] if c["name"] == "g-reviews-switched-off"))
+    base["expect"] = {"outcome": "answered", "must": ["not protected"]}
+    data["cases"] = [base]
+
+    with pytest.raises(ValidationError, match="changes a setting"):
+        DrafterSet.model_validate(data)
+
+
 def test_an_answer_that_says_both_values_is_wrong() -> None:
     said = reading((BP, "protected", "conflicting", ""), (BP, "reviews", "not_stated", ""))
 

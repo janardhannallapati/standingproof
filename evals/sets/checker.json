@@ -898,8 +898,8 @@
     "evidence:EV-BP-3"
    ],
    "sources": {
-    "LIB-REVIEW": [
-     "Changes to branch main of harborlight/app need 2 approving reviews before they can be merged."
+    "LIB-OPEN": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
     ],
     "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
@@ -919,8 +919,8 @@
     "evidence:EV-BP-7"
    ],
    "sources": {
-    "LIB-REVIEW": [
-     "Changes to branch main of harborlight/app need 2 approving reviews before they can be merged."
+    "LIB-OPEN": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
     ],
     "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."

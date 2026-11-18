@@ -353,3 +353,26 @@ def test_a_reading_of_a_sentence_that_is_not_in_the_set_fails_score(tmp_path: Pa
     result = load_result(tmp_path, DRAFTER, CHECKER, SETS, reader_set=_sentences())
 
     assert any("gone" in line for line in result.stale)
+
+
+def test_a_result_with_cases_read_by_the_reader_and_no_labelled_sentences_is_not_accepted(
+    tmp_path: Path,
+) -> None:
+    # Otherwise accepting with the set removed would write a baseline that expects none,
+    # and the gate would be quiet about a reader nobody measured.
+    from evals.cases import SETS
+    from evals.result import load_result, not_whole
+
+    result = load_result(tmp_path, DRAFTER, CHECKER, SETS, reader_set=ReaderSet())
+
+    assert any("no labelled sentences" in problem for problem in not_whole(result))
+
+
+def test_the_reader_is_measured_on_the_administrators_rule_by_itself() -> None:
+    # Sentences that are right about protection and reviews, and differ only in what they
+    # say of administrators. Without them the fact is graded and never measured.
+    alone = [s for s in load_reader().sentences if s.name.startswith("admins-")]
+
+    assert {s.case for s in alone} == {OFF}
+    assert [s.label for s in alone].count("does_not") >= 3
+    assert [s.label for s in alone].count("states_now") >= 3

@@ -937,6 +937,48 @@
    "case": "g-scanning-off-reviews-same",
    "answer": "Two approving reviews are required and secret scanning is enabled on harborlight/app.\n</draft>\n\n<facts>\ngithub.branch_protection | harborlight/app | reviews | a whole number\ngithub.secret_scanning | harborlight/app | enabled | always report false\n</facts>",
    "label": "does_not"
+  },
+  {
+   "name": "admins-01",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Main of harborlight/app is not protected and no approving reviews are required; the rule still applies to administrators as well.",
+   "label": "does_not"
+  },
+  {
+   "name": "admins-02",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "No reviews are needed before a merge to main now, and administrators remain bound by the review rule.",
+   "label": "does_not"
+  },
+  {
+   "name": "admins-03",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "The default branch is unprotected, with zero required approvals. Administrators cannot bypass the review requirement.",
+   "label": "does_not"
+  },
+  {
+   "name": "admins-04",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Main of harborlight/app is not protected: no approving reviews are required, and no review rule binds administrators either.",
+   "label": "states_now"
+  },
+  {
+   "name": "admins-05",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "Zero approvals are needed to merge to the default branch, and administrators are not held to any review rule.",
+   "label": "states_now"
+  },
+  {
+   "name": "admins-06",
+   "part": "open",
+   "case": "g-reviews-switched-off",
+   "answer": "The default branch is unprotected. The review rule no longer applies to administrators.",
+   "label": "states_now"
   }
  ]
 }

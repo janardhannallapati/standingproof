@@ -222,7 +222,12 @@ def test_a_redraft_case_loads_and_its_world_can_change() -> None:
     now = copy.deepcopy(LIVE)
     now["reads"] = {"protected": False, "reviews": 0, "admins": False}
 
-    cases = DrafterSet.model_validate(redraft_case(redraft={"live": [now]}))
+    data = redraft_case(redraft={"live": [now]})
+    data["cases"][0]["expect"] = {
+        "outcome": "answered",
+        "states": [{"check": now["check"], "scope": now["scope"], "facts": ["protected"]}],
+    }
+    cases = DrafterSet.model_validate(data)
 
     [case] = cases.cases
     assert case.redraft is not None and case.redraft.instruction == "Shorter, please."
@@ -309,6 +314,7 @@ def _verdicts(case: Any) -> dict[str, bool]:
     claim = case.answer.startswith("Yes")
     reads = {source_id: _says_protected(texts[0]) for source_id, texts in case.sources.items()}
     looks = _looks(case)
+    documents = [source_id for source_id in case.sources if source_id not in looks]
     values = list(reads.values())
     return {
         "the look number": reads[looks[-1]] == claim,
@@ -318,6 +324,10 @@ def _verdicts(case: Any) -> dict[str, bool]:
         "most of the sources": (sum(values) * 2 > len(values)) == claim,
         # No reading at all: object whenever the cited source is the first one listed.
         "not citing the first source": list(case.sources).index(case.citations[0]) != 0,
+        # Where two sources agree and one does not, believe the one that does not.
+        "the odd one out": (sum(values) * 2 < len(values)) == claim,
+        # Whatever the library document says, the opposite is true.
+        "against the document": reads[documents[0]] != claim,
     }
 
 
@@ -337,6 +347,8 @@ def test_only_the_look_number_reads_all_four_drafts_as_they_are_labelled() -> No
         "the worse reading",
         "most of the sources",
         "not citing the first source",
+        "the odd one out",
+        "against the document",
     }
     # And the later look is not the last source where it reads "protected".
     for name in TWO_LOOKS[2:]:

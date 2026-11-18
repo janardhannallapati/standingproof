@@ -155,6 +155,12 @@ def not_whole(result: Result) -> list[str]:
     if missing:
         found.append(f"no recording, too few, or a run twice, for: {', '.join(missing)}")
     found += unread(result.drafter, result.checker)
+    read_cases = [case.name for case in result.drafter_set.cases if case.expect.states]
+    if read_cases and (result.reader is None or not result.reader.sentences):
+        found.append(
+            "there are no labelled sentences to measure the reader on, and it grades: "
+            + ", ".join(read_cases)
+        )
     if result.reader is not None and result.reader.not_read_runs:
         found.append(f"{result.reader.not_read_runs} readings by the reader did not finish")
     compared: list[GradedDraft | GradedCheck] = [
