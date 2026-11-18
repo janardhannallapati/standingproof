@@ -95,6 +95,11 @@ What does not count:
   application repository" or "the main branch" is the place in the list unless the answer
   shows that it means another.
 - A statement that the answer could not find out.
+- What should, ought to or is planned to be the case, or would be under some condition.
+  "X should be off" and "X will be switched off" do not say that it is off.
+- An earlier finding that the answer itself says has not been looked at since, or may have
+  changed. "It was off at the January review; we have not checked since" does not say what
+  it is now. A finding given with its time and no such doubt still counts, as above.
 
 Report only what the answer says. Do not work out one fact from another: an answer that
 gives a number of reviews has not said whether the branch is protected, and the other way
