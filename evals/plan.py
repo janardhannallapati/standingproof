@@ -24,8 +24,8 @@ EACH = {
     "docs_only": 0.015,
     "checker": 0.0019,
     "cheaper": 0.0003,
-    # A calculation until the first run measures it: about 800 tokens in and 150 out.
-    "reader": 0.003,
+    # Measured on its first run: 214 readings for $0.3123.
+    "reader": 0.0015,
 }
 
 

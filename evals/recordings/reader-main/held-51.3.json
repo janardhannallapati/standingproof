@@ -1,0 +1,45 @@
+{
+ "kind": "reader",
+ "case": "held-51",
+ "run": 3,
+ "variant": "main",
+ "fingerprint": {
+  "reader.prompt": "e21d680f641c8090",
+  "reader.schema": "fa65acb306b7dcf7",
+  "reader.request": "83160673c6ef4085",
+  "reader.model": "claude-sonnet-5-5",
+  "reader.effort": "low",
+  "reader.max_tokens": "2000",
+  "case": "9892edf33abfd6f2"
+ },
+ "turn": {
+  "stop_reason": "end_turn",
+  "reading": {
+   "facts": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "fact": "reviews",
+     "says": "value",
+     "value": "1"
+    },
+    {
+     "check": "github.secret_scanning",
+     "scope": "harborlight/app",
+     "fact": "enabled",
+     "says": "value",
+     "value": "false"
+    }
+   ]
+  },
+  "usage": {
+   "input_tokens": 172,
+   "output_tokens": 97,
+   "cache_creation_input_tokens": 0,
+   "cache_read_input_tokens": 1292
+  },
+  "model": "claude-sonnet-5-5"
+ },
+ "cost_usd": 0.0014432000000000056,
+ "read_model": "claude-sonnet-5-5"
+}
