@@ -4,7 +4,7 @@
  "run": 1,
  "variant": "full",
  "fingerprint": {
-  "drafter.redraft": "a3956b51e635812f",
+  "drafter.redraft": "a78400d7c684c545",
   "drafter.prompt": "91732f23e9b73fbc",
   "drafter.tools": "5e92c6c016b91556",
   "drafter.schema": "9597184104d3e3fa",
@@ -26,16 +26,15 @@
  "final_stop_reason": "end_turn",
  "final_draft": {
   "status": "answered",
-  "answer": "Our application's source repository is harborlight/app on GitHub. Changes to its default branch need two approving reviews before they can be merged, and the rule applies to administrators as well. GitHub secret scanning is switched on for harborlight/app.",
+  "answer": "Changes to the default branch (main) of our application repository, harborlight/app on GitHub, need two approving reviews before they can be merged, and the rule applies to administrators as well. When we checked harborlight/app on 2026-11-18, GitHub secret scanning was switched off for that repository.",
   "citations": [
-   "answer:7c8d0dbb-491f-4840-9b3c-7f48a76d774a",
-   "answer:5c4afefa-dc85-4ad0-a3d0-f09cd033c067",
-   "evidence:3448bc8d-019d-4a9b-81db-1a22a51897f1",
-   "evidence:0426f387-318b-4a83-b16a-ee44f588398a"
+   "answer:d17a38d1-5f70-4112-b667-b669bb7217ae",
+   "evidence:f42cb58f-9ede-427e-928f-011c219e7e7c",
+   "evidence:f0eeb024-7077-4b96-8ac9-38620d681a1f"
   ],
-  "note": "Redrafted so the answer names the repository, harborlight/app, at the start. The repository name was already in the previous draft. Both parts of the answer come from approved answers (valid until 2027-11-18, owner security@harborlight.example). A live check of harborlight/app on 2026-11-18 at 02:49 UTC agreed with both. Branch main was protected and needed 2 approving reviews, with the rule applying to administrators. Secret scanning was switched on. The checks covered only harborlight/app, not any other repositories."
+  "note": "Please confirm before sending: secret scanning has changed. The approved answer (answer:06afd3dd-cac4-4333-ba1f-e9766660c028) says secret scanning is on for harborlight/app, and the first check at 2026-11-18T03:00:42Z agreed. A new check at 2026-11-18T03:00:50Z found it switched off, so this draft doesn't say it's on and doesn't cite that approved answer. Someone should find out why it was switched off and either switch it back on or update the approved answer. If it's switched back on, run the check again and redraft. The code-review part hasn't changed: the new check still shows 2 approving reviews that also apply to administrators, which matches the approved answer. As the reviewer asked, the answer names the repository (harborlight/app)."
  },
- "steps": 4,
+ "steps": 5,
  "tool_uses": [
   {
    "name": "search_approved_answers",
@@ -44,11 +43,11 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:7c8d0dbb-491f-4840-9b3c-7f48a76d774a",
-    "answer:acee4121-23ee-48b5-bd8e-ae23579fb160",
-    "answer:5c4afefa-dc85-4ad0-a3d0-f09cd033c067",
-    "answer:4554c427-1dcd-45f2-aa62-db7137e257e4",
-    "answer:72a1a5ff-97ac-4d61-b9cc-7bb4a0e97d38"
+    "answer:d17a38d1-5f70-4112-b667-b669bb7217ae",
+    "answer:502a3c5e-ef63-468a-9848-8dbe13e0487f",
+    "answer:06afd3dd-cac4-4333-ba1f-e9766660c028",
+    "answer:fe31234f-5027-48a2-b05d-a340105f4f06",
+    "answer:f17cef43-353e-4a4c-b0a8-60544142e164"
    ]
   },
   {
@@ -58,11 +57,11 @@
    },
    "is_error": false,
    "source_ids": [
-    "answer:5c4afefa-dc85-4ad0-a3d0-f09cd033c067",
-    "answer:72a1a5ff-97ac-4d61-b9cc-7bb4a0e97d38",
-    "answer:acee4121-23ee-48b5-bd8e-ae23579fb160",
-    "answer:28e88946-cc7a-47a9-9c25-92f2ca92e785",
-    "answer:614eb0ee-6f02-4c71-ab8d-21d4584ede22"
+    "answer:06afd3dd-cac4-4333-ba1f-e9766660c028",
+    "answer:f17cef43-353e-4a4c-b0a8-60544142e164",
+    "answer:502a3c5e-ef63-468a-9848-8dbe13e0487f",
+    "answer:651301a5-cb51-4b99-a6a2-7e4281634519",
+    "answer:914920af-6263-4ff9-b140-47268976fcb7"
    ]
   },
   {
@@ -73,7 +72,7 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:3448bc8d-019d-4a9b-81db-1a22a51897f1"
+    "evidence:d35eeaea-c597-4bdd-9993-a42da48c0cec"
    ]
   },
   {
@@ -84,75 +83,110 @@
    },
    "is_error": false,
    "source_ids": [
-    "evidence:0426f387-318b-4a83-b16a-ee44f588398a"
+    "evidence:88846f5f-b527-4e62-83ba-802b91520f60"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.branch_protection",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:f42cb58f-9ede-427e-928f-011c219e7e7c"
+   ]
+  },
+  {
+   "name": "check_live_setting",
+   "arguments": {
+    "check": "github.secret_scanning",
+    "scope": "harborlight/app"
+   },
+   "is_error": false,
+   "source_ids": [
+    "evidence:f0eeb024-7077-4b96-8ac9-38620d681a1f"
    ]
   }
  ],
  "seen_sources": {
-  "answer:7c8d0dbb-491f-4840-9b3c-7f48a76d774a": [
+  "answer:d17a38d1-5f70-4112-b667-b669bb7217ae": [
    "Yes. Changes to the default branch of our application repository (harborlight/app on GitHub) require two approving reviews before they can be merged, and the rule applies to administrators as well."
   ],
-  "answer:acee4121-23ee-48b5-bd8e-ae23579fb160": [
+  "answer:502a3c5e-ef63-468a-9848-8dbe13e0487f": [
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members.",
    "Yes. Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
   ],
-  "answer:5c4afefa-dc85-4ad0-a3d0-f09cd033c067": [
+  "answer:06afd3dd-cac4-4333-ba1f-e9766660c028": [
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app).",
    "Yes. GitHub secret scanning is switched on for our application repository (harborlight/app)."
   ],
-  "answer:4554c427-1dcd-45f2-aa62-db7137e257e4": [
+  "answer:fe31234f-5027-48a2-b05d-a340105f4f06": [
    "An independent firm performs a penetration test of the application and infrastructure once a year. A summary letter is available under NDA."
   ],
-  "answer:72a1a5ff-97ac-4d61-b9cc-7bb4a0e97d38": [
+  "answer:f17cef43-353e-4a4c-b0a8-60544142e164": [
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days.",
    "Infrastructure and container images are scanned weekly. Critical findings are fixed within 7 days and high findings within 30 days."
   ],
-  "answer:28e88946-cc7a-47a9-9c25-92f2ca92e785": [
+  "answer:651301a5-cb51-4b99-a6a2-7e4281634519": [
    "Yes. Customer data is encrypted at rest using AES-256 with keys managed by our cloud provider's key management service."
   ],
-  "answer:614eb0ee-6f02-4c71-ab8d-21d4584ede22": [
+  "answer:914920af-6263-4ff9-b140-47268976fcb7": [
    "Yes. New EBS disks in our AWS account (111122223333) are encrypted by default."
   ],
-  "evidence:3448bc8d-019d-4a9b-81db-1a22a51897f1": [
-   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 02:49 UTC."
+  "evidence:d35eeaea-c597-4bdd-9993-a42da48c0cec": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 03:00 UTC."
   ],
-  "evidence:0426f387-318b-4a83-b16a-ee44f588398a": [
-   "Secret scanning is switched on for harborlight/app. Observed 2026-11-18 02:49 UTC."
+  "evidence:88846f5f-b527-4e62-83ba-802b91520f60": [
+   "Secret scanning is switched on for harborlight/app. Observed 2026-11-18 03:00 UTC."
+  ],
+  "evidence:f42cb58f-9ede-427e-928f-011c219e7e7c": [
+   "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-18 03:00 UTC."
+  ],
+  "evidence:f0eeb024-7077-4b96-8ac9-38620d681a1f": [
+   "Secret scanning is switched off for harborlight/app. Observed 2026-11-18 03:00 UTC."
   ]
  },
  "check_turn": {
   "stop_reason": "end_turn",
   "verdict": {
-   "verdict": "supported",
-   "findings": []
+   "verdict": "not_supported",
+   "findings": [
+    {
+     "kind": "contradicted",
+     "quote": "GitHub secret scanning was switched off for that repository",
+     "source_id": "evidence:88846f5f-b527-4e62-83ba-802b91520f60",
+     "explanation": "An uncited observation from the same repository and the same timestamp (2026-11-18 03:00 UTC) says secret scanning is switched on, which conflicts with the draft and with the cited observation that says it is off."
+    }
+   ]
   },
   "usage": {
-   "input_tokens": 972,
-   "output_tokens": 18,
+   "input_tokens": 1172,
+   "output_tokens": 159,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1339
   },
   "model": "claude-sonnet-5-5"
  },
  "usage": {
-  "input_tokens": 8839,
-  "output_tokens": 1113,
+  "input_tokens": 12401,
+  "output_tokens": 1721,
   "cache_creation_input_tokens": 0,
-  "cache_read_input_tokens": 10938
+  "cache_read_input_tokens": 13003
  },
- "cost_usd": 0.0552818,
+ "cost_usd": 0.0802828,
  "draft_model": "claude-opus-5-5",
  "check_model": "claude-sonnet-5-5",
  "first_draft": {
   "status": "answered",
-  "answer": "Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged, and the rule applies to administrators as well. GitHub secret scanning is also switched on for that repository (harborlight/app).",
+  "answer": "Changes to the default branch of our application repository (harborlight/app on GitHub) need two approving reviews before they can be merged, and the rule applies to administrators as well. GitHub secret scanning is switched on for the same repository (harborlight/app). We checked both settings directly on the repository on 2026-11-18, and they match.",
   "citations": [
-   "answer:7c8d0dbb-491f-4840-9b3c-7f48a76d774a",
-   "answer:5c4afefa-dc85-4ad0-a3d0-f09cd033c067",
-   "evidence:3448bc8d-019d-4a9b-81db-1a22a51897f1",
-   "evidence:0426f387-318b-4a83-b16a-ee44f588398a"
+   "answer:d17a38d1-5f70-4112-b667-b669bb7217ae",
+   "answer:06afd3dd-cac4-4333-ba1f-e9766660c028",
+   "evidence:d35eeaea-c597-4bdd-9993-a42da48c0cec",
+   "evidence:88846f5f-b527-4e62-83ba-802b91520f60"
   ],
-  "note": "Both parts of the answer come from approved answers (valid until 2027-11-18, owner security@harborlight.example). A live check of harborlight/app on 2026-11-18 at 02:49 UTC agreed with both. Branch main was protected and needed 2 approving reviews, with the rule applying to administrators. Secret scanning was switched on. The checks covered only the harborlight/app repository, not any other repositories."
+  "note": "Both parts come from approved answers (owner security@harborlight.example, valid until 2027-11-18). Direct checks of harborlight/app at 2026-11-18T03:00Z agree with both answers: branch main is protected, needs 2 approving reviews and applies to administrators, and secret scanning is switched on. Both answers cover only the harborlight/app repository, so if the customer means other repositories, this does not answer for them."
  },
  "redraft_from": 4
 }

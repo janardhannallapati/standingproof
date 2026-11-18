@@ -1,9 +1,9 @@
 {
  "runs": 3,
  "drafter_wrong_cases": [],
- "drafter_right_cases": 29,
+ "drafter_right_cases": 31,
  "checker_missed_cases": [],
  "checker_false_alarm_cases": 0,
- "accepted_on": "2026-11-17",
- "note": "Second full run, after the checker was told which source is an observation and a failed look said not to repeat it. Four labelled drafts were added and one case's pattern was corrected. The prompts were changed after reading the first run, so this is not a first look."
+ "accepted_on": "2026-11-18",
+ "note": "Four redraft cases added (family G), each drafted, sent back with the world changed or not, and graded on the redraft. One look at them with the earlier redraft request (one run each, not kept) showed no second look in any of three live cases and two redrafts ready and wrong. The request was then changed, so this is not a first look. Now: every live redraft looks again, none is ready and wrong, and the two cases where the setting changed go to a person (the checker objects when an earlier and a later observation of one setting disagree; one run said no source). The 32 earlier cases and all checker recordings are reused unchanged."
 }

@@ -53,6 +53,11 @@ live system settings, and reopens them when those settings drift.
 - The eval reads a GitHub and an AWS that exist only in `evals/world.py`. Nothing under
   `evals/` may call `build_backends` or build a real client for either.
 - An eval result is a count out of a total, with the cases named. Never a bare percentage.
+- A change to how a redraft is asked for (`REDRAFT_REQUEST`, `reviewer_section`) is judged
+  by the eval's redraft cases (family G). They run through the graph, not the hand-written
+  loop, with the world changed between the draft and the redraft; `expect` is about the
+  redraft, and "cites a look" counts only a look the redraft made. A new case with no
+  `redraft` must hash as it would have before the field existed.
 - `standingproof/agent/model.py` is the only module that imports the `anthropic` SDK. Everything
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance
