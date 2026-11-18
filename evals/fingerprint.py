@@ -168,10 +168,10 @@ def of_drafter_case(
 
 def of_checker_case(case: CheckerCase, variant: CheckerVariant, config: Config) -> dict[str, str]:
     # The case is hashed with its keys sorted, so the order of its sources is not in that
-    # hash. For two looks the order is what says which is later. It is a part of its own,
-    # and only where it means something, so that a case without two looks hashes as before.
-    looks = [source_id for source_id in case.sources if source_id.startswith(OBSERVED_PREFIX)]
-    order = {"case.looks": _sha(looks)} if len(looks) > 1 else {}
+    # hash. The checker's request lists them in the case's order and numbers the looks by
+    # it, so the order is a part of its own, and only where there is one: a case with a
+    # single source hashes as it did.
+    order = {"case.sources": _sha(list(case.sources))} if len(case.sources) > 1 else {}
     return {
         **_checker_parts(config, variant),
         **order,
