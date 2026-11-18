@@ -2,18 +2,18 @@
 
 Written by `python -m evals report` from the files in `evals/recordings`. Do not edit.
 
-Run finished 2026-11-17. 322 recordings, $2.30. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
+Run finished 2026-11-18. 334 recordings, $2.89. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
 
 ## Result
 
 | What | Count |
 |---|---|
-| Drafter cases right in most of 3 runs | 29 of 32 |
-| Drafter cases ready and wrong in any run | 0 of 32 |
+| Drafter cases right in most of 3 runs | 31 of 36 |
+| Drafter cases ready and wrong in any run | 0 of 36 |
 | Planted defects the checker agreed with in any run | 0 of 35 |
 | Sound drafts the checker objected to in most runs | 0 of 17 |
 
-Baseline accepted 2026-11-17: Second full run, after the checker was told which source is an observation and a failed look said not to repeat it. Four labelled drafts were added and one case's pattern was corrected. The prompts were changed after reading the first run, so this is not a first look.
+Baseline accepted 2026-11-18: Four redraft cases added (family G), each drafted, sent back with the world changed or not, and graded on the redraft. One look at them with the earlier redraft request (one run each, not kept) showed no second look in any of three live cases and two redrafts ready and wrong. The request was then changed, so this is not a first look. Now: all nine redrafts about a live setting look again, and none is ready and wrong. In the two cases where the setting changed, one run of six is ready and right, three go to a person because the checker objects (it is shown an earlier and a later observation of one setting that disagree), and two because the drafter said there is no source. The wording patterns of those two cases are loose: a stale answer in other words could pass them. The 32 earlier cases and all checker recordings are reused unchanged.
 
 ## Method
 
@@ -31,8 +31,9 @@ A checker case is a hand-written draft with its sources and a label: sound, or o
 | D: an approved answer exists | 15 | 3 | 0 |
 | E: nothing supports an answer | 12 | 0 | 0 |
 | F: an instruction is planted in the question or the library | 12 | 0 | 0 |
+| G: a reviewer sends the draft back; the grade is the redraft's | 7 | 5 | 0 |
 
-Of the answered drafts about a live setting, 43 of 43 cite a look at it.
+Of the answered drafts about a live setting, 50 of 50 cite a look at it.
 
 ## With and without the live check
 
@@ -51,7 +52,7 @@ The drafter's own wording, graded by what the case's world reads, against what t
 | The wording was | Checker objected | Checker agreed |
 |---|---|---|
 | not supported by the world | 0 | 0 |
-| supported by the world | 7 | 57 |
+| supported by the world | 10 | 64 |
 
 ## The checker on labelled drafts
 
@@ -91,6 +92,6 @@ The label of each draft in the checker set was written with the draft, by its au
 
 ## What these numbers cannot show
 
-- The sets are small. Cases right: 29 of 32 (95% interval 76% to 97%). Planted defects caught by majority: 35 of 35 (95% interval 90% to 100%). Sound drafts passed: 17 of 17 (95% interval 82% to 100%).
+- The sets are small. Cases right: 31 of 36 (95% interval 71% to 94%). Planted defects caught by majority: 35 of 35 (95% interval 90% to 100%). Sound drafts passed: 17 of 17 (95% interval 82% to 100%).
 - The cases were written by the author of the system, about one made-up company.
 - A recording goes stale when a prompt, tool description, schema, model or case changes, and CI then fails. It does not notice a change in what the tools return, such as search ranking; the retrieval eval covers that separately.

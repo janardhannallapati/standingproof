@@ -48,9 +48,16 @@ _AWS_ERRORS = {"forbidden": "AccessDenied", "rate_limited": "Throttling"}
 _HTTP_ERRORS = {"forbidden": 403, "rate_limited": 429}
 
 
-def _github(lives: list[Live]) -> httpx2.MockTransport:
+class Settings:
+    """What every setting of the world reads at this moment. A redraft case changes it
+    between its two rounds; both fake systems read it afresh on every request."""
+
+    def __init__(self, lives: list[Live]) -> None:
+        self.lives = list(lives)
+
+
+def _github(now: Settings) -> httpx2.MockTransport:
     """A GitHub that holds exactly the settings the case names."""
-    by_check = {(live.check, live.scope.lower()): live for live in lives if live.system == "github"}
 
     def failed(live: Live) -> httpx2.Response:
         if live.fails == "unreachable":
@@ -58,6 +65,9 @@ def _github(lives: list[Live]) -> httpx2.MockTransport:
         return httpx2.Response(_HTTP_ERRORS[live.fails or "forbidden"], json={"message": "No"})
 
     def handler(request: httpx2.Request) -> httpx2.Response:
+        by_check = {
+            (live.check, live.scope.lower()): live for live in now.lives if live.system == "github"
+        }
         parts = request.url.path.strip("/").split("/")
         missing = httpx2.Response(404, json={"message": "Not Found"})
         if parts[0] == "orgs" and len(parts) == 2:
@@ -106,16 +116,17 @@ def _github(lives: list[Live]) -> httpx2.MockTransport:
 class _Aws:
     """The five AWS calls the checks make, answered from the case."""
 
-    def __init__(self, lives: list[Live]) -> None:
-        self._by_check = {live.check: live for live in lives if live.system == "aws"}
-        accounts = [live.scope for live in lives if live.system == "aws"]
+    def __init__(self, now: Settings) -> None:
+        self._now = now
+        accounts = [live.scope for live in now.lives if live.system == "aws"]
         self._account = accounts[0] if accounts else "000000000000"
 
     def client(self, _service: str) -> "_Aws":
         return self
 
     def _reads(self, check: str, operation: str) -> dict[str, Any]:
-        live = self._by_check.get(check)
+        by_check = {live.check: live for live in self._now.lives if live.system == "aws"}
+        live = by_check.get(check)
         if live is None or live.fails in _AWS_ERRORS:
             code = _AWS_ERRORS[live.fails] if live and live.fails else "AccessDenied"
             raise ClientError({"Error": {"Code": code}}, operation)
@@ -154,14 +165,15 @@ class _Aws:
         return {"EbsEncryptionByDefault": reads["encrypted"]}
 
 
-def fake_backends(lives: list[Live]) -> CheckBackends:
+def fake_backends(lives: list[Live] | Settings) -> CheckBackends:
+    now = lives if isinstance(lives, Settings) else Settings(lives)
     return CheckBackends(
         github=GitHubClient(
             token="eval-not-a-token",  # noqa: S106 - sent only to the transport above
             base_url="https://github.invalid",
-            client=httpx2.AsyncClient(transport=_github(lives)),
+            client=httpx2.AsyncClient(transport=_github(now)),
         ),
-        aws=AwsReader(region=_REGION, client_factory=_Aws(lives).client),
+        aws=AwsReader(region=_REGION, client_factory=_Aws(now).client),
     )
 
 
@@ -170,6 +182,11 @@ class World:
     tenant_id: uuid.UUID
     registry: ToolRegistry
     backends: CheckBackends
+    now: Settings
+
+    def becomes(self, lives: list[Live]) -> None:
+        """The world's settings change: the next look reads these."""
+        self.now.lives = list(lives)
 
     async def aclose(self) -> None:
         await self.backends.aclose()
@@ -219,8 +236,9 @@ async def build_world(
                 await add_connection(
                     session, tenant_id=tenant_id, system=system, scope=scope, settings=settings
                 )
-    backends = fake_backends(case.live)
+    now = Settings(case.live)
+    backends = fake_backends(now)
     registry = build_library_registry(sessions, tenant_id, embedder)
     if variant == "full":
         registry = registry.with_tools(check_tool(sessions, tenant_id, backends, settings))
-    return World(tenant_id=tenant_id, registry=registry, backends=backends)
+    return World(tenant_id=tenant_id, registry=registry, backends=backends, now=now)

@@ -144,7 +144,7 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
 
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
-    assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4}
+    assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 4}
     assert defects.pop("none") == 17
     assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
@@ -204,3 +204,50 @@ def test_a_library_can_build_on_another() -> None:
     data["libraries"]["more"]["extends"] = ["nowhere"]
     with pytest.raises(ValidationError, match="extends"):
         DrafterSet.model_validate(data)
+
+
+def redraft_case(**changes: Any) -> dict[str, Any]:
+    """The set with its one case made a redraft case (family G), then changed."""
+    data = copy.deepcopy(SET)
+    case = data["cases"][0]
+    case["family"] = "G"
+    case["redraft"] = {"instruction": "Shorter, please.", "live": [copy.deepcopy(LIVE)]}
+    case["redraft"].update(changes.pop("redraft", {}))
+    case.update(changes)
+    return data
+
+
+def test_a_redraft_case_loads_and_its_world_can_change() -> None:
+    now = copy.deepcopy(LIVE)
+    now["reads"] = {"protected": False, "reviews": 0, "admins": False}
+
+    cases = DrafterSet.model_validate(redraft_case(redraft={"live": [now]}))
+
+    [case] = cases.cases
+    assert case.redraft is not None and case.redraft.instruction == "Shorter, please."
+    assert case.redraft.live[0].reads == {"protected": False, "reviews": 0, "admins": False}
+    assert case.live[0].reads != case.redraft.live[0].reads
+
+
+@pytest.mark.parametrize(
+    ("data", "says"),
+    [
+        (changed(["cases", 0, "family"], "G"), "only family G, has a redraft"),
+        (redraft_case(family="B"), "only family G, has a redraft"),
+        (redraft_case(redraft={"instruction": ""}), "at least 1 character"),
+        # The redraft's world is the whole world again, not only what changed.
+        (redraft_case(redraft={"live": []}), "names the same settings"),
+    ],
+)
+def test_a_redraft_case_that_cannot_be_run_is_refused(data: dict[str, Any], says: str) -> None:
+    with pytest.raises(ValidationError, match=says):
+        DrafterSet.model_validate(data)
+
+
+def test_a_redraft_must_be_able_to_see_the_setting_it_is_graded_on() -> None:
+    gone = copy.deepcopy(LIVE)
+    gone.pop("reads")
+    gone["fails"] = "unreachable"
+
+    with pytest.raises(ValidationError, match="the redraft's world lets it observe"):
+        DrafterSet.model_validate(redraft_case(redraft={"live": [gone]}))

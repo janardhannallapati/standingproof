@@ -151,3 +151,45 @@ def test_output_limits_and_the_embedding_model_are_parts_too() -> None:
     assert parts["drafter.max_tokens"] == "16000"
     assert parts["checker.max_tokens"] == "8000"
     assert parts["world.embedding"] == "BAAI/bge-small-en-v1.5"
+
+
+def test_only_a_redraft_case_depends_on_how_a_redraft_is_asked_for(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from evals.cases import load_drafter
+    from standingproof.agent import prompts
+
+    cases = load_drafter()
+    plain, sent_back = cases.by_name["a-reviews-two"], cases.by_name["g-reviews-switched-off"]
+    config = Config.current()
+    before = {c.name: of_drafter_case(cases, c, "full", config) for c in (plain, sent_back)}
+
+    monkeypatch.setattr(prompts, "REDRAFT_REQUEST", "Redraft it, and look again first.")
+
+    assert of_drafter_case(cases, plain, "full", config) == before[plain.name]
+    assert "drafter.redraft" not in before[plain.name]
+    assert differences(
+        before[sent_back.name], of_drafter_case(cases, sent_back, "full", config)
+    ) == ["drafter.redraft"]
+
+    # And on how the reviewer's words are put in the system message.
+    monkeypatch.undo()
+    monkeypatch.setattr(prompts, "reviewer_section", lambda words: f"The reviewer says: {words}")
+    assert of_drafter_case(cases, plain, "full", config) == before[plain.name]
+    assert differences(
+        before[sent_back.name], of_drafter_case(cases, sent_back, "full", config)
+    ) == ["drafter.redraft"]
+
+
+def test_a_recording_made_before_cases_could_have_a_redraft_still_answers_for_its_case() -> None:
+    import json
+
+    from evals.cases import load_drafter
+    from evals.transcript import RECORDINGS
+
+    cases = load_drafter()
+    recorded = json.loads((RECORDINGS / "drafter-full" / "a-reviews-two.1.json").read_text())
+
+    today = of_drafter_case(cases, cases.by_name["a-reviews-two"], "full", Config.current())
+
+    assert differences(recorded["fingerprint"], today) == []

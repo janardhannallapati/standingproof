@@ -101,21 +101,32 @@ def test_the_full_plan_and_its_estimate() -> None:
     cost = estimate(plan)
 
     assert (len(plan.drafter), len(plan.docs_only), len(plan.checker), len(plan.cheaper)) == (
-        96,
+        108,
         18,
         156,
         52,
     )
-    assert 2.3 < cost.total < 2.8
-    assert [line.calls for line in cost.lines] == [96, 18, 156, 52]
+    # A redraft case is two rounds, so it is counted on its own line at twice the price.
+    assert [line.calls for line in cost.lines] == [96, 12, 18, 156, 52]
+    assert 2.9 < cost.total < 3.4
+
+
+def test_one_family_can_be_run_alone_and_fewer_times() -> None:
+    plan = plan_for(DRAFTER, CHECKER, smoke=False, family="G", runs=1)
+
+    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("GGGG")
+    assert {number for _, number in plan.drafter} == {1}
+    assert (plan.docs_only, plan.checker, plan.cheaper) == ([], [], [])
+    assert [line.calls for line in estimate(plan).lines] == [0, 4, 0, 0, 0]
+    assert estimate(plan).total < 0.25
 
 
 def test_the_smoke_plan_is_one_case_of_each_family_and_six_drafts() -> None:
     plan = plan_for(DRAFTER, CHECKER, smoke=True)
 
-    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("ABCDEF")
+    assert sorted(DRAFTER.by_name[name].family for name, _ in plan.drafter) == list("ABCDEFG")
     assert (len(plan.checker), plan.docs_only, plan.cheaper) == (6, [], [])
-    assert estimate(plan).total < 0.25
+    assert estimate(plan).total < 0.30
 
 
 @pytest.mark.parametrize(
@@ -353,3 +364,135 @@ def test_a_recording_that_may_not_be_written_stops_the_run_cleanly(db: Db, tmp_p
     assert not manifest.complete and "credential" in manifest.stopped
     assert manifest.recorded == 0 and read_all(tmp_path) == []
     assert manifest.spent_usd > 0
+
+
+class RedraftsFrom:
+    """A drafter that looks once and answers; sent back, it either answers again from the
+    look it already has (`look_again=False`) or looks at the setting again first."""
+
+    def __init__(self, look_again: bool) -> None:
+        self.look_again = look_again
+        self.requests: list[dict[str, Any]] = []
+
+    async def complete(self, *, messages: list[dict[str, Any]], **more: Any) -> ModelTurn:
+        self.requests.append({"messages": messages, **more})
+        looks = [
+            json.loads(block["content"])
+            for message in messages
+            if isinstance(message["content"], list)
+            for block in message["content"]
+            if isinstance(block, dict) and block.get("type") == "tool_result"
+        ]
+        sent_back = more.get("system_addendum") is not None
+        wanted = 2 if sent_back and self.look_again else 1
+        if len(looks) < wanted:
+            call = ToolCall(
+                id=f"t{len(looks) + 1}",
+                name="check_live_setting",
+                arguments={"check": "github.branch_protection", "scope": "harborlight/app"},
+            )
+            return wants_tools(call, tokens=TURN)
+        seen = looks[-1]
+        draft = AnswerDraft(
+            status="answered", answer=seen["statement"], citations=[seen["id"]], note=""
+        )
+        return finishes(draft, tokens=TURN)
+
+
+SENT_BACK = Plan(
+    drafter=[("g-reviews-switched-off", 1)],
+    docs_only=[],
+    checker=[],
+    cheaper=[],
+    redraft=frozenset({"g-reviews-switched-off"}),
+)
+
+
+def sent_back(db: Db, root: Path, look_again: bool) -> tuple[DrafterRun, RedraftsFrom]:
+    model = RedraftsFrom(look_again)
+    manifest, _ = go(db, root, SENT_BACK, model=model)
+    assert manifest.complete
+    [run] = [run for run in read_all(root) if isinstance(run, DrafterRun)]
+    return run, model
+
+
+def test_a_redraft_case_is_drafted_then_sent_back_through_the_products_own_graph(
+    db: Db, tmp_path: Path
+) -> None:
+    from standingproof.agent.prompts import REDRAFT_REQUEST
+
+    run, model = sent_back(db, tmp_path, look_again=True)
+
+    case = DRAFTER.by_name["g-reviews-switched-off"]
+    assert case.redraft is not None
+    # The first draft was written while the branch was protected.
+    assert run.first_draft is not None and "2 approving reviews" in run.first_draft.answer
+    # The redraft is what the recording describes: a second look, made after the change.
+    assert run.final_draft is not None and "not protected" in run.final_draft.answer
+    assert [use.name for use in run.tool_uses] == ["check_live_setting"] * 2
+    assert run.redraft_from == 1
+    assert run.final_draft.citations == run.tool_uses[1].source_ids
+    assert run.check_turn is not None and run.handoff is None
+    assert run.fingerprint == of_drafter_case(DRAFTER, case, "full", CONFIG)
+    # As the product sends a redraft: the reviewer's words in the system message only, and
+    # our fixed request as the last message.
+    last = model.requests[-1]
+    assert case.redraft.instruction in last["system_addendum"]
+    assert not any(case.redraft.instruction in str(m["content"]) for m in last["messages"])
+    assert {"role": "user", "content": REDRAFT_REQUEST} in last["messages"]
+    assert model.requests[0]["system_addendum"] is None
+
+
+def test_a_redraft_written_from_the_first_look_is_ready_and_wrong(db: Db, tmp_path: Path) -> None:
+    from evals.graders import grade_draft
+
+    run, _ = sent_back(db, tmp_path, look_again=False)
+
+    case = DRAFTER.by_name["g-reviews-switched-off"]
+    assert run.final_draft is not None and "2 approving reviews" in run.final_draft.answer
+    assert len(run.tool_uses) == 1 and run.redraft_from == 1
+    graded = grade_draft(case, run)
+    # Its own source supports it and the checker agrees, so nothing in the round stops it.
+    # The world says otherwise. And it cites a look, but not one the redraft made.
+    assert (graded.grade, graded.ready, graded.looked) == ("wrong", True, False)
+
+
+def test_a_redraft_that_looks_again_is_right(db: Db, tmp_path: Path) -> None:
+    from evals.graders import grade_draft
+
+    run, _ = sent_back(db, tmp_path, look_again=True)
+
+    graded = grade_draft(DRAFTER.by_name["g-reviews-switched-off"], run)
+    assert (graded.grade, graded.ready, graded.looked) == ("right", True, True)
+
+
+class GoesAwayWhenSentBack(RedraftsFrom):
+    """The provider answers the first draft and is unreachable for the redraft."""
+
+    async def complete(self, *, messages: list[dict[str, Any]], **more: Any) -> ModelTurn:
+        if more.get("system_addendum") is not None:
+            raise ModelCallError("rate limited", retryable=True)
+        return await super().complete(messages=messages, **more)
+
+
+def test_a_provider_failure_in_a_redraft_stops_the_run_cleanly_and_records_nothing(
+    db: Db, tmp_path: Path
+) -> None:
+    # The graph lets a failure that may pass go up to its caller, where the loop turns
+    # every failure into a result. The run must end as it does for any other case.
+    manifest, _ = go(db, tmp_path, SENT_BACK, model=GoesAwayWhenSentBack(look_again=True))
+
+    assert not manifest.complete
+    assert "could not be reached" in manifest.stopped
+    assert [run for run in read_all(tmp_path) if isinstance(run, DrafterRun)] == []
+    # Both attempts are counted as if they were billed.
+    assert manifest.spent_usd >= 2 * DRAFT_CALL_AT_MOST
+
+
+def test_smoke_and_one_family_cannot_be_asked_for_together(tmp_path: Path) -> None:
+    from evals.__main__ import NOT_APPROVED, main
+
+    said: list[str] = []
+    for words in (["estimate", "--smoke", "--family", "G"], ["estimate", "--runs", "1"]):
+        assert main(words, root=tmp_path, out=said.append) == NOT_APPROVED
+    assert "--smoke" in said[0] and "--family" in said[1]

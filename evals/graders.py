@@ -108,9 +108,12 @@ def _looked(case: DrafterCase, run: DrafterRun, draft: AnswerDraft) -> bool | No
     cite = case.expect.cite
     if cite is None:
         return None
+    # For a redraft, a look counts only if the redraft made it: citing the look the first
+    # draft was written from says nothing about what the setting reads now.
+    uses = run.tool_uses[run.redraft_from or 0 :]
     observed = {
         source_id
-        for use in run.tool_uses
+        for use in uses
         if use.name == "check_live_setting"
         and not use.is_error
         and use.arguments.get("check") == cite.check

@@ -90,7 +90,7 @@ class DrafterScore:
 def score_drafter(cases: DrafterSet, graded: Sequence[GradedDraft], *, runs: int) -> DrafterScore:
     grouped = _by_case(graded)
     family_of = {case.name: case.family for case in cases.cases}
-    by_family = {family: dict.fromkeys(("right", "safe", "wrong"), 0) for family in "ABCDEF"}
+    by_family = {family: dict.fromkeys(("right", "safe", "wrong"), 0) for family in "ABCDEFG"}
     for item in graded:
         by_family[family_of[item.case]][item.grade] += 1
     asked = [g for g in graded if g.looked is not None]

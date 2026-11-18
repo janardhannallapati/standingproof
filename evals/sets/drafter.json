@@ -912,6 +912,187 @@
     "outcome": "no_source"
    },
    "twin": "e-cyber-insurance"
+  },
+  {
+   "name": "g-reviews-switched-off",
+   "family": "G",
+   "question": "How many approving reviews does a code change need before it is merged to your main branch?",
+   "library": "claims",
+   "connected": {
+    "github": [
+     "harborlight"
+    ]
+   },
+   "live": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "reads": {
+      "protected": true,
+      "reviews": 2,
+      "admins": true
+     }
+    }
+   ],
+   "redraft": {
+    "instruction": "Shorter, please: one or two sentences.",
+    "live": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "reads": {
+       "protected": false,
+       "reviews": 0,
+       "admins": false
+      }
+     }
+    ]
+   },
+   "expect": {
+    "outcome": "answered",
+    "must": [
+     "\\b(not|no|without)\\b"
+    ],
+    "must_not": [
+     "\\b(2|two)\\s+(approving\\s+)?(reviews?|approvals?|reviewers?)"
+    ],
+    "cite": {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app"
+    }
+   },
+   "note": "Branch protection is switched off between the draft and the redraft. A redraft written from the first look says two reviews, and its own source supports it."
+  },
+  {
+   "name": "g-reviews-unchanged",
+   "family": "G",
+   "question": "How many approving reviews does a code change need before it is merged to your main branch?",
+   "library": "claims",
+   "connected": {
+    "github": [
+     "harborlight"
+    ]
+   },
+   "live": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "reads": {
+      "protected": true,
+      "reviews": 2,
+      "admins": true
+     }
+    }
+   ],
+   "redraft": {
+    "instruction": "Shorter, please: one or two sentences.",
+    "live": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "reads": {
+       "protected": true,
+       "reviews": 2,
+       "admins": true
+      }
+     }
+    ]
+   },
+   "expect": {
+    "outcome": "answered",
+    "must": [
+     "\\b(2|two)\\b"
+    ],
+    "must_not": [],
+    "cite": {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app"
+    }
+   },
+   "note": "Nothing changes. The redraft must still answer; whether it looked again is counted in the report."
+  },
+  {
+   "name": "g-scanning-off-reviews-same",
+   "family": "G",
+   "question": "How many approving reviews does a code change need before it is merged, and is automated secret scanning enabled on your application's source repository?",
+   "library": "claims",
+   "connected": {
+    "github": [
+     "harborlight"
+    ]
+   },
+   "live": [
+    {
+     "check": "github.branch_protection",
+     "scope": "harborlight/app",
+     "reads": {
+      "protected": true,
+      "reviews": 2,
+      "admins": true
+     }
+    },
+    {
+     "check": "github.secret_scanning",
+     "scope": "harborlight/app",
+     "reads": {
+      "enabled": true
+     }
+    }
+   ],
+   "redraft": {
+    "instruction": "Name the repository in the answer.",
+    "live": [
+     {
+      "check": "github.branch_protection",
+      "scope": "harborlight/app",
+      "reads": {
+       "protected": true,
+       "reviews": 2,
+       "admins": true
+      }
+     },
+     {
+      "check": "github.secret_scanning",
+      "scope": "harborlight/app",
+      "reads": {
+       "enabled": false
+      }
+     }
+    ]
+   },
+   "expect": {
+    "outcome": "answered",
+    "must": [
+     "\\b(2|two)\\b",
+     "\\b(not|off|disabled)\\b"
+    ],
+    "must_not": [
+     "scanning\\b[^.\\n]{0,40}\\b(is|are)\\s+(currently\\s+)?(enabled|switched on|turned on|on)\\b"
+    ],
+    "cite": {
+     "check": "github.secret_scanning",
+     "scope": "harborlight/app"
+    }
+   },
+   "note": "Two settings; one of them changes between the draft and the redraft."
+  },
+  {
+   "name": "g-backups-reordered",
+   "family": "G",
+   "question": "What is your backup frequency and retention period?",
+   "library": "core",
+   "redraft": {
+    "instruction": "Put the retention period first."
+   },
+   "expect": {
+    "outcome": "answered",
+    "must": [
+     "daily|every day",
+     "\\b35\\b"
+    ],
+    "must_not": []
+   },
+   "note": "No live setting at all: a redraft from the library must work as before."
   }
  ]
 }
