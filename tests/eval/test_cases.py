@@ -146,7 +146,7 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
     assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 4}
-    assert defects.pop("none") == 18
+    assert defects.pop("none") == 19
     assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
         if case.twin is not None:
