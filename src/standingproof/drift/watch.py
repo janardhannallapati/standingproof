@@ -88,12 +88,23 @@ async def rest_on(
         select(cited.c.check_name, cited.c.scope, cited.c.id).where(cited.c.newest == 1)
     ):
         await session.execute(
-            insert(AnswerEvidence).values(
+            insert(AnswerEvidence)
+            .values(
                 run_question_id=run_question_id,
                 check_name=check_name,
                 scope=scope,
                 tenant_id=tenant_id,
                 evidence_id=evidence_id,
+            )
+            # The row is normally gone by now. Where it is not, the link is moved, never
+            # doubled: one link for an answer and a setting.
+            .on_conflict_do_update(
+                index_elements=[
+                    AnswerEvidence.run_question_id,
+                    AnswerEvidence.check_name,
+                    AnswerEvidence.scope,
+                ],
+                set_={"evidence_id": evidence_id},
             )
         )
     await queue_newer(session, run_question_id)

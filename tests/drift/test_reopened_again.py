@@ -101,3 +101,44 @@ def test_the_api_gives_the_question_its_reopening(make_api: ClientFactory, wf: D
     assert question["reopening"] is not None
     assert question["reopening"]["was_review"] is None
     assert len(question["reopening"]["settings"]) == 1
+
+
+def test_a_redraft_that_fails_after_a_reopened_wait_comes_back_reopened(wf: Db) -> None:
+    from standingproof.workflow import results
+    from tests.workflow.test_runs import take
+
+    owner, item, _ = approved_answer(wf)
+    observe(wf, owner, OPEN)
+    examine_all(wf)
+    now_decide(wf, owner, item, "redraft", comment="Shorter, please.")
+    assert take(wf, item) is not None
+
+    async def the_model_is_away() -> None:
+        async with wf.database.tenant(owner)() as session:
+            await results.give_back(
+                session,
+                item_id=item,
+                owner="w1",
+                reason="model_unavailable",
+                retry_in_seconds=0,
+                max_attempts=1,
+            )
+
+    wf.run(the_model_is_away())
+    examine_all(wf)
+
+    # The earlier draft stands again, and it was written from the look before the change.
+    # It must not come back as an ordinary draft that one "approve" accepts.
+    row = item_row(wf, item)
+    assert (row.review, row.reason, row.reopened_at is not None) == (
+        "pending",
+        "redraft_failed",
+        True,
+    )
+    found = reopening(wf, item)
+    assert found is not None and found.was_review is None
+    [setting] = found.settings
+    assert {change.fact: (change.was, change.now) for change in setting.changes}["protected"] == (
+        True,
+        False,
+    )
