@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "e3360fecc1ed9e8c"
+  "case.sources": "4fcdeade5ea32917",
+  "case": "bb329506b378fca7"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "Changes to the default branch require a pull request with two approving reviews.",
-     "source_id": "evidence:EV-BP0",
-     "explanation": "The observed look found branch main of harborlight/app is not protected, which outweighs the policy document the draft restates."
+     "source_id": "evidence:EV-BP-6",
+     "explanation": "The observed look found branch main of harborlight/app is not protected, which conflicts with the draft's claim that protection is enforced, and the observed source outweighs the policy document."
     }
    ]
   },
   "usage": {
-   "input_tokens": 186,
-   "output_tokens": 114,
+   "input_tokens": 187,
+   "output_tokens": 134,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0016624,
+ "cost_usd": 0.0018644,
  "check_model": "claude-sonnet-5-5"
 }

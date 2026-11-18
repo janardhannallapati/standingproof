@@ -10,6 +10,7 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
+  "case.sources": "15e4f2a60782c0e2",
   "case": "0b916b13610f9b72"
  },
  "turn": {
@@ -21,18 +22,18 @@
      "kind": "contradicted",
      "quote": "We have no approved statement about sharing the full report.",
      "source_id": "LIB-PEN-SHARE",
-     "explanation": "LIB-PEN-SHARE is an approved statement that the full report is not shared with customers and that a summary letter is available under NDA."
+     "explanation": "The uncited source states that the full report is not shared with customers and that a summary letter is available under NDA, so an approved statement does exist."
     }
    ]
   },
   "usage": {
    "input_tokens": 192,
-   "output_tokens": 118,
+   "output_tokens": 116,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0017144,
+ "cost_usd": 0.0016944,
  "check_model": "claude-sonnet-5-5"
 }

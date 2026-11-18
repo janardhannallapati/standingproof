@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "bf624a1358aff142"
+  "case.sources": "1785d24448b74d36",
+  "case": "c44e223344b694fe"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,20 +20,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "require a pull request with two approving reviews",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, not two, and the observation outweighs the policy document for the same setting."
+     "quote": "two approving reviews",
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, which outweighs the policy document stating two."
     }
    ]
   },
   "usage": {
-   "input_tokens": 213,
-   "output_tokens": 116,
+   "input_tokens": 214,
+   "output_tokens": 103,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0017364000000000001,
+ "cost_usd": 0.0016084,
  "check_model": "claude-sonnet-5-5"
 }

@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "13199800e498a66f"
+  "case.sources": "fca5bfe59a0802f5",
+  "case": "d451f3c634b4cd6b"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,20 +20,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "needs 2 approving reviews before it can be merged",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The only observed look of the same setting (main of harborlight/app) reads 1 approving review, and it outweighs the document that says 2, which is not itself an observation."
+     "quote": "needs 2 approving reviews",
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed look at main of harborlight/app reads 1 approving review, which outweighs the document that says 2, so the draft's 2 is contradicted."
     }
    ]
   },
   "usage": {
-   "input_tokens": 258,
-   "output_tokens": 125,
+   "input_tokens": 259,
+   "output_tokens": 270,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0019164000000000002,
+ "cost_usd": 0.0033684,
  "check_model": "claude-sonnet-5-5"
 }

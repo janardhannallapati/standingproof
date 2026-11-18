@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "e3360fecc1ed9e8c"
+  "case.sources": "4fcdeade5ea32917",
+  "case": "bb329506b378fca7"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,20 +20,26 @@
    "findings": [
     {
      "kind": "contradicted",
+     "quote": "Changes to the default branch require a pull request with two approving reviews.",
+     "source_id": "evidence:EV-BP-6",
+     "explanation": "The observed look of harborlight/app on 2026-11-10 found branch main is not protected, which conflicts with the draft's claim that changes require approving reviews."
+    },
+    {
+     "kind": "unsupported",
      "quote": "Yes.",
-     "source_id": "evidence:EV-BP0",
-     "explanation": "An observed look on 2026-11-10 found branch main of harborlight/app is not protected, which outweighs the policy document that the draft cites."
+     "source_id": "",
+     "explanation": "The only cited source is a policy document describing a requirement, and no cited source shows that branch protection is actually enforced on the default branch."
     }
    ]
   },
   "usage": {
-   "input_tokens": 186,
-   "output_tokens": 549,
+   "input_tokens": 187,
+   "output_tokens": 204,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00030814000000000004,
+ "cost_usd": 0.00013574,
  "check_model": "claude-haiku-5-5"
 }

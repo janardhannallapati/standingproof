@@ -10,7 +10,7 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "76e6bd39cb8263c3"
+  "case": "60ba9a3c135449bf"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,13 +19,13 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 177,
+   "input_tokens": 176,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 4.1740000000000004e-05,
+ "cost_usd": 4.164e-05,
  "check_model": "claude-haiku-5-5"
 }

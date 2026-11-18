@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "680c5357b21a719f"
+  "case.sources": "85ac467c76241961",
+  "case": "f55d3d19260133da"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "New EBS disks in our AWS account are encrypted by default.",
-     "source_id": "evidence:EV-EBS-OFF",
-     "explanation": "The observed look on 2026-11-10 found that new EBS disks in account 111122223333 are not encrypted by default in us-east-1, which conflicts with the draft's statement and outweighs the document about the same account."
+     "source_id": "evidence:EV-EBS-7",
+     "explanation": "The observed look on 2026-11-10 found that new EBS disks in AWS account 111122223333 are not encrypted by default in us-east-1, which conflicts with the draft's claim."
     }
    ]
   },
   "usage": {
-   "input_tokens": 210,
-   "output_tokens": 150,
+   "input_tokens": 208,
+   "output_tokens": 140,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00011104000000000001,
+ "cost_usd": 0.00010584,
  "check_model": "claude-haiku-5-5"
 }

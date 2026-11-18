@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "1dc7e1e3d8a39971"
+  "case.sources": "d577d55b701fa562",
+  "case": "0b69d1c1f297f4c0"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,13 +20,13 @@
    "findings": []
   },
   "usage": {
-   "input_tokens": 254,
+   "input_tokens": 255,
    "output_tokens": 18,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0008384,
+ "cost_usd": 0.0008403999999999999,
  "check_model": "claude-sonnet-5-5"
 }

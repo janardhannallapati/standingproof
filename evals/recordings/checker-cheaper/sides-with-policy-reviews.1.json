@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "bf624a1358aff142"
+  "case.sources": "1785d24448b74d36",
+  "case": "c44e223344b694fe"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "two approving reviews",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, not two, and the draft cites this observation."
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, not two, and an observed source outweighs the policy document."
     }
    ]
   },
   "usage": {
-   "input_tokens": 213,
-   "output_tokens": 102,
+   "input_tokens": 214,
+   "output_tokens": 107,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 8.734e-05,
+ "cost_usd": 8.994000000000001e-05,
  "check_model": "claude-haiku-5-5"
 }

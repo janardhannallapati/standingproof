@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "bb4a924fd19050fa"
+  "case.sources": "622e59bc05f7e6f8",
+  "case": "316796b355370faf"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "Our AWS account blocks all public access to S3 buckets account-wide.",
-     "source_id": "evidence:EV-S3-OFF",
-     "explanation": "The observed look at account 111122223333 shows it does not block all public access to S3 buckets account-wide, which outweighs the document the draft repeats."
+     "source_id": "evidence:EV-S3-7",
+     "explanation": "The observed look at account 111122223333 found it does not block all public access to S3 buckets account-wide, and this outweighs the document the draft repeats."
     }
    ]
   },
   "usage": {
-   "input_tokens": 214,
-   "output_tokens": 132,
+   "input_tokens": 212,
+   "output_tokens": 130,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0018984000000000002,
+ "cost_usd": 0.0018744,
  "check_model": "claude-sonnet-5-5"
 }

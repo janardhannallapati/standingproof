@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "acc94d22e4346364"
+  "case.sources": "354471ebacd05060",
+  "case": "41324e85badae01e"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "requires two-factor sign-in for all of its members",
-     "source_id": "evidence:EV-2FA-OFF",
-     "explanation": "An observed look at the harborlight GitHub organisation on 2026-11-10 found it does not require two-factor sign-in for its members, which conflicts with the draft and outweighs the approved document."
+     "source_id": "evidence:EV-2FA-4",
+     "explanation": "The observed look on 2026-11-10 found that the GitHub organisation harborlight does not require two-factor sign-in for its members."
     }
    ]
   },
   "usage": {
-   "input_tokens": 225,
-   "output_tokens": 139,
+   "input_tokens": 223,
+   "output_tokens": 117,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00010704,
+ "cost_usd": 9.584e-05,
  "check_model": "claude-haiku-5-5"
 }

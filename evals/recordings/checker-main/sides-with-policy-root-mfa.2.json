@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "5cafa109cd6c01fe"
+  "case.sources": "dfb8976f063b3a10",
+  "case": "68d7595ab4ec5f42"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "The root user of our production AWS account has multi-factor authentication.",
-     "source_id": "evidence:EV-ROOT-OFF",
-     "explanation": "The observed look at account 111122223333 shows the root user does not have multi-factor authentication, which outweighs the document that says it does."
+     "source_id": "evidence:EV-ROOT-5",
+     "explanation": "The observed look at account 111122223333 shows the root user does not have multi-factor authentication, and it outweighs the document that says it does."
     }
    ]
   },
   "usage": {
-   "input_tokens": 210,
-   "output_tokens": 124,
+   "input_tokens": 208,
+   "output_tokens": 123,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0018104,
+ "cost_usd": 0.0017964,
  "check_model": "claude-sonnet-5-5"
 }

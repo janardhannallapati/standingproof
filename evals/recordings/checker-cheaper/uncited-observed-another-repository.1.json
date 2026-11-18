@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "970c078bd9b58ac2"
+  "case.sources": "62d0d93167a2d4bf",
+  "case": "ad286cc3d9a9faf2"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -18,21 +19,27 @@
    "verdict": "not_supported",
    "findings": [
     {
-     "kind": "unsupported",
+     "kind": "contradicted",
      "quote": "Yes.",
      "source_id": "LIB-SS-APP",
-     "explanation": "The question asks about the application repository (harborlight/app), but the only observed source covers harborlight/docs, and a document states that secret scanning is not yet switched on for harborlight/app."
+     "explanation": "The document states that GitHub secret scanning is not yet switched on for the application repository harborlight/app, which conflicts with the draft's answer of Yes for the application repository."
+    },
+    {
+     "kind": "unsupported",
+     "quote": "secret scanning is switched on for harborlight/docs",
+     "source_id": "evidence:EV-SS-6",
+     "explanation": "The observation covers harborlight/docs, not the application repository harborlight/app, so it does not support the claim about the application repository."
     }
    ]
   },
   "usage": {
-   "input_tokens": 211,
-   "output_tokens": 783,
+   "input_tokens": 208,
+   "output_tokens": 666,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00042764,
+ "cost_usd": 0.00036884000000000005,
  "check_model": "claude-haiku-5-5"
 }
