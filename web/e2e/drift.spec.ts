@@ -111,15 +111,19 @@ test("the runs list marks the run, and the Changes page leads to the question", 
   // The newest run is first. On a stack these tests have run on before, an earlier run's
   // answer rests on the same setting and is, rightly, reopened as well.
   await expect(page.getByRole("link", { name: /drift-question\.xlsx.*1 answer reopened/ }).first()).toBeVisible();
+  // So the change may have reopened more than this run's one answer.
+  // The page's text runs on with no space after it ("reopenedseen 18 Nov").
+  const reopenedCount = /[1-9]\d* answers? reopened/;
 
   await page.getByRole("link", { name: "Changes" }).click();
   const entry = page.getByRole("listitem").filter({ hasText: SETTING }).first();
-  await expect(entry).toContainText("1 answer reopened");
+  await expect(entry).toContainText(reopenedCount);
   await expect(entry).toContainText(NOT_PROTECTED);
   await expect(entry).toContainText("Approving reviews needed: was 2, now 0");
   await expect(entry).toContainText("Sent to Acme Corp");
 
-  await entry.getByRole("link", { name: /Drift test: do code changes need/ }).click();
+  // One link for each answer the change reopened; the newest run's is first.
+  await entry.getByRole("link", { name: /Drift test: do code changes need/ }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: QUESTION })).toBeVisible();
 });
 

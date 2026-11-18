@@ -150,14 +150,24 @@ async def give_back(
                 lease_owner=None,
                 lease_until=None,
             )
-            .returning(RunQuestion.run_id)
+            .returning(
+                RunQuestion.run_id, RunQuestion.tenant_id, RunQuestion.reason, RunQuestion.citations
+            )
         )
     ).one_or_none()
     if failed is not None:
-        # A redraft that failed leaves the earlier draft waiting again. Its setting may
-        # have changed while nobody was waiting on it: have it compared now.
-        await queue_newer(session, item_id)
-        await finish_run_if_done(session, failed[0])
+        run_id, tenant_id, now_reason, citations = failed
+        if now_reason == REASON_REDRAFT_FAILED:
+            # A redraft that failed leaves the earlier draft waiting again, and that draft
+            # rests on the looks it cites. If the redraft was asked for because a setting
+            # had changed, the answer's links were moved on to the newer look when it was
+            # reopened, and the decision closed that wait. Put the links back on what the
+            # draft cites and compare from there, so a draft written before the change
+            # comes back reopened, with what changed, and not as one "approve" away.
+            await rest_on(session, tenant_id, item_id, list(citations or []))
+        else:
+            await queue_newer(session, item_id)
+        await finish_run_if_done(session, run_id)
     else:
         await session.execute(
             update(RunQuestion)
