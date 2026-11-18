@@ -139,8 +139,12 @@ def of_drafter_case(
     # A case with no redraft is hashed as it was before cases could have one, so that a
     # recording made then still answers for it.
     left_out = {"note"} if case.redraft is not None else {"note", "redraft"}
+    described = case.model_dump(mode="json", exclude=left_out)
+    if not case.expect.states:
+        # The same for a case whose wording is not read by a model.
+        del described["expect"]["states"]
     world = {
-        "case": case.model_dump(mode="json", exclude=left_out),
+        "case": described,
         "library": cases.library(case.library).model_dump(mode="json"),
     }
     redraft = (
