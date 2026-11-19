@@ -211,26 +211,36 @@ def test_how_an_observation_is_marked_for_the_checker_is_part_of_every_recording
     assert differences(before, of_checker_case(case, "main", config)) == ["checker.request"]
 
 
-def test_which_of_two_looks_comes_first_is_part_of_a_labelled_drafts_recording() -> None:
-    from evals.cases import load_checker
+SEVERAL = [case.name for case in CHECKER.cases if len(case.sources) > 1]
 
-    cases = load_checker()
-    case = cases.by_name["sound-later-look-unprotected"]
+
+@pytest.mark.parametrize("name", SEVERAL)
+def test_the_order_of_a_labelled_drafts_sources_is_part_of_its_recording(name: str) -> None:
+    case = CHECKER.by_name[name]
     config = Config.current()
-    # The same case with its two looks the other way round: the later one is now first,
-    # so the request says the opposite and the label would be wrong.
+    # The same case with its sources the other way round. The checker's request lists
+    # them in this order, and numbers the looks by it, so it is another request.
     turned = case.model_copy(update={"sources": dict(reversed(list(case.sources.items())))})
 
+    assert check_messages_of(case) != check_messages_of(turned)
     assert differences(
         of_checker_case(case, "main", config), of_checker_case(turned, "main", config)
-    ) == ["case.looks"]
-    # A case with one look or none has no such part, and hashes as it did.
-    assert "case.looks" not in of_checker_case(cases.cases[0], "main", config)
+    ) == ["case.sources"]
 
 
-def test_the_two_looks_of_a_labelled_draft_cannot_be_told_apart_by_their_names() -> None:
-    from evals.cases import load_checker
+def test_a_labelled_draft_with_one_source_has_no_order_to_record() -> None:
+    assert len(SEVERAL) >= 17
+    config = Config.current()
+    for case in CHECKER.cases:
+        if len(case.sources) == 1:
+            parts = of_checker_case(case, "main", config)
+            assert "case.sources" not in parts
+            assert "case.looks" not in parts
 
-    for case in load_checker().cases:
-        for source_id in case.sources:
-            assert not any(word in source_id.upper() for word in ("EARL", "LATE", "OLD", "NEW"))
+
+def check_messages_of(case: Any) -> Any:
+    from standingproof.agent.checker import check_messages
+    from standingproof.agent.types import AnswerDraft
+
+    draft = AnswerDraft(status="answered", answer=case.answer, citations=case.citations, note="")
+    return check_messages(case.question, draft, case.sources)

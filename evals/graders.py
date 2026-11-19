@@ -15,8 +15,9 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
-from evals.cases import CheckerCase, DrafterCase
-from evals.transcript import CheckerRun, DrafterRun
+from evals.cases import CheckerCase, DrafterCase, Sentence
+from evals.reader import finished, states_now
+from evals.transcript import CheckerRun, DrafterRun, ReaderRun
 from standingproof.agent.steps import decide, judge_check, not_checked
 from standingproof.agent.types import AnswerDraft, CheckResult, HandoffReason, ModelTurn, Usage
 
@@ -55,6 +56,9 @@ class GradedDraft:
     # names none.
     looked: bool | None
     reasons: tuple[str, ...]
+    # For a case whose wording a model reads (`states`): whether a reading of this answer
+    # finished. False means the wording was not graded at all. None for other cases.
+    read: bool | None = None
 
 
 def _today(run: DrafterRun) -> tuple[AnswerDraft | None, str | None]:
@@ -134,7 +138,26 @@ def grade_draft(case: DrafterCase, run: DrafterRun) -> GradedDraft:
 
     check = _check(run, draft)
     ready = check.outcome == "agrees"
-    problems = _wording(case, draft.answer)
+    if case.expect.states:
+        reading = finished(run.reading)
+        if reading is None:
+            # Nobody read the wording, so it is neither right nor wrong. The gate refuses
+            # a result that has one of these, as it refuses a draft nobody checked.
+            return GradedDraft(
+                case=case.name,
+                run=run.run,
+                grade="safe",
+                ready=ready,
+                handoff=None,
+                check=check.outcome,
+                wording_ok=None,
+                looked=_looked(case, run, draft),
+                reasons=("the wording was not read",),
+                read=False,
+            )
+        problems = states_now(case, reading)
+    else:
+        problems = _wording(case, draft.answer)
     if not ready:
         grade = "safe"
     else:
@@ -149,6 +172,7 @@ def grade_draft(case: DrafterCase, run: DrafterRun) -> GradedDraft:
         wording_ok=not problems,
         looked=_looked(case, run, draft),
         reasons=tuple(problems),
+        read=True if case.expect.states else None,
     )
 
 
@@ -198,4 +222,37 @@ def grade_check(case: CheckerCase, run: CheckerRun) -> GradedCheck:
         ),
         located=(sum(found.located for found in quoting), len(quoting)),
         kinds=tuple(found.kind for found in result.findings),
+    )
+
+
+@dataclass(frozen=True)
+class GradedReading:
+    """One reading of a labelled sentence, put through the comparison a real answer gets."""
+
+    case: str
+    run: int
+    part: str
+    label: Literal["states_now", "does_not"]
+    outcome: Literal["states_now", "does_not", "not_read"]
+    # The comparison came to what the person's label says.
+    correct: bool
+    reasons: tuple[str, ...]
+
+
+def grade_reading(sentence: Sentence, case: DrafterCase, run: ReaderRun) -> GradedReading:
+    reading = finished(run.turn)
+    if reading is None:
+        return GradedReading(
+            sentence.name, run.run, sentence.part, sentence.label, "not_read", False, ()
+        )
+    problems = states_now(case, reading)
+    outcome: Literal["states_now", "does_not"] = "does_not" if problems else "states_now"
+    return GradedReading(
+        sentence.name,
+        run.run,
+        sentence.part,
+        sentence.label,
+        outcome,
+        outcome == sentence.label,
+        tuple(problems),
     )

@@ -28,20 +28,32 @@ from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from evals.cases import CheckerCase, CheckerSet, DrafterCase, DrafterSet, load_checker, load_drafter
+from evals.cases import (
+    CheckerCase,
+    CheckerSet,
+    DrafterCase,
+    DrafterSet,
+    ReaderSet,
+    Sentence,
+    load_checker,
+    load_drafter,
+)
 from evals.fingerprint import (
     CheckerVariant,
     Config,
     DrafterVariant,
     of_checker_case,
     of_drafter_case,
+    of_sentence,
 )
-from evals.graders import grade_check, grade_draft
+from evals.graders import grade_check, grade_draft, grade_reading
 from evals.plan import Manifest, Plan
+from evals.reader import READER_PROMPT, ReaderClient, ReadTurn, read_messages
 from evals.transcript import (
     MANIFEST,
     CheckerRun,
     DrafterRun,
+    ReaderRun,
     Run,
     SecretShapedError,
     ToolUse,
@@ -71,6 +83,8 @@ from standingproof.workflow.state import ExactMatch, Outcome, QuestionContext
 # is $0.08. Checker: 8,000 tokens out at $10 a million, and the same allowance for input.
 DRAFT_CALL_AT_MOST = 0.40
 CHECK_AT_MOST = 0.10
+# Reader: 2,000 tokens out at $10 a million, and 15,000 tokens of input.
+READ_AT_MOST = 0.05
 
 
 class _CeilingReachedError(Exception):
@@ -100,6 +114,9 @@ class Clients:
     model: ModelClient
     checker: CheckerClient
     cheaper_checker: CheckerClient
+    # Reads the wording of an answer or a labelled sentence. Needed only by a plan that
+    # has a case with `states` or a sentence in it.
+    reader: ReaderClient | None = None
 
 
 class _LastTurn:
@@ -141,6 +158,35 @@ class _LastCheck:
             raise
         self._meter.add(self.turn.model, self.turn.usage)
         return self.turn
+
+
+async def _read(
+    clients: Clients, meter: Meter, question: str, answer: str, case: DrafterCase
+) -> ReadTurn:
+    """One reading, counted. A provider failure is not a reading."""
+    if clients.reader is None:
+        raise RuntimeError("this plan reads a wording, and no reader was given")
+    meter.before(READ_AT_MOST)
+    messages = read_messages(question, answer, case.expect.states)
+    try:
+        turn = await clients.reader.read(system=READER_PROMPT, messages=messages)
+    except ModelCallError:
+        meter.spent += READ_AT_MOST
+        raise _ProviderFailedError from None
+    except BaseException:
+        meter.spent += READ_AT_MOST
+        raise
+    meter.add(turn.model, turn.usage)
+    return turn
+
+
+async def _reading_of(
+    clients: Clients, meter: Meter, case: DrafterCase, draft: AnswerDraft | None
+) -> ReadTurn | None:
+    """The reading of a run's final answer, where the case is graded by one."""
+    if not case.expect.states or draft is None or draft.status != "answered":
+        return None
+    return await _read(clients, meter, case.question, draft.answer, case)
 
 
 class _Recorded:
@@ -205,7 +251,9 @@ async def _draft(
     check_failed = checker.asked and checker.turn is None
     if result.handoff == HandoffReason.MODEL_ERROR or check_failed:
         raise _ProviderFailedError
+    final = model.last.draft if model.last else None
     return DrafterRun(
+        reading=await _reading_of(clients, meter, case, final),
         case=case.name,
         run=number,
         variant=variant,
@@ -289,7 +337,9 @@ async def _redraft(
         await world.aclose()
     if _provider_failed(result, checker):
         raise _ProviderFailedError
+    final = model.last.draft if model.last else None
     return DrafterRun(
+        reading=await _reading_of(clients, meter, case, final),
         case=case.name,
         run=number,
         variant="full",
@@ -335,6 +385,27 @@ async def _check(
     )
 
 
+async def _sentence(
+    sentence: Sentence,
+    case: DrafterCase,
+    number: int,
+    clients: Clients,
+    config: Config,
+    meter: Meter,
+) -> ReaderRun:
+    before = meter.spent
+    turn = await _read(clients, meter, case.question, sentence.answer, case)
+    return ReaderRun(
+        case=sentence.name,
+        run=number,
+        variant="main",
+        fingerprint=of_sentence(sentence, case, config),
+        turn=turn,
+        cost_usd=meter.spent - before,
+        read_model=config.read_model,
+    )
+
+
 @dataclass(frozen=True)
 class _Unit:
     """One case to run once: where its recording goes, the most it could cost, and how."""
@@ -363,7 +434,12 @@ class _Unit:
 
 
 def _draft_was_read(case: DrafterCase, data: dict[str, Any]) -> bool:
-    return grade_draft(case, DrafterRun.model_validate(data)).check != "not_checked"
+    graded = grade_draft(case, DrafterRun.model_validate(data))
+    return graded.check != "not_checked" and graded.read is not False
+
+
+def _sentence_was_read(sentence: Sentence, case: DrafterCase, data: dict[str, Any]) -> bool:
+    return grade_reading(sentence, case, ReaderRun.model_validate(data)).outcome != "not_read"
 
 
 def _check_was_read(case: CheckerCase, data: dict[str, Any]) -> bool:
@@ -379,8 +455,26 @@ def _units(
     clients: Clients,
     config: Config,
     meter: Meter,
+    sentences: ReaderSet,
 ) -> list[_Unit]:
     units: list[_Unit] = []
+    # The reader's own sentences first: they are cheap, and they say whether the readings
+    # of real answers further down can be trusted.
+    for name, number in plan.reader:
+        sentence = sentences.by_name[name]
+        about = drafts.by_name[sentence.case]
+        units.append(
+            _Unit(
+                "reader",
+                "main",
+                name,
+                number,
+                READ_AT_MOST,
+                of_sentence(sentence, about, config),
+                partial(_sentence, sentence, about, number, clients, config, meter),
+                partial(_sentence_was_read, sentence, about),
+            )
+        )
     drafter_plan: list[tuple[DrafterVariant, list[tuple[str, int]]]] = [
         ("full", plan.drafter),
         ("docs_only", [(name, 1) for name in plan.docs_only]),
@@ -446,9 +540,11 @@ async def run_plan(
     say: Callable[[str], None] = print,
     drafter: DrafterSet | None = None,
     checker: CheckerSet | None = None,
+    reader: ReaderSet | None = None,
 ) -> Manifest:
     drafts = drafter or load_drafter()
     checks = checker or load_checker()
+    sentences = reader or ReaderSet()
     meter = Meter(ceiling)
     recorded, reused = 0, 0
     full = f"the ceiling of ${ceiling:.2f} has no room for another request"
@@ -467,7 +563,8 @@ async def run_plan(
     _save_manifest(manifest(stopped), root)
     try:
         stopped = ""
-        for unit in _units(plan, drafts, checks, sessions, embedder, clients, config, meter):
+        units = _units(plan, drafts, checks, sessions, embedder, clients, config, meter, sentences)
+        for unit in units:
             if unit.recorded(root):
                 reused += 1
                 continue

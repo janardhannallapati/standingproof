@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
+from evals.reader import ReadTurn
 from standingproof.agent.types import AnswerDraft, CheckTurn, Usage
 
 RECORDINGS = Path(__file__).parent / "recordings"
@@ -63,6 +64,9 @@ class DrafterRun(_Record):
     # redraft's own calls begin. Everything above describes the redraft. None otherwise.
     first_draft: AnswerDraft | None = None
     redraft_from: int | None = None
+    # What a reader said the final answer states, for a case graded that way (`states`).
+    # None for every other case, and when the run ended without an answer.
+    reading: ReadTurn | None = None
 
 
 class CheckerRun(_Record):
@@ -78,7 +82,21 @@ class CheckerRun(_Record):
     check_model: str
 
 
-Run = DrafterRun | CheckerRun
+class ReaderRun(_Record):
+    """One reading of one labelled sentence. `case` is the sentence's name."""
+
+    kind: Literal["reader"] = "reader"
+    case: str
+    run: int
+    variant: Literal["main"]
+    fingerprint: dict[str, str]
+    # None when the provider could not be reached.
+    turn: ReadTurn | None
+    cost_usd: float
+    read_model: str
+
+
+Run = DrafterRun | CheckerRun | ReaderRun
 _RUN: TypeAdapter[Run] = TypeAdapter(Run)
 
 

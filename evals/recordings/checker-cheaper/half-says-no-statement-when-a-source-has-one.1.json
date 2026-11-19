@@ -10,6 +10,7 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
+  "case.sources": "15e4f2a60782c0e2",
   "case": "0b916b13610f9b72"
  },
  "turn": {
@@ -21,18 +22,18 @@
      "kind": "contradicted",
      "quote": "We have no approved statement about sharing the full report.",
      "source_id": "LIB-PEN-SHARE",
-     "explanation": "An approved library document states that the full penetration test report is not shared with customers and that a summary letter is available under NDA, so an approved statement does exist."
+     "explanation": "The library holds a document stating that the full penetration test report is not shared with customers, with a summary letter available under NDA, so an approved statement on sharing does exist."
     }
    ]
   },
   "usage": {
    "input_tokens": 192,
-   "output_tokens": 567,
+   "output_tokens": 747,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00031774,
+ "cost_usd": 0.00040774,
  "check_model": "claude-haiku-5-5"
 }

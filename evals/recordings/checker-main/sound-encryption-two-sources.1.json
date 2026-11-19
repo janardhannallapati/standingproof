@@ -10,6 +10,7 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
+  "case.sources": "7b7078a5937aea6d",
   "case": "6f72b1917ed5c87b"
  },
  "turn": {

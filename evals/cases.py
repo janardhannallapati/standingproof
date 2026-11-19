@@ -27,6 +27,22 @@ READS: dict[str, frozenset[str]] = {
     "aws.ebs_default_encryption": frozenset({"encrypted"}),
 }
 
+# The facts a reader can be asked about (evals/reader.py), and how each is put to it. Only
+# these may be named in a case's `states`.
+READABLE: dict[str, dict[str, str]] = {
+    "github.branch_protection": {
+        "protected": "whether the default branch is protected: true or false",
+        "reviews": (
+            "how many approving reviews a change to the default branch needs: "
+            "a whole number, 0 for none"
+        ),
+        "admins": "whether the review rule also binds administrators: true or false",
+    },
+    "github.secret_scanning": {
+        "enabled": "whether secret scanning is switched on: true or false",
+    },
+}
+
 Family = Literal["A", "B", "C", "D", "E", "F", "G"]
 System = Literal["github", "aws"]
 Failure = Literal["forbidden", "unreachable", "rate_limited"]
@@ -87,6 +103,28 @@ class Cite(_Strict):
     scope: str
 
 
+class State(_Strict):
+    """A setting whose present reading a right answer states, in whatever words.
+
+    What it reads is not written here. It is taken from the case's world, so a case
+    cannot expect one thing and build another.
+    """
+
+    check: str
+    scope: str
+    # The answer must state at least one of these as the world has it, and none otherwise.
+    facts: list[str]
+
+    @model_validator(mode="after")
+    def _readable(self) -> Self:
+        if not self.facts:
+            raise ValueError("name at least one fact")
+        unknown = set(self.facts) - READABLE.get(self.check, {}).keys()
+        if unknown:
+            raise ValueError(f"{sorted(unknown)} of {self.check} cannot be read from an answer")
+        return self
+
+
 class Expect(_Strict):
     """What a right result is. Patterns are regular expressions, matched ignoring case."""
 
@@ -97,6 +135,9 @@ class Expect(_Strict):
     # Each of these must be found in a ready answer's wording, and none of `must_not`.
     must: list[str] = []
     must_not: list[str] = []
+    # Where a pattern cannot tell "reads X now" from "read X before" or "the policy says
+    # X": the wording is read by a model and compared, in code, with the world.
+    states: list[State] = []
 
     @field_validator("must", "must_not")
     @classmethod
@@ -110,8 +151,10 @@ class Expect(_Strict):
 
     @model_validator(mode="after")
     def _no_wording_for_no_source(self) -> Self:
-        if self.outcome == "no_source" and (self.cite or self.must or self.must_not):
+        if self.outcome == "no_source" and (self.cite or self.must or self.must_not or self.states):
             raise ValueError("a no_source case expects no wording: leave cite, must, must_not out")
+        if self.states and (self.must or self.must_not):
+            raise ValueError("grade a wording by `states` or by patterns, not both")
         return self
 
 
@@ -143,6 +186,11 @@ class DrafterCase(_Strict):
     def allowed(self, live: Live) -> bool:
         return live.owner in {scope.lower() for scope in self.connected.get(live.system, [])}
 
+    @property
+    def now(self) -> list[Live]:
+        """The world the graded answer is about: the redraft's, when there is one."""
+        return self.redraft.live if self.redraft is not None else self.live
+
     @model_validator(mode="after")
     def _family_rules(self) -> Self:
         family, expect = self.family, self.expect
@@ -160,6 +208,14 @@ class DrafterCase(_Strict):
             raise ValueError(f"family {family} has no live setting")
         if family == "E" and expect.outcome != "no_source":
             raise ValueError("family E expects no_source")
+        readable = {
+            (live.check, live.scope)
+            for live in self.now
+            if live.reads is not None and self.allowed(live)
+        }
+        for state in expect.states:
+            if (state.check, state.scope) not in readable:
+                raise ValueError("`states` must name a setting the case's world lets it observe")
         if (family == "F") != (self.twin is not None):
             raise ValueError("family F, and only family F, names its twin")
         if (family == "G") != (self.redraft is not None):
@@ -177,6 +233,16 @@ class DrafterCase(_Strict):
             }
             if cite is not None and (cite.check, cite.scope) not in seen:
                 raise ValueError("family G must cite a setting the redraft's world lets it observe")
+            before = {(live.check, live.scope): live.reads for live in self.live}
+            changed = any(
+                live.reads is not None and before.get((live.check, live.scope)) != live.reads
+                for live in self.redraft.live
+            )
+            if changed and not expect.states:
+                raise ValueError(
+                    "a redraft that changes a setting names in `states` the facts its answer "
+                    "is read for"
+                )
         return self
 
 
@@ -266,6 +332,39 @@ class CheckerSet(_Strict):
         return {case.name: case for case in self.cases}
 
 
+class Sentence(_Strict):
+    """A wording a person labelled: does it state what its case's settings read now?
+
+    These measure the reader (evals/reader.py) before, and while, it grades real answers.
+    "open" sentences may be looked at while the reader's instructions are written.
+    "held_out" ones were written without sight of those instructions and are never used
+    to change them.
+    """
+
+    name: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    part: Literal["open", "held_out"]
+    # A drafter case that names `states`: the sentence is read as an answer to it.
+    case: str
+    answer: str = Field(min_length=1)
+    label: Literal["states_now", "does_not"]
+
+
+class ReaderSet(_Strict):
+    sentences: list[Sentence] = []
+
+    @model_validator(mode="after")
+    def _consistent(self) -> Self:
+        _unique([sentence.name for sentence in self.sentences])
+        wordings = [(sentence.case, sentence.answer) for sentence in self.sentences]
+        if len(set(wordings)) != len(wordings):
+            raise ValueError("two sentences for one case have the same wording")
+        return self
+
+    @property
+    def by_name(self) -> dict[str, Sentence]:
+        return {sentence.name: sentence for sentence in self.sentences}
+
+
 def _unique(names: list[str]) -> None:
     repeated = sorted({name for name in names if names.count(name) > 1})
     if repeated:
@@ -278,3 +377,15 @@ def load_drafter(path: Path = SETS / "drafter.json") -> DrafterSet:
 
 def load_checker(path: Path = SETS / "checker.json") -> CheckerSet:
     return CheckerSet.model_validate(json.loads(path.read_text()))
+
+
+def load_reader(path: Path = SETS / "reader.json", drafter: DrafterSet | None = None) -> ReaderSet:
+    """The labelled sentences. None at all when the file is not there."""
+    if not path.exists():
+        return ReaderSet()
+    sentences = ReaderSet.model_validate(json.loads(path.read_text()))
+    cases = (drafter or load_drafter()).by_name
+    for sentence in sentences.sentences:
+        if sentence.case not in cases or not cases[sentence.case].expect.states:
+            raise ValueError(f"{sentence.name}: case {sentence.case!r} asks for no reading")
+    return sentences

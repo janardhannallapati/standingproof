@@ -20,6 +20,7 @@ live system settings, and reopens them when those settings drift.
 - Re-record the checker's six cases (calls the paid API): `uv run python scripts/record_checker_cases.py`
 - Grade the committed eval recordings against the baseline (free; CI runs it): `uv run python -m evals score`
 - What an eval run would cost (free): `uv run python -m evals estimate`
+- Read only the reader's labelled sentences (paid; it asks first): `uv run python -m evals run --only-reader`
 - Run the eval (calls the paid API; it asks first): `uv run python -m evals run`, then
   `uv run python -m evals report` and, to make the result the baseline, `accept --note "<why>"`
 
@@ -58,6 +59,18 @@ live system settings, and reopens them when those settings drift.
   loop, with the world changed between the draft and the redraft; `expect` is about the
   redraft, and "cites a look" counts only a look the redraft made. A new case with no
   `redraft` must hash as it would have before the field existed.
+- Where a pattern cannot grade a wording (a setting that changed: "reads X now" against
+  "read X before" or "the policy says X"), the case names `states` and a reader model says
+  what the answer states (`evals/reader.py`). The reader is shown the question, the answer
+  and the names of the facts. Never give it a source, the case's world, what is expected,
+  the first draft or the reviewer's instruction, and never ask it whether an answer is
+  right: code compares its reading with the world (`states_now`).
+- The reader is trusted only as far as `evals/sets/reader.json` measures it. A `held_out`
+  sentence was written without sight of the reader's instructions: do not read those
+  sentences while changing `READER_PROMPT`, and do not change it to fix one. Write new
+  sentences instead, and move the ones you have seen to `open`.
+- A source id in an eval set states neither an order nor a value: a setting's name and a
+  number that is not in the source's text (`evidence:EV-BP-7`). The model is shown ids.
 - `standingproof/agent/model.py` is the only module that imports the `anthropic` SDK. Everything
   else depends on the `ModelClient` protocol in `agent/loop.py`.
 - A model's final answer is accepted only by `check_draft` in `agent/steps.py`. New acceptance

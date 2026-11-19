@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "8f9ad0b2e81f6e43"
+  "case.sources": "a7cd274b2d69765b",
+  "case": "80abe716f1d3a458"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "GitHub secret scanning is switched on for our application repository.",
-     "source_id": "evidence:EV-SS-OFF",
-     "explanation": "The observed source from a live look on 2026-11-10 reports that secret scanning is switched off for harborlight/app, which conflicts with the draft's claim that it is on."
+     "source_id": "evidence:EV-SS-4",
+     "explanation": "The observed source from look 1 records that secret scanning is switched off for harborlight/app, which conflicts with the draft's statement that it is on."
     }
    ]
   },
   "usage": {
-   "input_tokens": 221,
-   "output_tokens": 134,
+   "input_tokens": 219,
+   "output_tokens": 123,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00010414,
+ "cost_usd": 9.844000000000001e-05,
  "check_model": "claude-haiku-5-5"
 }

@@ -1,6 +1,7 @@
 """The eval cases are data a person wrote. A case that cannot be graded is refused on load."""
 
 import copy
+import re
 from collections import Counter
 from typing import Any
 
@@ -144,8 +145,8 @@ def test_the_committed_sets_load_and_have_every_family_and_defect() -> None:
 
     families = Counter(case.family for case in drafter.cases)
     defects = Counter(case.defect for case in checker.cases)
-    assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 4}
-    assert defects.pop("none") == 18
+    assert families == {"A": 4, "B": 10, "C": 4, "D": 6, "E": 4, "F": 4, "G": 5}
+    assert defects.pop("none") == 19
     assert len(defects) == 8 and min(defects.values()) == 4
     for case in drafter.cases:
         if case.twin is not None:
@@ -221,7 +222,12 @@ def test_a_redraft_case_loads_and_its_world_can_change() -> None:
     now = copy.deepcopy(LIVE)
     now["reads"] = {"protected": False, "reviews": 0, "admins": False}
 
-    cases = DrafterSet.model_validate(redraft_case(redraft={"live": [now]}))
+    data = redraft_case(redraft={"live": [now]})
+    data["cases"][0]["expect"] = {
+        "outcome": "answered",
+        "states": [{"check": now["check"], "scope": now["scope"], "facts": ["protected"]}],
+    }
+    cases = DrafterSet.model_validate(data)
 
     [case] = cases.cases
     assert case.redraft is not None and case.redraft.instruction == "Shorter, please."
@@ -253,48 +259,110 @@ def test_a_redraft_must_be_able_to_see_the_setting_it_is_graded_on() -> None:
         DrafterSet.model_validate(redraft_case(redraft={"live": [gone]}))
 
 
-R, S = "g-reviews-switched-off", "g-scanning-off-reviews-same"
-RIGHT = [
-    (R, "Branch main is not protected, so no approving reviews are required."),
-    (R, "Policy calls for two approving reviews, but the branch is currently unprotected."),
-    (R, "The policy requires two approving reviews, but branch main is not protected."),
-    (R, "No. Branch protection is not enforced on branch main of harborlight/app."),
-    (R, "No. Branch protection is not enabled on main."),
-    (R, "Branch main has no branch protection rule."),
-    (R, "Branch main is not protected; it no longer requires 2 approving reviews."),
-    (R, "Main is unprotected, so a change does not need 2 approving reviews."),
-    (S, "Changes need two approving reviews. Secret scanning is switched off."),
-    (S, "Two reviews are needed. Secret scanning is not currently enabled."),
-    (S, "Two reviews are needed. Secret scanning isn't enabled."),
-    (S, "Two reviews are needed. Secret scanning is off; it was on at the earlier check."),
-    (S, "Two reviews. Secret scanning, which was enabled earlier, is now disabled."),
-    (S, "Two reviews are needed. Secret scanning is off; protection is on."),
-]
-STALE = [
-    (R, "A change needs two approving reviews, and administrators are not exempt."),
-    (R, "Two approving reviews are required before a merge."),
-    (R, "Yes. A change must be approved by 2 reviewers, and no approvals can be skipped."),
-    (R, "Yes. Branch main is protected: 2 approving reviews, and no reviews are waived."),
-    (S, "Two reviews, and administrators are not exempt. Secret scanning was switched on."),
-    (S, "Two reviews are needed. The repository has secret scanning enabled."),
-    (S, "Two reviews are required, administrators are not exempt, with secret scanning enabled."),
-    (S, "Two reviews; not exempt, and secret scanning and push protection are both enabled."),
+# What a labelled draft's sources must not give away. The checker is shown each source's
+# id, so an id that states an order or a value answers the case for it.
+LOOK_ID = re.compile(r"^evidence:EV-(BP|SS|2FA|EBS|ROOT|S3|PW)-(\d+)$")
+TWO_LOOKS = [
+    "sound-later-look-unprotected",
+    "earlier-look-against-later",
+    "sound-later-look-protected",
+    "earlier-look-unprotected-against-later",
 ]
 
 
-@pytest.mark.parametrize(("case", "answer"), RIGHT)
-def test_a_redraft_that_states_the_new_state_passes_in_many_wordings(
-    case: str, answer: str
-) -> None:
-    from evals import graders
-
-    wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
-    assert wording(load_drafter().by_name[case], answer) == []
+def _looks(case: Any) -> list[str]:
+    return [source_id for source_id in case.sources if source_id.startswith(OBSERVED_PREFIX)]
 
 
-@pytest.mark.parametrize(("case", "answer"), STALE)
-def test_a_redraft_that_states_the_old_state_fails_in_many_wordings(case: str, answer: str) -> None:
-    from evals import graders
+def test_an_observations_id_names_its_setting_and_a_number_and_nothing_else() -> None:
+    for case in load_checker().cases:
+        for source_id in _looks(case):
+            match = LOOK_ID.match(source_id)
+            assert match, f"{case.name}: {source_id}"
+            # The number is a label. It must not be a number the source's text states
+            # (a count of reviews, a length), or the id repeats the value.
+            stated = re.findall(r"(?<![\w:-])\d+(?![\w:-])", " ".join(case.sources[source_id]))
+            assert match[2] not in stated, f"{case.name}: {source_id}"
 
-    wording = graders._wording  # noqa: SLF001 - the grader's own reading of a wording
-    assert wording(load_drafter().by_name[case], answer) != []
+
+def test_the_number_in_an_id_does_not_say_which_of_two_looks_is_later() -> None:
+    checker = load_checker()
+    later_is_higher = set()
+    for name in TWO_LOOKS:
+        earlier, later = (int(LOOK_ID.match(i)[2]) for i in _looks(checker.by_name[name]))  # type: ignore[index]
+        later_is_higher.add(later > earlier)
+
+    assert later_is_higher == {True, False}
+    assert [c.name for c in checker.cases if len(_looks(c)) > 1] == TWO_LOOKS
+
+
+def test_two_looks_in_one_draft_carry_the_same_minute() -> None:
+    # In the product the time in a source is to the minute. If the two differed here, a
+    # checker could order them by the text and never use the look number.
+    for name in TWO_LOOKS:
+        case = load_checker().by_name[name]
+        minutes = {text.rsplit("Observed ", 1)[1] for i in _looks(case) for text in case.sources[i]}
+        assert len(minutes) == 1, name
+
+
+def _says_protected(text: str) -> bool:
+    return "is not protected" not in text
+
+
+def _verdicts(case: Any) -> dict[str, bool]:
+    """Whether each way of choosing a source to believe would call this draft supported."""
+    claim = case.answer.startswith("Yes")
+    reads = {source_id: _says_protected(texts[0]) for source_id, texts in case.sources.items()}
+    looks = _looks(case)
+    documents = [source_id for source_id in case.sources if source_id not in looks]
+    values = list(reads.values())
+    return {
+        "the look number": reads[looks[-1]] == claim,
+        "the earlier look": reads[looks[0]] == claim,
+        "the last source": values[-1] == claim,
+        "the worse reading": all(values) == claim,
+        "most of the sources": (sum(values) * 2 > len(values)) == claim,
+        # No reading at all: object whenever the cited source is the first one listed.
+        "not citing the first source": list(case.sources).index(case.citations[0]) != 0,
+        # Where two sources agree and one does not, believe the one that does not.
+        "the odd one out": (sum(values) * 2 < len(values)) == claim,
+        # Whatever the library document says, the opposite is true.
+        "against the document": reads[documents[0]] != claim,
+    }
+
+
+def test_only_the_look_number_reads_all_four_drafts_as_they_are_labelled() -> None:
+    checker = load_checker()
+    wrong: dict[str, list[str]] = {}
+    for name in TWO_LOOKS:
+        case = checker.by_name[name]
+        for rule, supported in _verdicts(case).items():
+            if supported != (case.label == "supported"):
+                wrong.setdefault(rule, []).append(name)
+
+    assert "the look number" not in wrong
+    assert set(wrong) == {
+        "the earlier look",
+        "the last source",
+        "the worse reading",
+        "most of the sources",
+        "not citing the first source",
+        "the odd one out",
+        "against the document",
+    }
+    # And the later look is not the last source where it reads "protected".
+    for name in TWO_LOOKS[2:]:
+        case = checker.by_name[name]
+        assert not list(case.sources)[-1].startswith(OBSERVED_PREFIX)
+
+
+def test_a_case_read_for_a_setting_tells_the_drafter_where_that_setting_is() -> None:
+    # The drafter learns a repository's name from the question or from the library, never
+    # from the case. A case that names it nowhere is declined before any look, on the first
+    # draft and the redraft alike, and so says nothing about a setting that changed.
+    drafter = load_drafter()
+    for case in drafter.cases:
+        library = drafter.library(case.library)
+        told = " ".join([case.question, library.model_dump_json()])
+        for state in case.expect.states:
+            assert state.scope in told, (case.name, state.scope)

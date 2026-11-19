@@ -10,7 +10,7 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "3f016ef47ffd02fe"
+  "case": "70ba761e10da139d"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +20,19 @@
     {
      "kind": "contradicted",
      "quote": "needs 2 approving reviews",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The observed branch protection on main of harborlight/app requires 1 approving review, not 2."
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed source states that the main branch of harborlight/app needs 1 approving review, not 2."
     }
    ]
   },
   "usage": {
-   "input_tokens": 183,
-   "output_tokens": 97,
+   "input_tokens": 184,
+   "output_tokens": 99,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0014864000000000001,
+ "cost_usd": 0.0015084,
  "check_model": "claude-sonnet-5-5"
 }

@@ -2,9 +2,11 @@
 
 import logging
 from collections.abc import Awaitable
+from dataclasses import dataclass
 from typing import Any, Literal
 
 import anthropic
+from pydantic import BaseModel
 
 from standingproof.agent.loop import ModelCallError
 from standingproof.agent.types import (
@@ -159,6 +161,64 @@ class AnthropicChecker:
         return CheckTurn(
             stop_reason=response.stop_reason or "unknown",
             verdict=response.parsed_output if response.stop_reason == "end_turn" else None,
+            usage=_usage(response.usage),
+            model=self._model,
+        )
+
+
+@dataclass(frozen=True)
+class Structured[T: BaseModel]:
+    """One structured reply. `parsed` is None unless the model finished its turn."""
+
+    stop_reason: str
+    parsed: T | None
+    usage: Usage
+    model: str
+
+
+class AnthropicStructured[T: BaseModel]:
+    """One question, one reply of a given shape, no tools.
+
+    The product's own calls are `AnthropicModel` and `AnthropicChecker`. This is for a
+    reader outside the answering path, such as the one the evals use to read an answer's
+    wording: it gets the same error handling, metering and cold-cache rule as they do.
+    """
+
+    def __init__(
+        self,
+        client: anthropic.AsyncAnthropic,
+        *,
+        model: str,
+        effort: Effort,
+        output: type[T],
+        max_tokens: int = 2_000,
+    ) -> None:
+        self._client = client
+        self._model = model
+        self._effort = effort
+        self._output = output
+        self._max_tokens = max_tokens
+        self._warm = FirstCallAlone()
+
+    async def ask(self, *, system: str, messages: list[dict[str, Any]]) -> Structured[T]:
+        def request() -> Awaitable[Any]:
+            return _call(
+                self._client.messages.parse(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    system=[
+                        {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
+                    ],
+                    messages=messages,  # type: ignore[arg-type]
+                    output_format=self._output,
+                    output_config={"effort": self._effort},
+                )
+            )
+
+        response = await self._warm.run(request)
+        return Structured(
+            stop_reason=response.stop_reason or "unknown",
+            parsed=response.parsed_output if response.stop_reason == "end_turn" else None,
             usage=_usage(response.usage),
             model=self._model,
         )

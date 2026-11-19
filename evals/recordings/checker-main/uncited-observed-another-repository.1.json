@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "970c078bd9b58ac2"
+  "case.sources": "62d0d93167a2d4bf",
+  "case": "ad286cc3d9a9faf2"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -18,21 +19,21 @@
    "verdict": "not_supported",
    "findings": [
     {
-     "kind": "not_answered",
-     "quote": "",
+     "kind": "contradicted",
+     "quote": "Yes.",
      "source_id": "LIB-SS-APP",
-     "explanation": "The question asks about the application repository (harborlight/app), but the draft only reports on harborlight/docs, and the document says secret scanning is not yet on for harborlight/app."
+     "explanation": "The question asks about the application repository (harborlight/app), which LIB-SS-APP says does not yet have secret scanning on, and the observed look covers only harborlight/docs, a different repository."
     }
    ]
   },
   "usage": {
-   "input_tokens": 211,
-   "output_tokens": 112,
+   "input_tokens": 208,
+   "output_tokens": 482,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0016924000000000002,
+ "cost_usd": 0.0053863999999999995,
  "check_model": "claude-sonnet-5-5"
 }

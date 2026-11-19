@@ -10,7 +10,8 @@
   "checker.model": "claude-sonnet-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "13199800e498a66f"
+  "case.sources": "fca5bfe59a0802f5",
+  "case": "d451f3c634b4cd6b"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -19,20 +20,20 @@
    "findings": [
     {
      "kind": "contradicted",
-     "quote": "needs 2 approving reviews before it can be merged",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The only observed look of the same branch in the same repository reads 1 approving review, and the draft states the document's figure of 2 against it, so the observation outweighs the document."
+     "quote": "needs 2 approving reviews",
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed look at branch main of harborlight/app reads 1 approving review, and an observed source outweighs the document that says 2 for the same setting in the same place."
     }
    ]
   },
   "usage": {
-   "input_tokens": 258,
-   "output_tokens": 126,
+   "input_tokens": 259,
+   "output_tokens": 253,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-sonnet-5-5"
  },
- "cost_usd": 0.0019264,
+ "cost_usd": 0.0031984,
  "check_model": "claude-sonnet-5-5"
 }

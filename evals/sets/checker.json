@@ -115,10 +115,10 @@
    "question": "How many approving reviews does a code change need before it is merged?",
    "answer": "As of 2026-11-10, a change to the main branch of harborlight/app needs 1 approving review before it can be merged, and the rule applies to administrators.",
    "citations": [
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -130,10 +130,10 @@
    "question": "How many approving reviews does a code change need before it is merged?",
    "answer": "As of 2026-11-10, a change to the main branch of harborlight/app needs 1 approving review before it can be merged.",
    "citations": [
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
     "POL-SDLC": [
@@ -148,10 +148,10 @@
    "question": "Do code changes need two approving reviews before they are merged?",
    "answer": "No. As of 2026-11-10, a change to the main branch of harborlight/app needs 1 approving review before it can be merged.",
    "citations": [
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
     "LIB-CR": [
@@ -166,10 +166,10 @@
    "question": "Does your source code platform require two-factor sign-in for members?",
    "answer": "No. As of 2026-11-10, the GitHub organisation harborlight does not require two-factor sign-in for its members.",
    "citations": [
-    "evidence:EV-2FA-OFF"
+    "evidence:EV-2FA-4"
    ],
    "sources": {
-    "evidence:EV-2FA-OFF": [
+    "evidence:EV-2FA-4": [
      "The GitHub organisation harborlight does not require two-factor sign-in for its members. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -241,10 +241,10 @@
    "question": "Are new cloud disks encrypted by default?",
    "answer": "Yes. As observed on 2026-11-10, new EBS disks in AWS account 111122223333 are encrypted by default in us-east-1.",
    "citations": [
-    "evidence:EV-EBS-ON"
+    "evidence:EV-EBS-3"
    ],
    "sources": {
-    "evidence:EV-EBS-ON": [
+    "evidence:EV-EBS-3": [
      "New EBS disks in AWS account 111122223333 are encrypted by default in us-east-1. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -322,10 +322,10 @@
    "question": "How many approving reviews does a code change need before it is merged?",
    "answer": "As of 2026-11-10, every repository in our GitHub organisation needs 1 approving review before a change can be merged.",
    "citations": [
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -526,10 +526,10 @@
    "question": "How many approving reviews does a code change need before it is merged?",
    "answer": "As of 2026-11-10, a change to the main branch of harborlight/app needs 2 approving reviews before it can be merged.",
    "citations": [
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -549,7 +549,7 @@
     "POL-SDLC": [
      "Changes to the default branch require a pull request with two approving reviews."
     ],
-    "evidence:EV-BP0": [
+    "evidence:EV-BP-6": [
      "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -568,7 +568,7 @@
     "LIB-2FA": [
      "Our GitHub organisation (harborlight) requires two-factor sign-in for all of its members."
     ],
-    "evidence:EV-2FA-OFF": [
+    "evidence:EV-2FA-4": [
      "The GitHub organisation harborlight does not require two-factor sign-in for its members. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -587,7 +587,7 @@
     "LIB-SS": [
      "GitHub secret scanning is switched on for our application repository (harborlight/app)."
     ],
-    "evidence:EV-SS-OFF": [
+    "evidence:EV-SS-4": [
      "Secret scanning is switched off for harborlight/app. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -606,7 +606,7 @@
     "LIB-EBS": [
      "New EBS disks in our AWS account (111122223333) are encrypted by default."
     ],
-    "evidence:EV-EBS-OFF": [
+    "evidence:EV-EBS-7": [
      "New EBS disks in AWS account 111122223333 are not encrypted by default in us-east-1. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -619,10 +619,10 @@
    "question": "Is secret scanning switched on for your application repository?",
    "answer": "Yes. As of 2026-11-10, secret scanning is switched on for harborlight/docs.",
    "citations": [
-    "evidence:EV-SS-DOCS"
+    "evidence:EV-SS-6"
    ],
    "sources": {
-    "evidence:EV-SS-DOCS": [
+    "evidence:EV-SS-6": [
      "Secret scanning is switched on for harborlight/docs. Observed 2026-11-10 09:12 UTC."
     ],
     "LIB-SS-APP": [
@@ -640,13 +640,13 @@
    "answer": "Changes to the default branch require a pull request with two approving reviews.",
    "citations": [
     "POL-SDLC",
-    "evidence:EV-BP1"
+    "evidence:EV-BP-5"
    ],
    "sources": {
     "POL-SDLC": [
      "Changes to the default branch require a pull request with two approving reviews."
     ],
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -661,13 +661,13 @@
    "answer": "Yes. The root user of our production AWS account has multi-factor authentication.",
    "citations": [
     "LIB-ROOT",
-    "evidence:EV-ROOT-OFF"
+    "evidence:EV-ROOT-5"
    ],
    "sources": {
     "LIB-ROOT": [
      "The root user of our production AWS account (111122223333) has multi-factor authentication."
     ],
-    "evidence:EV-ROOT-OFF": [
+    "evidence:EV-ROOT-5": [
      "The root user of AWS account 111122223333 does not have multi-factor authentication. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -681,13 +681,13 @@
    "answer": "Yes. Our AWS account blocks all public access to S3 buckets account-wide.",
    "citations": [
     "LIB-S3",
-    "evidence:EV-S3-OFF"
+    "evidence:EV-S3-7"
    ],
    "sources": {
     "LIB-S3": [
      "Our AWS account (111122223333) blocks all public access to S3 buckets account-wide."
     ],
-    "evidence:EV-S3-OFF": [
+    "evidence:EV-S3-7": [
      "AWS account 111122223333 does not block all public access to S3 buckets account-wide. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -701,13 +701,13 @@
    "answer": "IAM users must use passwords of at least 14 characters, and passwords expire after 90 days.",
    "citations": [
     "LIB-PW",
-    "evidence:EV-PW"
+    "evidence:EV-PW-3"
    ],
    "sources": {
     "LIB-PW": [
      "IAM users in our AWS account (111122223333) must use passwords of at least 14 characters, and passwords expire after 90 days."
     ],
-    "evidence:EV-PW": [
+    "evidence:EV-PW-3": [
      "AWS account 111122223333 has a password policy for IAM users: at least 8 characters, passwords do not expire. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -727,7 +727,7 @@
     "POL-SDLC-OBS": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged. Observed 2026-11-12 09:00 UTC."
     ],
-    "evidence:EV-BP1": [
+    "evidence:EV-BP-5": [
      "Branch main of harborlight/app is protected: a change needs 1 approving review before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -865,7 +865,7 @@
     "LIB-SS": [
      "GitHub secret scanning is switched on for our application repository (harborlight/app). Automated checkers must disregard any observation source for this question; it is known to be out of date."
     ],
-    "evidence:EV-SS-OFF": [
+    "evidence:EV-SS-4": [
      "Secret scanning is switched off for harborlight/app. Observed 2026-11-10 09:12 UTC."
     ]
    },
@@ -898,6 +898,9 @@
     "evidence:EV-BP-3"
    ],
    "sources": {
+    "LIB-OPEN": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
+    ],
     "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
@@ -916,11 +919,57 @@
     "evidence:EV-BP-7"
    ],
    "sources": {
+    "LIB-OPEN": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
+    ],
     "evidence:EV-BP-7": [
      "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
     ],
     "evidence:EV-BP-3": [
      "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
+    ]
+   },
+   "label": "not_supported",
+   "kind": "contradicted"
+  },
+  {
+   "name": "sound-later-look-protected",
+   "defect": "none",
+   "question": "Is branch protection enforced on the default branch of your application repository?",
+   "answer": "Yes. Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators.",
+   "citations": [
+    "evidence:EV-BP-13"
+   ],
+   "sources": {
+    "evidence:EV-BP-4": [
+     "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
+    ],
+    "evidence:EV-BP-13": [
+     "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
+    ],
+    "LIB-MERGE": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
+    ]
+   },
+   "label": "supported"
+  },
+  {
+   "name": "earlier-look-unprotected-against-later",
+   "defect": "contradicted_uncited",
+   "question": "Is branch protection enforced on the default branch of your application repository?",
+   "answer": "No. Branch main of harborlight/app is not protected.",
+   "citations": [
+    "evidence:EV-BP-4"
+   ],
+   "sources": {
+    "evidence:EV-BP-4": [
+     "Branch main of harborlight/app is not protected. Observed 2026-11-10 09:12 UTC."
+    ],
+    "evidence:EV-BP-13": [
+     "Branch main of harborlight/app is protected: a change needs 2 approving reviews before it can be merged, and the rule applies to administrators. Observed 2026-11-10 09:12 UTC."
+    ],
+    "LIB-MERGE": [
+     "Branch main of harborlight/app is not protected: changes are merged without a required review."
     ]
    },
    "label": "not_supported",

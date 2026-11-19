@@ -10,7 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case": "13199800e498a66f"
+  "case.sources": "fca5bfe59a0802f5",
+  "case": "d451f3c634b4cd6b"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -20,19 +21,19 @@
     {
      "kind": "contradicted",
      "quote": "needs 2 approving reviews",
-     "source_id": "evidence:EV-BP1",
-     "explanation": "The observed look of the main branch of harborlight/app shows a requirement of 1 approving review, and the observation outweighs the cited document that says 2."
+     "source_id": "evidence:EV-BP-5",
+     "explanation": "The observed look at main of harborlight/app found that a change needs 1 approving review, which outweighs the document's statement of 2."
     }
    ]
   },
   "usage": {
-   "input_tokens": 258,
-   "output_tokens": 554,
+   "input_tokens": 259,
+   "output_tokens": 443,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00031784,
+ "cost_usd": 0.00026244,
  "check_model": "claude-haiku-5-5"
 }
