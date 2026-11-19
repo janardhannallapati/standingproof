@@ -2,7 +2,7 @@
 
 Written by `python -m evals report` from the files in `evals/recordings`. Do not edit.
 
-Run finished 2026-11-18. 607 recordings, $3.40. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
+Run finished 2026-11-19. 613 recordings, $3.42. Drafter `claude-opus-5-5` (medium), checker `claude-sonnet-5-5` (medium). 3 runs of each case.
 
 ## Result
 
@@ -13,7 +13,7 @@ Run finished 2026-11-18. 607 recordings, $3.40. Drafter `claude-opus-5-5` (mediu
 | Planted defects the checker agreed with in any run | 0 of 37 |
 | Sound drafts the checker objected to in most runs | 0 of 19 |
 
-Baseline accepted 2026-11-18: The two redraft cases where a setting changes, and a third added here, are graded by a reading and a comparison in place of wording patterns. A model reads what the answer says each named fact reads now (it sees the question, the answer and the fact names, nothing of the case's world), and code compares that with the world. The reader is measured on 134 labelled sentences, which this baseline records by count and hash: 60 held out, never read while its instructions were written, read three times each (180 of 180 readings as labelled); 34 open ones; and 40 a reviewer wrote against it after reading its instructions. On a first read of the reviewer's 40 it took 2 stale sentences for current (hostile-15, a January finding the answer says was not looked at since; hostile-18, what should be the case). Its instructions were then changed by two lines and every sentence read again: 0 of 63 stale taken for current in any run, 0 of 71 correct refused. So the 74 open sentences are not a first look; the 60 held-out ones are, for the instructions, but all 134 were written by agents and not by the owner. A review also made the reader's gate stricter (one run of three is enough to name a stale sentence taken for current), made the administrators rule a fact the reader is asked about in the switched-off cases, and widened the reader's fingerprint; all reader readings and the nine redraft recordings were made again. Redraft grades in this run, each of 3 runs: g-reviews-switched-off right in 2 and declined in 1 (it had declined in every earlier run; the reader read its first two real answers, both stating main is not protected and no reviews are required). g-reviews-switched-off-no-claim right in 3 (2 of 3 in the run before; an earlier acceptance note said 3 of 3 for that run, which was wrong: the checker objected once). g-scanning-off-reviews-same right in 1 and safe in 2: the redraft left secret scanning out, the reader read it as not stated, and the checker objected (3 of 3 right in the run before). These moves are the drafter varying between runs; no instruction of the drafter or checker changed. Cases right: 32 of 37, none ready and wrong. Checker: no defect missed and no sound draft objected to, of 56; one pair of the two-look drafts now lists a document before its looks so that list position does not predict the label, and its eight readings are correct.
+Baseline accepted 2026-11-19: The two redraft cases where a setting changes, and a third added in this pull request, are graded by a reading and a comparison in place of wording patterns. A model reads what the answer says each named fact reads now (it sees the question, the answer and the fact names, nothing of the case's world), and code compares that with the world. This acceptance follows a second review. It corrects one number and records three changes. The correction: the note before this one said the eight readings of the reordered two-look pair were correct. Seven were: the cheaper comparison model objected once to the sound draft (checker-cheaper, sound-later-look-unprotected). The six readings by the checker's own model were correct. The changes: (1) the document in that pair agreed with the earlier look in both pairs, so a rule that believes the odd one out labelled all four two-look drafts without the look number; the pair's document now agrees with the later look, and the test that requires shortcut rules to fail has two more of them. The pair's eight readings were made again and all eight are as labelled. (2) The administrators rule was graded in the switched-off cases but the reader was never measured on it by itself; six sentences that differ only in what they say of administrators were added to the open part, written by the session that wrote the instructions. All six were read as labelled on a first reading, with no change to the instructions. (3) A result with cases graded by the reader and no labelled sentences can no longer be accepted. The reader is now measured on 140 labelled sentences, recorded here by count and hash: 60 held out, never read while its instructions were written, read three times each (180 of 180 readings as labelled); 80 open ones read once (34 written beside the instructions, 40 a reviewer wrote against them, 6 on administrators). 0 of 66 stale sentences taken for current in any run, 0 of 74 correct refused. As before: on a first read of the reviewer's 40 the reader took 2 stale sentences for current, its instructions were changed by two lines and everything was read again, so only the 60 held-out sentences are a first look for the instructions, and all 140 were written by agents and not by the owner. No drafter or redraft recording changed in this run. Redraft grades, each of 3 runs: g-reviews-switched-off right in 2 and declined in 1; g-reviews-switched-off-no-claim right in 3; g-scanning-off-reviews-same right in 1 and safe in 2 (the redraft left secret scanning out, the reader read it as not stated, and the checker objected). Cases right: 32 of 37, none ready and wrong. Checker: no defect missed and no sound draft objected to, of 56 drafts in 168 readings.
 
 ## Method
 
@@ -72,7 +72,7 @@ The drafter's own wording, graded by what the case's world reads, against what t
 | wider_scope | 12 of 12 |
 | wrong_number | 12 of 12 |
 
-Agreement with the labels beyond chance (Cohen's kappa): 1.00. A finding of the expected kind: 108 of 111 catches. A quote on the planted words: 72 of 72. Quotes found in the draft: 105 of 105. Checks that did not finish: 0.
+Agreement with the labels beyond chance (Cohen's kappa): 1.00. A finding of the expected kind: 108 of 111 catches. A quote on the planted words: 72 of 72. Quotes found in the draft: 106 of 106. Checks that did not finish: 0.
 
 | Checker | Defects missed of 37 | False alarms of 19 |
 |---|---|---|
@@ -80,7 +80,7 @@ Agreement with the labels beyond chance (Cohen's kappa): 1.00. A finding of the 
 | always agree | 37 | 0 |
 | the code rule alone | 35 | 0 |
 | `claude-sonnet-5-5`, by majority | 0 | 0 |
-| `claude-haiku-5-5`, one run | 0 | 3 |
+| `claude-haiku-5-5`, one run | 0 | 2 |
 
 ## The reader of wordings
 
@@ -89,7 +89,7 @@ Where a setting changes between a draft and its redraft, a pattern cannot tell a
 | Sentences | Stale, taken for current | Correct, refused |
 |---|---|---|
 | Held out | 0 of 30 | 0 of 30 |
-| Open (the instructions were written against these) | 0 of 33 | 0 of 41 |
+| Open (the instructions were written against these) | 0 of 36 | 0 of 44 |
 
 Stale sentences taken for current: 0.
 

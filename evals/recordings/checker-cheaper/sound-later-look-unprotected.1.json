@@ -10,30 +10,23 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case.sources": "226d6fdac11384f2",
-  "case": "7c7081e132c466ab"
+  "case.sources": "57110608a30f3681",
+  "case": "aad41692169f7a5f"
  },
  "turn": {
   "stop_reason": "end_turn",
   "verdict": {
-   "verdict": "not_supported",
-   "findings": [
-    {
-     "kind": "unsupported",
-     "quote": "Branch main of harborlight/app",
-     "source_id": "",
-     "explanation": "No source states that branch main is the default branch of the application repository, so the draft assumes the question's default branch is main."
-    }
-   ]
+   "verdict": "supported",
+   "findings": []
   },
   "usage": {
-   "input_tokens": 297,
-   "output_tokens": 583,
+   "input_tokens": 292,
+   "output_tokens": 283,
    "cache_creation_input_tokens": 1504,
    "cache_read_input_tokens": 0
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.0005092,
+ "cost_usd": 0.0003587,
  "check_model": "claude-haiku-5-5"
 }

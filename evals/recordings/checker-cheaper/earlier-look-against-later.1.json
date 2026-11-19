@@ -10,8 +10,8 @@
   "checker.model": "claude-haiku-5-5",
   "checker.effort": "medium",
   "checker.max_tokens": "8000",
-  "case.sources": "226d6fdac11384f2",
-  "case": "9ebbb6585237ad2e"
+  "case.sources": "57110608a30f3681",
+  "case": "c7b34ef2c68332bd"
  },
  "turn": {
   "stop_reason": "end_turn",
@@ -22,18 +22,18 @@
      "kind": "contradicted",
      "quote": "Yes.",
      "source_id": "evidence:EV-BP-3",
-     "explanation": "The later observed look (look 2, 2026-11-10 09:12 UTC) reads that branch main of harborlight/app is not protected, which conflicts with the draft's claim that the rule is enforced."
+     "explanation": "The later observation (look 2, 2026-11-10 09:12 UTC) reads that branch main of harborlight/app is not protected, which contradicts the draft's claim that it is protected."
     }
    ]
   },
   "usage": {
-   "input_tokens": 324,
-   "output_tokens": 618,
+   "input_tokens": 319,
+   "output_tokens": 626,
    "cache_creation_input_tokens": 0,
    "cache_read_input_tokens": 1504
   },
   "model": "claude-haiku-5-5"
  },
- "cost_usd": 0.00035644,
+ "cost_usd": 0.00035994,
  "check_model": "claude-haiku-5-5"
 }
